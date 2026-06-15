@@ -59,6 +59,23 @@ describe("GET /license.md", () => {
     const body = await res.text();
     expect(body).toContain("error: invalid_view");
   });
+
+  test("format=text はプレーンテキスト（text/plain・見出し記号なし）を返す", async () => {
+    const res = await call("/license.md?format=text");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("text/plain; charset=utf-8");
+    const body = await res.text();
+    // 見出し記号 # が外れている
+    expect(body).not.toMatch(/^#/m);
+    expect(body).toContain("撮影データの取り扱いについて");
+  });
+
+  test("不正な format は 400 を返す", async () => {
+    const res = await call("/license.md?format=pdf");
+    expect(res.status).toBe(400);
+    const body = await res.text();
+    expect(body).toContain("error: invalid_format");
+  });
 });
 
 describe("非対応メソッド", () => {

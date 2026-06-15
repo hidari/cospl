@@ -2,7 +2,12 @@
 // DOM に依存しない純粋関数群。Worker（src/worker.ts）と Client（src/client/main.ts）が共有する。
 // 生成 Markdown の文字列は旧 docs/cospl.mjs と byte 一致を保つ（test/__fixtures__/golden.json で検証）。
 
-import { invalidViewError, type ParseError, unknownTagError } from "./types/errors";
+import {
+  invalidFormatError,
+  invalidViewError,
+  type ParseError,
+  unknownTagError,
+} from "./types/errors";
 import { none, type Option, some } from "./types/option";
 import { fail, type Result, success } from "./types/result";
 
@@ -13,6 +18,7 @@ const TAGS: ReadonlySet<string> = new Set<Tag>(ORDER);
 
 export type State = Readonly<Record<Tag, boolean>>;
 export type View = "human" | "ai";
+export type Format = "markdown" | "text";
 
 // 全タグ false の初期状態を作る純粋関数。リテラルで全 Tag を網羅し、
 // ORDER に Tag を追加すると型エラーで気付ける（as アサーション不要）。
@@ -75,12 +81,24 @@ export function parseView(raw: string | null): Result<View, ParseError> {
   return fail(invalidViewError(normalized));
 }
 
-// 人間向け納品 README を生成する（旧 humanMD と 1:1）
+// format クエリを厳格パースする。null/markdown→markdown、text→text、その他は失敗。
+export function parseFormat(raw: string | null): Result<Format, ParseError> {
+  const normalized = (raw ?? "markdown").trim().toLowerCase();
+  if (normalized === "markdown") {
+    return success("markdown");
+  }
+  if (normalized === "text") {
+    return success("text");
+  }
+  return fail(invalidFormatError(normalized));
+}
+
+// 人間向け README を生成する（旧 humanMD と 1:1）
 export function humanMD(state: State): string {
   const id = ident(state);
   const L: string[] = [];
   L.push("# 撮影データの取り扱いについて", "");
-  L.push(`*適用: ${id} ／ 最終更新: [YYYY-MM-DD]*`, "");
+  L.push(`適用: ${id} ／ 最終更新: [YYYY-MM-DD]`, "");
   L.push("この度は撮影にご協力いただき、ありがとうございました！");
   L.push("お渡しした写真データの取り扱いについて、以下の点をご確認いただければ幸いです。", "");
   L.push(
@@ -105,7 +123,7 @@ export function humanMD(state: State): string {
   L.push("## 権利関係について");
   L.push("- 写真の著作権は撮影者（[撮影者名]）に帰属します");
   L.push("- 被写体であるモデルの肖像権は、モデルご本人に帰属します");
-  L.push("- 衣装が表現するキャラクターの著作権は原作の権利者に帰属し、本書の対象外です", "");
+  L.push("- 衣装が表現するキャラクターの著作権は原作の権利者に帰属し、本文書の対象外です", "");
   const bans: string[] = [];
   if (state.NC)
     bans.push(
@@ -125,7 +143,6 @@ export function humanMD(state: State): string {
   }
   L.push("## 撮影者からのお約束");
   L.push("- 掲載の際はモデルさんのクレジットを表記します");
-  L.push("- 「この写真は出さないでほしい」というカットがあれば、掲載しません");
   L.push("- データを第三者へ無断で提供したり、無断で商用利用したりはしません", "");
   if (state.TD) {
     L.push("## 掲載の取り下げについて");
@@ -135,6 +152,15 @@ export function humanMD(state: State): string {
   L.push("## 連絡先", "- [連絡先をここに記入]", "");
   L.push("----", `適用: ${id} ／ 文責: [撮影者名]`);
   return L.join("\n");
+}
+
+// 同梱用のプレーンテキスト版 README。文面は humanMD と同一で、非技術者に紛らわしい
+// Markdown 見出し記号（# / ##）だけを外す。リンク等の特殊記法は使っていないため変換は最小で済む。
+export function humanText(state: State): string {
+  return humanMD(state)
+    .split("\n")
+    .map((line) => line.replace(/^#{1,6}\s+/, ""))
+    .join("\n");
 }
 
 // AI 向け宣言を生成する（旧 aiMD と 1:1）

@@ -2,7 +2,9 @@ import { describe, expect, test } from "vitest";
 import {
   aiMD,
   humanMD,
+  humanText,
   ident,
+  parseFormat,
   parseTag,
   parseTags,
   parseView,
@@ -11,7 +13,7 @@ import {
 } from "../src/core";
 import golden from "./__fixtures__/golden.json";
 
-// golden.json は旧 docs/cospl.mjs の出力を捕捉したもの。生成 Markdown の byte 一致を保証する。
+// golden.json は現在の core 出力を固定した回帰用フィクスチャ。`pnpm regen:golden` で更新する。
 type GoldenCase = {
   tags: string[];
   ident: string;
@@ -120,6 +122,42 @@ describe("parseView", () => {
   });
 });
 
+describe("parseFormat", () => {
+  test("null と markdown は markdown", () => {
+    expect(parseFormat(null)).toEqual({ success: true, data: "markdown" });
+    expect(parseFormat("markdown")).toEqual({ success: true, data: "markdown" });
+  });
+
+  test("text は text（大文字小文字を問わない）", () => {
+    expect(parseFormat("text")).toEqual({ success: true, data: "text" });
+    expect(parseFormat("TEXT")).toEqual({ success: true, data: "text" });
+  });
+
+  test("未知の format は invalid_format で失敗する", () => {
+    const result = parseFormat("pdf");
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.kind).toBe("invalid_format");
+      expect(result.error.input).toBe("pdf");
+    }
+  });
+});
+
+describe("humanText", () => {
+  test("文面は humanMD と同一で、見出し記号(# / ##)だけを外す", () => {
+    const state = unwrapState("BY-NC-NAI-TD");
+    const text = humanText(state);
+    expect(text).not.toMatch(/^#/m);
+    expect(text).toBe(humanMD(state).replace(/^#{1,6}\s+/gm, ""));
+  });
+
+  test("箇条書きや区切り線はそのまま残す", () => {
+    const text = humanText(unwrapState("none"));
+    expect(text).toContain("- 現像済みJPEGデータ");
+    expect(text).toContain("----");
+  });
+});
+
 describe("ident", () => {
   test("タグありはハイフン連結、タグなしはバージョンのみ", () => {
     expect(ident(unwrapState("BY-NC-NAI-TD"))).toBe("CosPL 1.0 / BY-NC-NAI-TD");
@@ -127,7 +165,7 @@ describe("ident", () => {
   });
 });
 
-describe("生成 Markdown は旧実装と byte 一致する（golden）", () => {
+describe("生成文書は golden と byte 一致する（回帰）", () => {
   for (const [raw, expected] of Object.entries(goldenCases)) {
     test(`${raw}: tags / ident / humanMD / aiMD`, () => {
       const state = unwrapState(raw);

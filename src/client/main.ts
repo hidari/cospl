@@ -5,6 +5,7 @@ import {
   aiMD,
   emptyState,
   humanMD,
+  humanText,
   ident,
   parseTag,
   parseTags,
@@ -36,6 +37,11 @@ function update(state: AppState, action: Action): AppState {
 
 function currentMarkdown(state: AppState): string {
   return state.view === "ai" ? aiMD(state.tags) : humanMD(state.tags);
+}
+
+// README のプレーンテキスト版（見出し記号なし）。テキストでコピー用。
+function currentText(state: AppState): string {
+  return humanText(state.tags);
 }
 
 function identHTML(state: AppState): string {
@@ -132,6 +138,11 @@ function render(state: AppState): void {
   ifSome(byId("tab-h"), (el) => el.setAttribute("aria-selected", String(state.view === "human")));
   ifSome(byId("tab-a"), (el) => el.setAttribute("aria-selected", String(state.view === "ai")));
 
+  // テキストでコピーは README ビューのみ（AI宣言は機械向けで Markdown のみ）
+  ifSome(byId("copy-text"), (el) => {
+    el.style.display = state.view === "ai" ? "none" : "";
+  });
+
   history.replaceState(null, "", hashFragment(state));
 }
 
@@ -173,6 +184,7 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
   );
 
   bindCopy("copy", () => currentMarkdown(getState()));
+  bindCopy("copy-text", () => currentText(getState()));
   bindCopy("ep-copy", () => endpoint(getState()));
   bindCopy("link", () => location.href);
 }

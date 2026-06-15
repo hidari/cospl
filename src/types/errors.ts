@@ -7,7 +7,7 @@
  */
 
 // エラーの種別一覧（ランタイム検証とコンパイル時型の両方を一元管理）
-const PARSE_ERROR_KIND_LIST = ["unknown_tag", "invalid_view"] as const;
+const PARSE_ERROR_KIND_LIST = ["unknown_tag", "invalid_view", "invalid_format"] as const;
 
 export type ParseErrorKind = (typeof PARSE_ERROR_KIND_LIST)[number];
 export const PARSE_ERROR_KINDS: ReadonlySet<string> = new Set<ParseErrorKind>(
@@ -31,5 +31,11 @@ export const unknownTagError = (input: string): ParseError => ({
 export const invalidViewError = (input: string): ParseError => ({
   kind: "invalid_view",
   message: `Invalid view: "${input}". Allowed views are human, ai.`,
+  input,
+});
+
+export const invalidFormatError = (input: string): ParseError => ({
+  kind: "invalid_format",
+  message: `Invalid format: "${input}". Allowed formats are markdown, text.`,
   input,
 });

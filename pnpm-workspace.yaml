@@ -1,0 +1,8 @@
+# pnpm 10.x が build script の実行を許可するパッケージの allowlist。
+# pnpm はデフォルトで postinstall 等を実行しない（サプライチェーン対策）ため、
+# ネイティブバイナリの準備に build script が要る依存だけを明示的に信頼する。
+# pnpm 10.33+ は canonical なこの場所を参照する（package.json の pnpm フィールドは非推奨）。
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+  - workerd

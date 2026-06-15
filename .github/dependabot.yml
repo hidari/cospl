@@ -1,0 +1,36 @@
+version: 2
+updates:
+  # npm エコシステム（pnpm-lock.yaml に対応）
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "depends"
+    labels:
+      - "dependencies"
+    assignees:
+      - "hidari"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "dependencies"
+      - "github_actions"
+    assignees:
+      - "hidari"

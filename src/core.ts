@@ -1,6 +1,6 @@
 // CosPL core — タグロジックと Markdown 生成の単一ソース。
 // DOM に依存しない純粋関数群。Worker（src/worker.ts）と Client（src/client/main.ts）が共有する。
-// 生成 Markdown の文字列は旧 docs/cospl.mjs と byte 一致を保つ（test/__fixtures__/golden.json で検証）。
+// 生成文書の文字列は golden（test/__fixtures__/golden.json）と byte 一致を保つ。文面変更時は pnpm regen:golden で更新する。
 
 import {
   invalidFormatError,
@@ -93,7 +93,7 @@ export function parseFormat(raw: string | null): Result<Format, ParseError> {
   return fail(invalidFormatError(normalized));
 }
 
-// 人間向け README を生成する（旧 humanMD と 1:1）
+// 人間向け README を生成する
 export function humanMD(state: State): string {
   const id = ident(state);
   const L: string[] = [];
@@ -163,7 +163,7 @@ export function humanText(state: State): string {
     .join("\n");
 }
 
-// AI 向け宣言を生成する（旧 aiMD と 1:1）
+// AI 向け宣言を生成する
 export function aiMD(state: State): string {
   const id = ident(state);
   const L: string[] = [];

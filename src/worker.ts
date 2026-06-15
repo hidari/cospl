@@ -41,11 +41,13 @@ function parseLicenseRequest(url: URL): Result<LicenseRequest, ParseError> {
   );
 }
 
-// 成功時のレスポンス（200）。format=text はプレーンテキスト、それ以外は Markdown。
+// 成功時のレスポンス（200）。README は format=text でプレーンテキスト。
+// AI 宣言は機械向けで常に Markdown なので format は無視する（body と content-type を一致させる）。
 function licenseResponse({ state, view, format }: LicenseRequest): Response {
-  const body = view === "ai" ? aiMD(state) : format === "text" ? humanText(state) : humanMD(state);
-  const contentType =
-    format === "text" ? "text/plain; charset=utf-8" : "text/markdown; charset=utf-8";
+  const isAi = view === "ai";
+  const asText = !isAi && format === "text";
+  const body = isAi ? aiMD(state) : asText ? humanText(state) : humanMD(state);
+  const contentType = asText ? "text/plain; charset=utf-8" : "text/markdown; charset=utf-8";
   return new Response(body, {
     headers: {
       "content-type": contentType,

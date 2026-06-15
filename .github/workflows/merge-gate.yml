@@ -56,6 +56,9 @@ jobs:
         env:
           RESULT: ${{ needs.full.result }}
         run: |
+          # full は意図的に if: 条件を持たず skip 不可。skipped を許容するのは
+          # 将来ジョブを増やした際に required が pending デッドロックしないため。
+          # full に if: を足す場合はこの許容を必ず見直すこと。
           echo "full job result: ${RESULT}"
           case "${RESULT}" in
             success|skipped) echo "merge gate passed" ;;

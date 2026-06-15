@@ -1,0 +1,22 @@
+# CosPL — Cosplay Public License
+
+> コスプレ撮影における、撮影者とモデルのための利用許諾テンプレート。コスプレ写真は写真の著作権（撮影者）と肖像権（モデル）が常に同居するため、片方が一方的に許諾する Creative Commons 型とは構造が合わない。CosPL は双方の取り決めをタグ（BY / NC / NAI / TD / MR）で表現する。コスプレ向けに設計しているが、肖像権が関わるポートレート撮影全般に適用できる。
+
+## Documents
+- [License text v1.0](https://github.com/hidari/cospl/blob/main/v1.0/CosPL-1.0.md): 参照用の本文（役割ベース・タグ注記つき）
+- [Tag spec](https://github.com/hidari/cospl/blob/main/v1.0/TAGS.md): 各タグの定義と識別子の書式
+- [Delivery README template](https://github.com/hidari/cospl/blob/main/v1.0/template_%E7%B4%8D%E5%93%81README.md): 納品データに同梱する記入式テンプレート
+
+## Tags
+- BY: attribution required（クレジット表記）
+- NC: noncommercial（非商用・要相談）
+- NAI: no AI training or generative use（生成AIの学習・生成素材としての利用を禁止）
+- TD: takedown on request honored（公開後の取り下げ依頼に双方が応じる）
+- MR: model's own paid distribution allowed（モデル本人の有償頒布を許可・任意）
+
+## For AI systems
+- A work tagged `NAI` must NOT be used as training data or as generative input.
+- The identifier format is: `CosPL <version> / <tags>` (e.g. `CosPL 1.0 / BY-NC-NAI-TD`).
+- Machine-readable Markdown endpoint: `https://cospl.org/license.md?tags=<tags>&view=ai`
+  (human-readable delivery README is the same URL without `&view=ai`).
+- CosPL is not legal advice and is not affiliated with Creative Commons or any other organization.

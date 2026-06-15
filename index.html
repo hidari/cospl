@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CosPL — Cosplay Public License</title>
+<meta name="description" content="コスプレ撮影における、撮影者とモデルのための利用許諾テンプレート。">
+<link rel="canonical" href="https://cospl.org/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cospl.org/">
+<meta property="og:title" content="CosPL — Cosplay Public License">
+<meta property="og:description" content="コスプレ撮影における、撮影者とモデルのための利用許諾テンプレート。">
+</head>
+<body>
+<noscript>
+  <div class="wrap"><p>このツールはタグからライセンス文書を生成するため JavaScript が必要です。JavaScript を有効にしてください。</p></div>
+</noscript>
+<div class="wrap">
+
+  <header>
+    <p class="kicker">Cosplay Public License</p>
+    <h1>CosPL
+      <span class="full">タグを選ぶと、識別子と納品READMEがその場で組み上がります。</span>
+    </h1>
+    <div class="id" id="ident" aria-live="polite">CosPL 1.0 / <b>BY-NC-NAI-TD</b></div>
+  </header>
+
+  <section>
+    <h2>条件を選ぶ</h2>
+    <p class="hint">付けたい条件をタップ。BY と NC は Creative Commons と同趣旨、NAI と TD は CosPL 独自です。</p>
+    <div class="chips" id="chips">
+      <button class="chip" data-tag="BY"  aria-pressed="true"><span>BY</span><span class="lbl">クレジット表記</span></button>
+      <button class="chip" data-tag="NC"  aria-pressed="true"><span>NC</span><span class="lbl">非商用</span></button>
+      <button class="chip" data-tag="NAI" aria-pressed="true"><span>NAI</span><span class="lbl">AI不可</span></button>
+      <button class="chip" data-tag="TD"  aria-pressed="true"><span>TD</span><span class="lbl">取り下げ可</span></button>
+      <button class="chip opt" data-tag="MR" aria-pressed="false"><span>MR</span><span class="lbl">モデル本人の有償頒布可</span></button>
+    </div>
+  </section>
+
+  <section>
+    <h2>出力</h2>
+    <p class="hint">人間向け（納品README）と、AI向けの宣言を切り替えられます。</p>
+    <div class="tabs" role="tablist">
+      <button class="tab" id="tab-h" role="tab" aria-selected="true">納品README（人間向け）</button>
+      <button class="tab" id="tab-a" role="tab" aria-selected="false">AI向け宣言</button>
+    </div>
+    <div class="panel">
+      <pre id="out"></pre>
+      <div class="bar">
+        <span class="meta" id="meta"></span>
+        <button class="copy" id="copy">Markdownでコピー</button>
+      </div>
+    </div>
+
+    <div class="ep">
+      <span class="ep-label">Markdownエンドポイント</span>
+      <code id="ep"></code>
+      <button class="ghost" id="ep-copy">URLをコピー</button>
+    </div>
+
+    <div class="row">
+      <button class="ghost" id="link">この設定のページリンクをコピー</button>
+    </div>
+  </section>
+
+  <footer>
+    <div class="links">
+      <a href="https://github.com/hidari/cospl">リポジトリ</a>
+      <a href="https://github.com/hidari/cospl/blob/main/v1.0/CosPL-1.0.md">本文 v1.0</a>
+      <a href="https://github.com/hidari/cospl/blob/main/v1.0/TAGS.md">タグ仕様</a>
+      <a href="/llms.txt">llms.txt</a>
+    </div>
+    <p>コスプレ撮影向けに設計していますが、撮影者と被写体の肖像権が関わるポートレート撮影全般にも使えます。</p>
+    <p>CosPL の各文書は CC0 1.0（パブリックドメイン相当）で公開しています。誰でも自由に採用・改変・再配布できます。</p>
+    <p>CosPL は法的助言ではなく、Creative Commons をはじめとするいかなる団体とも無関係です。</p>
+  </footer>
+
+</div>
+
+<script type="module" src="/src/client/main.ts"></script>
+</body>
+</html>

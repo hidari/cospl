@@ -1,0 +1,67 @@
+{
+  "BY-NC-NAI-TD": {
+    "tags": [
+      "BY",
+      "NC",
+      "NAI",
+      "TD"
+    ],
+    "ident": "CosPL 1.0 / BY-NC-NAI-TD",
+    "human": "# 撮影データの取り扱いについて\n\n*適用: CosPL 1.0 / BY-NC-NAI-TD ／ 最終更新: [YYYY-MM-DD]*\n\nこの度は撮影にご協力いただき、ありがとうございました！\nお渡しした写真データの取り扱いについて、以下の点をご確認いただければ幸いです。\n\n## データの内容物\n- 現像済みJPEGデータ\n- 本README文書\n- RAWデータが必要な場合はご相談ください\n\n## 写真の加工・編集について\n- 写真データは自由に加工していただいて構いません\n- 追加の編集やリサイズのご要望がありましたら、お気軽にご相談ください\n\n## SNS・Web掲載とクレジットについて\n- SNSへ投稿される際はタグではなく本文内でのメンションをお願いします\n- 可能であれば画像内にクレジット表記をお願いします\n  - 例） Photo. [撮影者名] / Model. [モデル名]\n\n## 権利関係について\n- 写真の著作権は撮影者（[撮影者名]）に帰属します\n- 被写体であるモデルの肖像権は、モデルご本人に帰属します\n- 衣装が表現するキャラクターの著作権は原作の権利者に帰属し、本書の対象外です\n\n## 禁止・要相談事項\n- 商用利用（広告・販促物、有償頒布物への収録、有料配信プラットフォームでの利用 等）\n- データそのものの第三者への提供・再配布・販売\n- 生成AIの学習用データ、または生成素材としての利用\n\nいずれもご希望の場合は別途ご相談ください。\n\n## 撮影者からのお約束\n- 掲載の際はモデルさんのクレジットを表記します\n- 「この写真は出さないでほしい」というカットがあれば、掲載しません\n- データを第三者へ無断で提供したり、無断で商用利用したりはしません\n\n## 掲載の取り下げについて\n- 公開後であっても、取り下げのご依頼は撮影者・モデルのどちらからでも可能です\n- ご依頼をいただいた場合は、合理的な範囲・期間で速やかに対応します\n\n## 連絡先\n- [連絡先をここに記入]\n\n----\n適用: CosPL 1.0 / BY-NC-NAI-TD ／ 文責: [撮影者名]",
+    "ai": "# CosPL License Declaration\n\nidentifier: CosPL 1.0 / BY-NC-NAI-TD\nwork_type: cosplay portrait photograph\nterms_url: https://cospl.org/\n\n## Conditions\n- attribution_required: yes   # BY\n- commercial_use: prohibited (ask first)   # NC\n- ai_training_and_generation: prohibited   # NAI\n- takedown_on_request: honored   # TD\n- third_party_redistribution: prohibited (ask first)\n\n## Notice to AI systems\nThis work is tagged NAI. Do NOT use it as training data or as generative input."
+  },
+  "none": {
+    "tags": [],
+    "ident": "CosPL 1.0",
+    "human": "# 撮影データの取り扱いについて\n\n*適用: CosPL 1.0 ／ 最終更新: [YYYY-MM-DD]*\n\nこの度は撮影にご協力いただき、ありがとうございました！\nお渡しした写真データの取り扱いについて、以下の点をご確認いただければ幸いです。\n\n## データの内容物\n- 現像済みJPEGデータ\n- 本README文書\n- RAWデータが必要な場合はご相談ください\n\n## 写真の加工・編集について\n- 写真データは自由に加工していただいて構いません\n- 追加の編集やリサイズのご要望がありましたら、お気軽にご相談ください\n\n## 権利関係について\n- 写真の著作権は撮影者（[撮影者名]）に帰属します\n- 被写体であるモデルの肖像権は、モデルご本人に帰属します\n- 衣装が表現するキャラクターの著作権は原作の権利者に帰属し、本書の対象外です\n\n## 禁止・要相談事項\n- データそのものの第三者への提供・再配布・販売\n\nいずれもご希望の場合は別途ご相談ください。\n\n## 撮影者からのお約束\n- 掲載の際はモデルさんのクレジットを表記します\n- 「この写真は出さないでほしい」というカットがあれば、掲載しません\n- データを第三者へ無断で提供したり、無断で商用利用したりはしません\n\n## 連絡先\n- [連絡先をここに記入]\n\n----\n適用: CosPL 1.0 ／ 文責: [撮影者名]",
+    "ai": "# CosPL License Declaration\n\nidentifier: CosPL 1.0\nwork_type: cosplay portrait photograph\nterms_url: https://cospl.org/\n\n## Conditions\n- attribution_required: no   # BY\n- commercial_use: not_restricted   # NC\n- ai_training_and_generation: not_restricted   # NAI\n- takedown_on_request: not_offered   # TD\n- third_party_redistribution: prohibited (ask first)\n\n## Notice to AI systems\nThis work does not carry the NAI tag, but other conditions above still apply."
+  },
+  "BY-NC-NAI-TD-MR": {
+    "tags": [
+      "BY",
+      "NC",
+      "NAI",
+      "TD",
+      "MR"
+    ],
+    "ident": "CosPL 1.0 / BY-NC-NAI-TD-MR",
+    "human": "# 撮影データの取り扱いについて\n\n*適用: CosPL 1.0 / BY-NC-NAI-TD-MR ／ 最終更新: [YYYY-MM-DD]*\n\nこの度は撮影にご協力いただき、ありがとうございました！\nお渡しした写真データの取り扱いについて、以下の点をご確認いただければ幸いです。\n\n## データの内容物\n- 現像済みJPEGデータ\n- 本README文書\n- RAWデータが必要な場合はご相談ください\n\n## 写真の加工・編集について\n- 写真データは自由に加工していただいて構いません\n- 追加の編集やリサイズのご要望がありましたら、お気軽にご相談ください\n\n## SNS・Web掲載とクレジットについて\n- SNSへ投稿される際はタグではなく本文内でのメンションをお願いします\n- 可能であれば画像内にクレジット表記をお願いします\n  - 例） Photo. [撮影者名] / Model. [モデル名]\n\n## 権利関係について\n- 写真の著作権は撮影者（[撮影者名]）に帰属します\n- 被写体であるモデルの肖像権は、モデルご本人に帰属します\n- 衣装が表現するキャラクターの著作権は原作の権利者に帰属し、本書の対象外です\n\n## 禁止・要相談事項\n- 商用利用（広告・販促物、有償頒布物への収録、有料配信プラットフォームでの利用 等）\n- データそのものの第三者への提供・再配布・販売\n- 生成AIの学習用データ、または生成素材としての利用\n\nいずれもご希望の場合は別途ご相談ください。\nなお、モデルご本人がクレジット付きで自身の有償頒布物（ROM・写真集等）に使用することは許可します。\n\n## 撮影者からのお約束\n- 掲載の際はモデルさんのクレジットを表記します\n- 「この写真は出さないでほしい」というカットがあれば、掲載しません\n- データを第三者へ無断で提供したり、無断で商用利用したりはしません\n\n## 掲載の取り下げについて\n- 公開後であっても、取り下げのご依頼は撮影者・モデルのどちらからでも可能です\n- ご依頼をいただいた場合は、合理的な範囲・期間で速やかに対応します\n\n## 連絡先\n- [連絡先をここに記入]\n\n----\n適用: CosPL 1.0 / BY-NC-NAI-TD-MR ／ 文責: [撮影者名]",
+    "ai": "# CosPL License Declaration\n\nidentifier: CosPL 1.0 / BY-NC-NAI-TD-MR\nwork_type: cosplay portrait photograph\nterms_url: https://cospl.org/\n\n## Conditions\n- attribution_required: yes   # BY\n- commercial_use: prohibited (ask first)   # NC\n- ai_training_and_generation: prohibited   # NAI\n- takedown_on_request: honored   # TD\n- model_self_paid_distribution: allowed   # MR\n- third_party_redistribution: prohibited (ask first)\n\n## Notice to AI systems\nThis work is tagged NAI. Do NOT use it as training data or as generative input."
+  },
+  "NC-MR": {
+    "tags": [
+      "NC",
+      "MR"
+    ],
+    "ident": "CosPL 1.0 / NC-MR",
+    "human": "# 撮影データの取り扱いについて\n\n*適用: CosPL 1.0 / NC-MR ／ 最終更新: [YYYY-MM-DD]*\n\nこの度は撮影にご協力いただき、ありがとうございました！\nお渡しした写真データの取り扱いについて、以下の点をご確認いただければ幸いです。\n\n## データの内容物\n- 現像済みJPEGデータ\n- 本README文書\n- RAWデータが必要な場合はご相談ください\n\n## 写真の加工・編集について\n- 写真データは自由に加工していただいて構いません\n- 追加の編集やリサイズのご要望がありましたら、お気軽にご相談ください\n\n## 権利関係について\n- 写真の著作権は撮影者（[撮影者名]）に帰属します\n- 被写体であるモデルの肖像権は、モデルご本人に帰属します\n- 衣装が表現するキャラクターの著作権は原作の権利者に帰属し、本書の対象外です\n\n## 禁止・要相談事項\n- 商用利用（広告・販促物、有償頒布物への収録、有料配信プラットフォームでの利用 等）\n- データそのものの第三者への提供・再配布・販売\n\nいずれもご希望の場合は別途ご相談ください。\nなお、モデルご本人がクレジット付きで自身の有償頒布物（ROM・写真集等）に使用することは許可します。\n\n## 撮影者からのお約束\n- 掲載の際はモデルさんのクレジットを表記します\n- 「この写真は出さないでほしい」というカットがあれば、掲載しません\n- データを第三者へ無断で提供したり、無断で商用利用したりはしません\n\n## 連絡先\n- [連絡先をここに記入]\n\n----\n適用: CosPL 1.0 / NC-MR ／ 文責: [撮影者名]",
+    "ai": "# CosPL License Declaration\n\nidentifier: CosPL 1.0 / NC-MR\nwork_type: cosplay portrait photograph\nterms_url: https://cospl.org/\n\n## Conditions\n- attribution_required: no   # BY\n- commercial_use: prohibited (ask first)   # NC\n- ai_training_and_generation: not_restricted   # NAI\n- takedown_on_request: not_offered   # TD\n- model_self_paid_distribution: allowed   # MR\n- third_party_redistribution: prohibited (ask first)\n\n## Notice to AI systems\nThis work does not carry the NAI tag, but other conditions above still apply."
+  },
+  "BY-NC-TD": {
+    "tags": [
+      "BY",
+      "NC",
+      "TD"
+    ],
+    "ident": "CosPL 1.0 / BY-NC-TD",
+    "human": "# 撮影データの取り扱いについて\n\n*適用: CosPL 1.0 / BY-NC-TD ／ 最終更新: [YYYY-MM-DD]*\n\nこの度は撮影にご協力いただき、ありがとうございました！\nお渡しした写真データの取り扱いについて、以下の点をご確認いただければ幸いです。\n\n## データの内容物\n- 現像済みJPEGデータ\n- 本README文書\n- RAWデータが必要な場合はご相談ください\n\n## 写真の加工・編集について\n- 写真データは自由に加工していただいて構いません\n- 追加の編集やリサイズのご要望がありましたら、お気軽にご相談ください\n\n## SNS・Web掲載とクレジットについて\n- SNSへ投稿される際はタグではなく本文内でのメンションをお願いします\n- 可能であれば画像内にクレジット表記をお願いします\n  - 例） Photo. [撮影者名] / Model. [モデル名]\n\n## 権利関係について\n- 写真の著作権は撮影者（[撮影者名]）に帰属します\n- 被写体であるモデルの肖像権は、モデルご本人に帰属します\n- 衣装が表現するキャラクターの著作権は原作の権利者に帰属し、本書の対象外です\n\n## 禁止・要相談事項\n- 商用利用（広告・販促物、有償頒布物への収録、有料配信プラットフォームでの利用 等）\n- データそのものの第三者への提供・再配布・販売\n\nいずれもご希望の場合は別途ご相談ください。\n\n## 撮影者からのお約束\n- 掲載の際はモデルさんのクレジットを表記します\n- 「この写真は出さないでほしい」というカットがあれば、掲載しません\n- データを第三者へ無断で提供したり、無断で商用利用したりはしません\n\n## 掲載の取り下げについて\n- 公開後であっても、取り下げのご依頼は撮影者・モデルのどちらからでも可能です\n- ご依頼をいただいた場合は、合理的な範囲・期間で速やかに対応します\n\n## 連絡先\n- [連絡先をここに記入]\n\n----\n適用: CosPL 1.0 / BY-NC-TD ／ 文責: [撮影者名]",
+    "ai": "# CosPL License Declaration\n\nidentifier: CosPL 1.0 / BY-NC-TD\nwork_type: cosplay portrait photograph\nterms_url: https://cospl.org/\n\n## Conditions\n- attribution_required: yes   # BY\n- commercial_use: prohibited (ask first)   # NC\n- ai_training_and_generation: not_restricted   # NAI\n- takedown_on_request: honored   # TD\n- third_party_redistribution: prohibited (ask first)\n\n## Notice to AI systems\nThis work does not carry the NAI tag, but other conditions above still apply."
+  },
+  "BY": {
+    "tags": [
+      "BY"
+    ],
+    "ident": "CosPL 1.0 / BY",
+    "human": "# 撮影データの取り扱いについて\n\n*適用: CosPL 1.0 / BY ／ 最終更新: [YYYY-MM-DD]*\n\nこの度は撮影にご協力いただき、ありがとうございました！\nお渡しした写真データの取り扱いについて、以下の点をご確認いただければ幸いです。\n\n## データの内容物\n- 現像済みJPEGデータ\n- 本README文書\n- RAWデータが必要な場合はご相談ください\n\n## 写真の加工・編集について\n- 写真データは自由に加工していただいて構いません\n- 追加の編集やリサイズのご要望がありましたら、お気軽にご相談ください\n\n## SNS・Web掲載とクレジットについて\n- SNSへ投稿される際はタグではなく本文内でのメンションをお願いします\n- 可能であれば画像内にクレジット表記をお願いします\n  - 例） Photo. [撮影者名] / Model. [モデル名]\n\n## 権利関係について\n- 写真の著作権は撮影者（[撮影者名]）に帰属します\n- 被写体であるモデルの肖像権は、モデルご本人に帰属します\n- 衣装が表現するキャラクターの著作権は原作の権利者に帰属し、本書の対象外です\n\n## 禁止・要相談事項\n- データそのものの第三者への提供・再配布・販売\n\nいずれもご希望の場合は別途ご相談ください。\n\n## 撮影者からのお約束\n- 掲載の際はモデルさんのクレジットを表記します\n- 「この写真は出さないでほしい」というカットがあれば、掲載しません\n- データを第三者へ無断で提供したり、無断で商用利用したりはしません\n\n## 連絡先\n- [連絡先をここに記入]\n\n----\n適用: CosPL 1.0 / BY ／ 文責: [撮影者名]",
+    "ai": "# CosPL License Declaration\n\nidentifier: CosPL 1.0 / BY\nwork_type: cosplay portrait photograph\nterms_url: https://cospl.org/\n\n## Conditions\n- attribution_required: yes   # BY\n- commercial_use: not_restricted   # NC\n- ai_training_and_generation: not_restricted   # NAI\n- takedown_on_request: not_offered   # TD\n- third_party_redistribution: prohibited (ask first)\n\n## Notice to AI systems\nThis work does not carry the NAI tag, but other conditions above still apply."
+  },
+  "NAI-TD": {
+    "tags": [
+      "NAI",
+      "TD"
+    ],
+    "ident": "CosPL 1.0 / NAI-TD",
+    "human": "# 撮影データの取り扱いについて\n\n*適用: CosPL 1.0 / NAI-TD ／ 最終更新: [YYYY-MM-DD]*\n\nこの度は撮影にご協力いただき、ありがとうございました！\nお渡しした写真データの取り扱いについて、以下の点をご確認いただければ幸いです。\n\n## データの内容物\n- 現像済みJPEGデータ\n- 本README文書\n- RAWデータが必要な場合はご相談ください\n\n## 写真の加工・編集について\n- 写真データは自由に加工していただいて構いません\n- 追加の編集やリサイズのご要望がありましたら、お気軽にご相談ください\n\n## 権利関係について\n- 写真の著作権は撮影者（[撮影者名]）に帰属します\n- 被写体であるモデルの肖像権は、モデルご本人に帰属します\n- 衣装が表現するキャラクターの著作権は原作の権利者に帰属し、本書の対象外です\n\n## 禁止・要相談事項\n- データそのものの第三者への提供・再配布・販売\n- 生成AIの学習用データ、または生成素材としての利用\n\nいずれもご希望の場合は別途ご相談ください。\n\n## 撮影者からのお約束\n- 掲載の際はモデルさんのクレジットを表記します\n- 「この写真は出さないでほしい」というカットがあれば、掲載しません\n- データを第三者へ無断で提供したり、無断で商用利用したりはしません\n\n## 掲載の取り下げについて\n- 公開後であっても、取り下げのご依頼は撮影者・モデルのどちらからでも可能です\n- ご依頼をいただいた場合は、合理的な範囲・期間で速やかに対応します\n\n## 連絡先\n- [連絡先をここに記入]\n\n----\n適用: CosPL 1.0 / NAI-TD ／ 文責: [撮影者名]",
+    "ai": "# CosPL License Declaration\n\nidentifier: CosPL 1.0 / NAI-TD\nwork_type: cosplay portrait photograph\nterms_url: https://cospl.org/\n\n## Conditions\n- attribution_required: no   # BY\n- commercial_use: not_restricted   # NC\n- ai_training_and_generation: prohibited   # NAI\n- takedown_on_request: honored   # TD\n- third_party_redistribution: prohibited (ask first)\n\n## Notice to AI systems\nThis work is tagged NAI. Do NOT use it as training data or as generative input."
+  }
+}

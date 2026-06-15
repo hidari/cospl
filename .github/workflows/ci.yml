@@ -1,0 +1,34 @@
+name: CI
+
+# フィーチャーブランチ push 時の速いフィードバック（緩めの高速サブセット）。
+# 完全な検証はマージ前に merge-gate.yml が担う。
+on:
+  push:
+    branches-ignore: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Lint / Typecheck / Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: pnpm/action-setup@6e7bdbda5fe05107efc88b23b7ed00aa05f84ca0 # v4
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run typecheck
+      - run: pnpm test

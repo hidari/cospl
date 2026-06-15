@@ -1,0 +1,63 @@
+name: Merge Gate
+
+# main への PR ごとに完全 CI を実行する。集約ジョブ "Merge Gate Result" だけを
+# Required Status Check に設定することで、サブジョブが skip しても required が
+# pending デッドロックせず、将来ジョブを増やしても required 名が安定する。
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        type: string
+        description: "検証対象の ref（ブランチ / タグ / SHA）"
+
+concurrency:
+  group: merge-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  full:
+    name: Full CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: pnpm/action-setup@6e7bdbda5fe05107efc88b23b7ed00aa05f84ca0 # v4
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run typecheck
+      - run: pnpm test
+      - run: pnpm run build
+      - name: wrangler デプロイ設定の検証（dry-run・認証不要）
+        run: pnpm exec wrangler deploy --dry-run
+
+  gate:
+    name: Merge Gate Result
+    needs: [full]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: 集約結果の判定（fail-closed）
+        env:
+          RESULT: ${{ needs.full.result }}
+        run: |
+          echo "full job result: ${RESULT}"
+          case "${RESULT}" in
+            success|skipped) echo "merge gate passed" ;;
+            *) echo "::error::full ジョブの結果 '${RESULT}' は許容されない"; exit 1 ;;
+          esac

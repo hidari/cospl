@@ -1,0 +1,58 @@
+name: Deploy
+
+# cospl.org への本番デプロイ。手動トリガーのみ（deploy スキルが gh workflow run で起動）。
+# ローカルからの wrangler deploy は禁止のため、デプロイ経路はこの workflow に一本化する。
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        type: string
+        description: "デプロイ対象の ref（既定: main）"
+        default: main
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to Cloudflare (cospl.org)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://cospl.org
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.ref || 'main' }}
+      - uses: pnpm/action-setup@6e7bdbda5fe05107efc88b23b7ed00aa05f84ca0 # v4
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Build & deploy
+        run: pnpm run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Health check (cospl.org/license.md)
+        run: |
+          for i in $(seq 1 10); do
+            code=$(curl -fsS -o /dev/null -w "%{http_code}" "https://cospl.org/license.md" || true)
+            echo "attempt ${i}: HTTP ${code}"
+            if [ "${code}" = "200" ]; then
+              echo "healthy"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::health check failed: cospl.org/license.md did not return 200"
+          exit 1

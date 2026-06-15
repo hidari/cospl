@@ -20,7 +20,7 @@
   <header>
     <p class="kicker">Cosplay Public License</p>
     <h1>CosPL
-      <span class="full">タグを選ぶと、識別子と納品READMEがその場で組み上がります。</span>
+      <span class="full">タグを選ぶと、識別子とREADMEがその場で組み上がります。</span>
     </h1>
     <div class="id" id="ident" aria-live="polite">CosPL 1.0 / <b>BY-NC-NAI-TD</b></div>
   </header>
@@ -39,16 +39,19 @@
 
   <section>
     <h2>出力</h2>
-    <p class="hint">人間向け（納品README）と、AI向けの宣言を切り替えられます。</p>
+    <p class="hint">納品データ同梱用READMEと、AI向けの宣言を切り替えられます。</p>
     <div class="tabs" role="tablist">
-      <button class="tab" id="tab-h" role="tab" aria-selected="true">納品README（人間向け）</button>
+      <button class="tab" id="tab-h" role="tab" aria-selected="true">README用</button>
       <button class="tab" id="tab-a" role="tab" aria-selected="false">AI向け宣言</button>
     </div>
     <div class="panel">
       <pre id="out"></pre>
       <div class="bar">
         <span class="meta" id="meta"></span>
-        <button class="copy" id="copy">Markdownでコピー</button>
+        <span class="copy-actions">
+          <button class="ghost" id="copy-text">テキストでコピー</button>
+          <button class="copy" id="copy">Markdownでコピー</button>
+        </span>
       </div>
     </div>
 

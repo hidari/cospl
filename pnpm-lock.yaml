@@ -17,6 +17,9 @@ importers:
       '@cloudflare/vitest-pool-workers':
         specifier: ^0.16.15
         version: 0.16.15(@vitest/runner@4.1.9)(@vitest/snapshot@4.1.9)(vitest@4.1.9(vite@8.0.16(esbuild@0.27.3)))
+      esbuild:
+        specifier: ^0.27.3
+        version: 0.27.3
       typescript:
         specifier: ^6.0.3
         version: 6.0.3

@@ -29,42 +29,28 @@ CosPL 1.0 / BY-NC-NAI-TD
 ## 使い方
 
 1. 付けたい条件のタグを選ぶ
-2. [v1.0/template_納品README.md](v1.0/template_納品README.md) の `[撮影者名]` `[モデル名]` `[連絡先]` を埋める
+2. [v1.0/template_README.md](v1.0/template_README.md) の `[撮影者名]` `[モデル名]` `[連絡先]` を埋める
 3. 現像済みデータと一緒に納品フォルダへ同梱する
 
 ライセンス本文の参照用テキストは [v1.0/CosPL-1.0.md](v1.0/CosPL-1.0.md) です。
 
 ## AI・機械可読
 
-- サイトはタグを選ぶと識別子と納品READMEをその場で生成し、「人間向け」「AI向け宣言」の両方をMarkdownでコピーできます。
-- 動的エンドポイント `GET /license.md`（Cloudflare Worker）で、生のMarkdownを返します。
-  - `https://cospl.org/license.md?tags=BY-NC-NAI-TD` → 納品README
+- サイトはタグを選ぶと識別子とREADMEをその場で生成します。READMEは Markdown とプレーンテキストの両方で、AI向け宣言は Markdown でコピーできます（Markdownを知らない相手にはプレーンテキストが便利です）。
+- 動的エンドポイント `GET /license.md` で文書を返します。
+  - `https://cospl.org/license.md?tags=BY-NC-NAI-TD` → README（Markdown）
+  - `https://cospl.org/license.md?tags=BY-NC-NAI-TD&format=text` → README（プレーンテキスト, `text/plain`）
   - `https://cospl.org/license.md?tags=BY-NC-NAI-TD&view=ai` → AI向け宣言
   - `tags` 省略時は `BY-NC-NAI-TD` を既定とします。
   - CORS 許可済み（`Access-Control-Allow-Origin: *`）なので、ツールやエージェントから直接取得できます。
 - `llms.txt` に LLM 向けの概要を置いています。`NAI` タグの作品はAI学習・生成素材としての利用を禁止する旨を明記しています。
 
-### エンドポイントの契約
+## ライセンス
 
-- 未知のタグ（例 `?tags=ZZZ`）や不正な `view`（`human` / `ai` 以外）は `400 Bad Request` を返し、本文にエラー種別を含めます。
-- `view` を省略、または `view=human` の場合は納品README、`view=ai` の場合はAI向け宣言を返します。
+- ライセンス文書（本文・タグ仕様・テンプレート、生成される納品用文書）は CC0（パブリックドメイン相当）。誰でも自由に採用・改変・再配布できます。詳細は [LICENSE-DOCUMENTS.md](LICENSE-DOCUMENTS.md)。
+- Web サイト/ツールの実装コードは MIT License。詳細は [LICENSE](LICENSE)。
 
-## 構成と配信
-
-- Cloudflare Workers（Vite + TypeScript + CSS Modules）。単一の Worker が静的サイトと `/license.md` の両方を配信します。
-- 生成ロジックの単一ソース: `src/core.ts`（Worker と サイトが共有）。失敗しうる入力は `Result` / `Option`（`src/types/`）で型に表します。
-- Worker エントリ: `src/worker.ts`。`/license.md` を生成し、それ以外は静的アセットへ委譲します。
-- サイト: `index.html` + `src/client/`（バニラ TypeScript の関数型 reducer）。
-
-ローカル開発は `npm run dev`、本番ビルドは `npm run build`、デプロイは `npm run deploy`（`wrangler`）です。テストは `npm test`（Vitest + `@cloudflare/vitest-pool-workers`）。
-
-## バージョン
-
-- v1.0（初版）
-
-## このテキスト自体のライセンス
-
-CosPL の各文書は CC0（パブリックドメイン相当）で公開しています。誰でも自由に採用・改変・再配布できます。詳細は [NOTICE.md](NOTICE.md)。
+ライセンスの使い分けの背景は [NOTICE.md](NOTICE.md) を参照してください。
 
 ## 免責
 

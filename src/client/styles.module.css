@@ -181,6 +181,12 @@
   font-size: 0.82rem;
   color: var(--muted);
 }
+:global(.copy-actions) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
 :global(button.copy) {
   font-family: var(--sans);
   font-size: 0.88rem;

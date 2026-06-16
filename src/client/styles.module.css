@@ -49,6 +49,9 @@
 
   --warm: #ff7a2f;
   --warm-on-dark: #ff9e5c;
+  /* 明色背景の大きい/太字テキスト用アクセシブルオレンジ。白地で約 3.6:1 のため
+     WCAG 3:1（大きい文字）は満たすが 4.5:1（小さい本文）は未達。小さい本文には使わないこと。 */
+  --warm-ink: #e25c10;
 
   --blue: #2f8bff;
   --ok: #22c08a;
@@ -168,7 +171,7 @@
   font-family: var(--mono), monospace;
   font-size: 0.8rem;
   letter-spacing: 0.16em;
-  color: var(--accent);
+  color: var(--accent-ink);
   text-transform: uppercase;
   margin: 0 0 12px;
 }
@@ -181,7 +184,7 @@
   color: var(--ink);
 }
 :global(h1 .hl) {
-  color: var(--warm);
+  color: var(--warm-ink);
 }
 :global(.hero .lead) {
   color: var(--muted);
@@ -311,7 +314,7 @@
   font-family: var(--mono), monospace;
   font-size: 0.82rem;
   font-weight: 700;
-  color: var(--faint);
+  color: var(--muted);
 }
 :global(.chip[aria-pressed="true"]) {
   border-color: var(--accent);
@@ -325,7 +328,7 @@
   color: var(--accent-ink);
 }
 :global(.chip[aria-pressed="true"] .lead) {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 /* 識別子バー ----------------------------------------------------------- */

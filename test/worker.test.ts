@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vitest";
-import worker from "../src/worker";
+import worker, { DISCOVERY_ROUTES } from "../src/worker";
+// workerd ランタイムでは node:fs が使えないため、Vite の ?raw で内容を埋め込んで検査する。
+import wranglerToml from "../wrangler.toml?raw";
 
 // ASSETS をスタブした Env。パス別に応答を返し、Worker の配線を決定的に検証する。
 const assetBody = "ASSET OK";
@@ -194,5 +196,17 @@ describe("GET /openapi.json", () => {
     const body = JSON.parse(await res.text());
     expect(body.openapi).toBe("3.1.0");
     expect(body.paths["/license.md"].get).toBeDefined();
+  });
+});
+
+describe("DISCOVERY_ROUTES と wrangler.toml の整合", () => {
+  // 発見性ルートを表へ追加して run_worker_first 登録を忘れる回帰を防ぐ。
+  // 統合テストは worker.fetch を直接呼ぶため Cloudflare のアセットルーティング層を通らず、
+  // この登録漏れを検出できない（CLAUDE.md MUST）。ここで表と設定の一致を静的に保証する。
+  test("全 discovery ルートが run_worker_first に登録されている", () => {
+    const runWorkerFirst = wranglerToml.match(/run_worker_first\s*=\s*\[(.*?)\]/s)?.[1] ?? "";
+    for (const path of Object.keys(DISCOVERY_ROUTES)) {
+      expect(runWorkerFirst).toContain(`"${path}"`);
+    }
   });
 });

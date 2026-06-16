@@ -44,6 +44,19 @@ const LLMS_PATH = "/llms.txt";
 const API_CATALOG_PATH = "/.well-known/api-catalog";
 const OPENAPI_PATH = "/openapi.json";
 
+// 発見性リソースの動的生成ルート表。各ルートは「origin → 本文文字列」生成 + 固定 Content-Type で
+// 配信する同一形状なので個別の分岐ではなく表で表現する（/ と /license.md は Accept 交渉・メソッド
+// 処理を持つ別ルートなので含めない）。新ルートはここに1行足し、wrangler.toml の run_worker_first
+// にも登録する（その整合は test/worker.test.ts が静的に検証する）。
+export const DISCOVERY_ROUTES: Readonly<
+  Record<string, { generate: (origin: string) => string; contentType: string }>
+> = {
+  [ROBOTS_PATH]: { generate: robotsTxt, contentType: "text/plain; charset=utf-8" },
+  [SITEMAP_PATH]: { generate: sitemapXml, contentType: "application/xml; charset=utf-8" },
+  [API_CATALOG_PATH]: { generate: apiCatalogJson, contentType: "application/linkset+json" },
+  [OPENAPI_PATH]: { generate: openApiJson, contentType: "application/json" },
+};
+
 // CORS は全許可（ツール・エージェントから直接取得できるようにする）
 const CORS_ORIGIN = "access-control-allow-origin";
 
@@ -115,16 +128,6 @@ function methodNotAllowedResponse(): Response {
   });
 }
 
-// robots.txt（200・text/plain）。origin はリクエストから取得する。
-function robotsResponse(origin: string): Response {
-  return cachedResponse(robotsTxt(origin), "text/plain; charset=utf-8");
-}
-
-// sitemap.xml（200・application/xml）
-function sitemapResponse(origin: string): Response {
-  return cachedResponse(sitemapXml(origin), "application/xml; charset=utf-8");
-}
-
 // Accept: text/markdown のとき /llms.txt を Markdown として返す。
 // ASSETS が ok でなければその応答をそのまま返し、嘘の Content-Type を付けない。
 async function markdownHomeResponse(request: Request, env: Env): Promise<Response> {
@@ -163,17 +166,9 @@ export default {
     }
 
     if (request.method === "GET") {
-      if (url.pathname === ROBOTS_PATH) {
-        return robotsResponse(url.origin);
-      }
-      if (url.pathname === SITEMAP_PATH) {
-        return sitemapResponse(url.origin);
-      }
-      if (url.pathname === API_CATALOG_PATH) {
-        return cachedResponse(apiCatalogJson(url.origin), "application/linkset+json");
-      }
-      if (url.pathname === OPENAPI_PATH) {
-        return cachedResponse(openApiJson(url.origin), "application/json");
+      const route = DISCOVERY_ROUTES[url.pathname];
+      if (route) {
+        return cachedResponse(route.generate(url.origin), route.contentType);
       }
       if (url.pathname === HOME_PATH) {
         return prefersMarkdown(request.headers.get("accept"))

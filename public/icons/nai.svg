@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56" fill="none" stroke="currentColor" role="img" aria-label="NAI">
+  <!-- NAI: ロボット顔に斜線（AI 学習・生成での利用不可） -->
+  <line x1="28" y1="4" x2="28" y2="13" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="28" cy="4" r="3.4" fill="currentColor" stroke="none"/>
+  <rect x="10" y="13" width="36" height="31" rx="9" stroke-width="4.2"/>
+  <circle cx="21" cy="29" r="3.8" fill="currentColor" stroke="none"/>
+  <circle cx="35" cy="29" r="3.8" fill="currentColor" stroke="none"/>
+  <line x1="22" y1="38" x2="34" y2="38" stroke-width="3.6" stroke-linecap="round"/>
+  <line x1="9" y1="47" x2="47" y2="9" stroke-width="5" stroke-linecap="round"/>
+</svg>

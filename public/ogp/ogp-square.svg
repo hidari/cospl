@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" width="1200" height="1200">
+  <!--
+    CosPL OGP / 正方形 1200x1200
+    外部ベクターツールで直接編集できる native SVG。
+    フォント: Space Grotesk(見出し/PL), Space Mono(識別子/ドメイン), Zen Kaku Gothic New(本文/サブ)。
+    ラスタライズは scripts/build-images.mjs（Playwright）でフォントを与えて行う。
+    ライセンスアイコンは public/icons/*.svg と同じ 0 0 56 56 グリフを translate+scale で円内に配置。
+  -->
+  <rect width="1200" height="1200" fill="#ffffff"/>
+
+  <!-- 装飾ボブル -->
+  <circle cx="810" cy="110" r="260" fill="#ff7a2f" opacity="0.12"/>
+  <circle cx="30" cy="450" r="150" fill="#7b54ff" opacity="0.12"/>
+  <circle cx="960" cy="990" r="120" fill="#2f8bff" opacity="0.10"/>
+
+  <!-- ワードマーク Cos[PL] -->
+  <g fill="#1c1430" font-family="'Space Grotesk', sans-serif" font-weight="700">
+    <text x="96" y="222" font-size="84" letter-spacing="-2">Cos</text>
+    <rect x="258" y="124" width="128" height="100" rx="24" fill="none" stroke="#1c1430" stroke-width="7"/>
+    <text x="322" y="222" font-size="84" text-anchor="middle">PL</text>
+  </g>
+
+  <!-- メインコピー（3行） -->
+  <g fill="#1c1430" font-family="'Zen Kaku Gothic New', sans-serif" font-weight="900" font-size="76" letter-spacing="-0.5">
+    <text x="96" y="438">撮った写真の</text>
+    <text x="96" y="532"><tspan fill="#ff7a2f">「使っていい範囲」</tspan>を、</text>
+    <text x="96" y="626">言葉にする。</text>
+  </g>
+
+  <!-- サブコピー（2行） -->
+  <g fill="#6b6580" font-family="'Zen Kaku Gothic New', sans-serif" font-weight="500" font-size="31">
+    <text x="96" y="712">写真の使いみちは、なんとなくじゃなく自分で決める。</text>
+    <text x="96" y="763">撮影者とモデルの取り決めを、誰にでも伝わる形に。</text>
+  </g>
+
+  <!-- 識別子ピル -->
+  <rect x="96" y="812" width="540" height="66" rx="16" fill="#1c1430"/>
+  <text x="124" y="856" font-family="'Space Mono', monospace" font-size="30" fill="#ffffff">CosPL 1.0 / <tspan fill="#ff9e5c" font-weight="700">BY-NC-NAI-TD</tspan></text>
+
+  <!-- 下段: ドメイン + ライセンスアイコン4種（88px円・border5・グリフは scale0.93/translate18）-->
+  <text x="96" y="1058" font-family="'Space Mono', monospace" font-size="32" letter-spacing="1.9" fill="#6b6580">cospl.org</text>
+
+  <g transform="translate(720, 1000)">
+    <!-- BY -->
+    <g transform="translate(0,0)">
+      <circle cx="44" cy="44" r="41" fill="none" stroke="#1c1430" stroke-width="5"/>
+      <g transform="translate(18,18) scale(0.93)" fill="#1c1430">
+        <circle cx="28" cy="19" r="10.5"/>
+        <path d="M7 50 a21 21 0 0 1 42 0 Z"/>
+      </g>
+    </g>
+    <!-- NC -->
+    <g transform="translate(104,0)">
+      <circle cx="44" cy="44" r="41" fill="none" stroke="#1c1430" stroke-width="5"/>
+      <g transform="translate(18,18) scale(0.93)" fill="#1c1430">
+        <text x="28" y="28" font-family="'Space Grotesk', sans-serif" font-weight="700" font-size="46" text-anchor="middle" dominant-baseline="central">¥</text>
+        <line x1="9" y1="47" x2="47" y2="9" stroke="#1c1430" stroke-width="5" stroke-linecap="round"/>
+      </g>
+    </g>
+    <!-- NAI -->
+    <g transform="translate(208,0)">
+      <circle cx="44" cy="44" r="41" fill="none" stroke="#1c1430" stroke-width="5"/>
+      <g transform="translate(18,18) scale(0.93)" fill="none" stroke="#1c1430">
+        <line x1="28" y1="4" x2="28" y2="13" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="28" cy="4" r="3.4" fill="#1c1430" stroke="none"/>
+        <rect x="10" y="13" width="36" height="31" rx="9" stroke-width="4.2"/>
+        <circle cx="21" cy="29" r="3.8" fill="#1c1430" stroke="none"/>
+        <circle cx="35" cy="29" r="3.8" fill="#1c1430" stroke="none"/>
+        <line x1="22" y1="38" x2="34" y2="38" stroke-width="3.6" stroke-linecap="round"/>
+      </g>
+    </g>
+    <!-- TD -->
+    <g transform="translate(312,0)">
+      <circle cx="44" cy="44" r="41" fill="none" stroke="#1c1430" stroke-width="5"/>
+      <g transform="translate(18,18) scale(0.93)" fill="#1c1430">
+        <rect x="23" y="6" width="10" height="25" rx="4"/>
+        <path d="M13 27 L28 45 L43 27 Z"/>
+        <rect x="12" y="49" width="32" height="5.4" rx="2.7"/>
+      </g>
+    </g>
+  </g>
+</svg>

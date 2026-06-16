@@ -5,11 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CosPL — Cosplay Public License</title>
 <meta name="description" content="コスプレ撮影における、撮影者とモデルのための利用許諾テンプレート。">
+<meta name="theme-color" content="#7b54ff">
 <link rel="canonical" href="https://cospl.org/">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://cospl.org/">
 <meta property="og:title" content="CosPL — Cosplay Public License">
 <meta property="og:description" content="コスプレ撮影における、撮影者とモデルのための利用許諾テンプレート。">
+<meta property="og:image" content="https://cospl.org/ogp/ogp-landscape.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="CosPL — 撮った写真の「使っていい範囲」を、言葉にする。">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://cospl.org/ogp/ogp-landscape.jpg">
 </head>
 <body>
 <noscript>
@@ -17,40 +27,73 @@
 </noscript>
 <div class="wrap">
 
-  <header>
-    <p class="kicker">Cosplay Public License</p>
-    <h1>CosPL
-      <span class="full">タグを選ぶと、識別子とREADMEがその場で組み上がります。</span>
-    </h1>
-    <div class="id" id="ident" aria-live="polite">CosPL 1.0 / <b>BY-NC-NAI-TD</b></div>
+  <header class="hero">
+    <div class="bobbles" aria-hidden="true">
+      <span class="bobble b-warm"></span>
+      <span class="bobble b-blue"></span>
+      <span class="bobble b-accent"></span>
+    </div>
+    <div class="hero-body">
+      <p class="wordmark"><span>Cos</span><span class="pl"><span class="pl-t">PL</span></span></p>
+      <p class="kicker">Cosplay Public License</p>
+      <h1>
+        撮った写真の
+        <br><span class="hl">”使っていい範囲”&nbsp;</span>を<br/>
+        言葉にする</h1>
+      <p class="lead">写真の使いみちは、なんとなくじゃなく自分で決める。<br>"CosPL"&nbsp;は、撮影者とモデルの取り決めを、誰にでも伝わる形にする共通ルールです。</p>
+    </div>
   </header>
 
   <section>
-    <h2>条件を選ぶ</h2>
-    <p class="hint">付けたい条件をタップ。BY と NC は Creative Commons と同趣旨、NAI と TD は CosPL 独自です。</p>
+    <p class="step"><span class="step-no">STEP 1</span>使い方の条件を決める</p>
+    <p class="hint">付けたい条件を選択しましょう。</p>
     <div class="chips" id="chips">
-      <button class="chip" data-tag="BY"  aria-pressed="true"><span>BY</span><span class="lbl">クレジット表記</span></button>
-      <button class="chip" data-tag="NC"  aria-pressed="true"><span>NC</span><span class="lbl">非商用</span></button>
-      <button class="chip" data-tag="NAI" aria-pressed="true"><span>NAI</span><span class="lbl">AI不可</span></button>
-      <button class="chip" data-tag="TD"  aria-pressed="true"><span>TD</span><span class="lbl">取り下げ可</span></button>
-      <button class="chip opt" data-tag="MR" aria-pressed="false"><span>MR</span><span class="lbl">モデル本人の有償頒布可</span></button>
+      <button class="chip" data-tag="BY" aria-pressed="true">
+        <span class="ic" aria-hidden="true"></span>
+        <span class="txt"><span class="name">クレジット表記</span><span class="lead">お名前を載せてね</span></span>
+        <span class="code">BY</span>
+      </button>
+      <button class="chip" data-tag="NC" aria-pressed="true">
+        <span class="ic" aria-hidden="true"></span>
+        <span class="txt"><span class="name">非商用</span><span class="lead">商用はナシ</span></span>
+        <span class="code">NC</span>
+      </button>
+      <button class="chip" data-tag="NAI" aria-pressed="true">
+        <span class="ic" aria-hidden="true"></span>
+        <span class="txt"><span class="name">AI学習不可</span><span class="lead">AI学習用途は禁止</span></span>
+        <span class="code">NAI</span>
+      </button>
+      <button class="chip" data-tag="TD" aria-pressed="true">
+        <span class="ic" aria-hidden="true"></span>
+        <span class="txt"><span class="name">取り下げOK</span><span class="lead">あとで下げられる</span></span>
+        <span class="code">TD</span>
+      </button>
+      <button class="chip opt" data-tag="MR" aria-pressed="false">
+        <span class="ic" aria-hidden="true"></span>
+        <span class="txt"><span class="name">本人頒布OK</span><span class="lead">モデル本人の有償頒布だけは許可</span></span>
+        <span class="code">MR</span>
+      </button>
     </div>
+    <div class="id" id="ident" aria-live="polite">CosPL 1.0 / <b>BY-NC-NAI-TD</b></div>
   </section>
 
   <section>
-    <h2>出力</h2>
-    <p class="hint">納品データ同梱用READMEと、AI向けの宣言を切り替えられます。</p>
+    <p class="step"><span class="step-no">STEP 2</span>決めた内容を書き出す</p>
+    <p class="hint">納品データ同梱用 README と、AI 向けの宣言を切り替えられます。</p>
     <div class="tabs" role="tablist">
-      <button class="tab" id="tab-h" role="tab" aria-selected="true">README用</button>
-      <button class="tab" id="tab-a" role="tab" aria-selected="false">AI向け宣言</button>
+      <button class="tab" id="tab-h" role="tab" aria-selected="true" aria-label="README用">README用<span class="tab-q" aria-hidden="true">?</span><span class="tab-tip" aria-hidden="true">撮影データと一緒に納品フォルダへ同梱する、人が読むテキスト形式。</span></button>
+      <button class="tab" id="tab-a" role="tab" aria-selected="false" aria-label="AI向け宣言">AI向け宣言<span class="tab-q" aria-hidden="true">?</span><span class="tab-tip" aria-hidden="true">クローラや AI エージェントに読ませる、機械向けの宣言。</span></button>
     </div>
     <div class="panel">
       <pre id="out"></pre>
       <div class="bar">
-        <span class="meta" id="meta"></span>
         <span class="copy-actions">
-          <button class="ghost" id="copy-text">テキストでコピー</button>
-          <button class="copy" id="copy">Markdownでコピー</button>
+          <button class="ghost" id="copy">コピーする</button>
+          <button class="copy" id="download">ダウンロード</button>
+          <span class="help-wrap">
+            <button class="help" type="button" aria-label="ダウンロード形式の説明" aria-describedby="dl-help-tip">?</button>
+            <span class="help-tip" role="tooltip" id="dl-help-tip">中身は Markdown です。README.txt として保存されますが Markdown が分かる方は拡張子を .md に変えて利用することもできます。</span>
+          </span>
         </span>
       </div>
     </div>

@@ -5,8 +5,6 @@ import {
   aiMD,
   emptyState,
   humanMD,
-  humanText,
-  ident,
   parseTag,
   parseTags,
   type State,
@@ -39,19 +37,14 @@ function currentMarkdown(state: AppState): string {
   return state.view === "ai" ? aiMD(state.tags) : humanMD(state.tags);
 }
 
-// README のプレーンテキスト版（見出し記号なし）。テキストでコピー用。
-function currentText(state: AppState): string {
-  return humanText(state.tags);
+// ダウンロードファイル名。中身は Markdown だが、まず開けることを優先して .txt で配る。
+function downloadName(state: AppState): string {
+  return state.view === "ai" ? "cospl-ai.txt" : "README.txt";
 }
 
 function identHTML(state: AppState): string {
   const tags = tagsFrom(state.tags);
   return `CosPL 1.0${tags.length ? ` / <b>${tags.join("-")}</b>` : ""}`;
-}
-
-function metaText(state: AppState): string {
-  const label = state.view === "ai" ? "crawler / agent 向け" : "納品フォルダに同梱する用";
-  return `${label} · ${ident(state.tags)}`;
 }
 
 function endpoint(state: AppState): string {
@@ -104,6 +97,21 @@ async function copyText(text: string): Promise<Result<void, string>> {
   return copyViaExecCommand(text);
 }
 
+// テキストをファイルとして保存する。Blob を一時 anchor 経由でダウンロードさせる。
+function downloadFile(filename: string, text: string): void {
+  const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // click() はダウンロード起動を要求するだけ。即時 revoke すると Firefox/Safari で
+  // 転送前に URL が失効しファイルが空になりうるため、十分遅延させてから解放する。
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
 function flash(btn: HTMLElement, label: string): void {
   const original = btn.textContent ?? "";
   btn.textContent = label;
@@ -122,7 +130,6 @@ function render(state: AppState): void {
     el.innerHTML = identHTML(state);
   });
   setText("out", currentMarkdown(state));
-  setText("meta", metaText(state));
   setText("ep", endpoint(state));
 
   // chips の aria-pressed を状態と同期
@@ -137,11 +144,6 @@ function render(state: AppState): void {
   // tabs の aria-selected を同期
   ifSome(byId("tab-h"), (el) => el.setAttribute("aria-selected", String(state.view === "human")));
   ifSome(byId("tab-a"), (el) => el.setAttribute("aria-selected", String(state.view === "ai")));
-
-  // テキストでコピーは README ビューのみ（AI宣言は機械向けで Markdown のみ）
-  ifSome(byId("copy-text"), (el) => {
-    el.style.display = state.view === "ai" ? "none" : "";
-  });
 
   history.replaceState(null, "", hashFragment(state));
 }
@@ -184,9 +186,16 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
   );
 
   bindCopy("copy", () => currentMarkdown(getState()));
-  bindCopy("copy-text", () => currentText(getState()));
   bindCopy("ep-copy", () => endpoint(getState()));
   bindCopy("link", () => location.href);
+
+  ifSome(byId("download"), (btn) => {
+    btn.addEventListener("click", () => {
+      const state = getState();
+      downloadFile(downloadName(state), currentMarkdown(state));
+      flash(btn, "保存しました");
+    });
+  });
 }
 
 function bindCopy(id: string, textOf: () => string): void {

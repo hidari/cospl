@@ -1,0 +1,79 @@
+/// CosPL のタスク定義（pkfire）。
+/// 人間の入口は `pkf run <task>` に一本化する。dev/build/test/lint/typecheck は
+/// 中身が vite/vitest/tsc のため pnpm へ委譲する薄いラッパー。
+/// images は inputs→outputs が純粋なため差分キャッシュを効かせる。
+/// CI は引き続き package.json scripts（pnpm）を直接叩く。
+/// スキーマは published package をタグ固定（再現性・警告ゼロ。更新は `pkf migrate --to=<ver>`）。
+amends "package://pkg.pkl-lang.org/github.com/mizchi/pkfire/pkfire@0.10.0#/Taskfile.pkl"
+
+// 開発サーバ（vite）は常駐プロセス。`pkf up dev` で起動するとライブ出力され
+// Ctrl+C でツリーごと停止する（`pkf run` はタスク出力をキャプチャするため常駐に不向き）。
+local dev = new Task {
+  name = "dev"
+  description = "Vite 開発サーバを起動（pkf up dev）"
+  cmd = "pnpm dev"
+  service = true
+  readyPort = 5210 // vite.config の server.port と一致（reuse 検出も兼ねる）
+  cache = false
+}
+
+local build = new Task {
+  name = "build"
+  description = "型チェック + 本番ビルド"
+  cmd = "pnpm build"
+  cache = false
+}
+
+local typecheck = new Task {
+  name = "typecheck"
+  description = "tsc 型チェック"
+  cmd = "pnpm typecheck"
+  cache = false
+}
+
+local lint = new Task {
+  name = "lint"
+  description = "Biome チェック"
+  cmd = "pnpm lint"
+  cache = false
+}
+
+local test = new Task {
+  name = "test"
+  description = "Vitest 実行"
+  cmd = "pnpm test"
+  cache = false
+}
+
+// マージ前の一括検証。
+local check = new Task {
+  name = "check"
+  description = "lint + typecheck + test"
+  deps { lint; typecheck; test }
+}
+
+// SVG マスターからブランド画像（ファビコン / OGP）を生成。入力不変ならスキップ。
+local images = new Task {
+  name = "images"
+  description = "SVG から favicon / OGP（PNG・WebP・JPEG）を生成"
+  cmd = "node scripts/build-images.mjs"
+  inputs {
+    "scripts/build-images.mjs"
+    "public/favicon.svg"
+    "public/icons/*.svg"
+    "public/ogp/*.svg"
+    "public/fonts/*.woff2"
+  }
+  outputs {
+    "public/favicon.ico"
+    "public/apple-touch-icon.png"
+    "public/ogp/ogp-landscape.png"
+    "public/ogp/ogp-landscape.webp"
+    "public/ogp/ogp-landscape.jpg"
+    "public/ogp/ogp-square.png"
+    "public/ogp/ogp-square.webp"
+    "public/ogp/ogp-square.jpg"
+  }
+}
+
+tasks { dev; build; typecheck; lint; test; check; images }

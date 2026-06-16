@@ -23,6 +23,7 @@
     "@cloudflare/vite-plugin": "^1.40.2",
     "@cloudflare/vitest-pool-workers": "^0.16.15",
     "esbuild": "^0.27.3",
+    "playwright-core": "^1.61.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
     "vitest": "^4.1.9",

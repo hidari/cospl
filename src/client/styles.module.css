@@ -2,35 +2,79 @@
  * サイトのスタイル。既存のアクセシブルなマークアップ（aria-pressed 等を持つ静的 HTML）の
  * クラスフックを温存するため、各セレクタを :global(...) で包んで CSS Modules パイプラインに載せる。
  * 単一ページ・単一スタイルシートのためスコープ分割は不要で、グローバル前提が妥当。
+ * 欧文（Space Grotesk / Space Mono）のみ自己ホスト、和文本文はシステムフォント。
  */
+
+/* 欧文フォント（latin サブセット・自己ホスト）。public/fonts に配置。 */
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 500 700;
+  font-display: swap;
+  src: url("/fonts/SpaceGrotesk-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Space Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/SpaceMono-400-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Space Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/SpaceMono-700-latin.woff2") format("woff2");
+}
+
+/* カラートークン。パープルを主役に、オレンジを差し色（ハイライト / CTA）。 */
 :global(:root) {
-  --ink: #17161a;
-  --paper: #fbfbf9;
-  --muted: #6b6a72;
-  --line: #e4e3df;
-  --accent: #5a4bd6;
-  --accent-soft: #ece9ff;
-  --ok: #1f9d63;
-  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Noto Sans Mono CJK JP", monospace;
-  --sans: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --ink: #1c1430;
+  --paper: #ffffff;
+  --paper-tint: #fbfaff;
+  --surface: #faf9fc;
+
+  --muted: #6b6580;
+  --faint: #9a93b0;
+  --ghost: #b3adc4;
+  --code-ink: #3a3357;
+
+  --line: #ececf2;
+  --line-soft: #e6e1ee;
+
+  --accent: #7b54ff;
+  --accent-soft: #efe9ff;
+  --accent-ink: #5a39d6;
+
+  --warm: #ff7a2f;
+  --warm-on-dark: #ff9e5c;
+
+  --blue: #2f8bff;
+  --ok: #22c08a;
+
+  --mono: "Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Noto Sans Mono CJK JP";
+  --sans: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP";
+  --display: "Space Grotesk", var(--sans);
 }
 :global(*) {
   box-sizing: border-box;
 }
+
 /* body に適用するローカルクラス。default export を実際に使うことで
    ビルド時に CSS Module が tree-shake されず CSS が emit される。 */
 .app {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--sans);
+  font-family: var(--sans), sans-serif;
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
 }
 :global(.wrap) {
-  max-width: 760px;
+  max-width: 720px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 20px;
 }
 :global(a) {
   color: var(--accent);
@@ -39,163 +83,432 @@
 :global(:focus-visible) {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
-:global(header) {
-  padding: 72px 0 32px;
+/* ヒーロー -------------------------------------------------------------- */
+:global(.hero) {
+  position: relative;
+  overflow: hidden;
+  margin: 22px 0 8px;
+  padding: 34px 26px 38px;
+  background: var(--paper-tint);
+  border: 1px solid var(--line-soft);
+  border-radius: 28px;
+}
+:global(.hero .hero-body) {
+  position: relative;
+}
+:global(.bobbles) {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+:global(.bobble) {
+  position: absolute;
+  border-radius: 999px;
+}
+:global(.bobble.b-warm) {
+  width: 170px;
+  height: 170px;
+  top: -56px;
+  right: -34px;
+  background: var(--warm);
+  opacity: 0.13;
+}
+:global(.bobble.b-blue) {
+  width: 108px;
+  height: 108px;
+  top: 60px;
+  right: 52px;
+  background: var(--blue);
+  opacity: 0.12;
+}
+:global(.bobble.b-accent) {
+  width: 80px;
+  height: 80px;
+  bottom: 6px;
+  left: -22px;
+  border: 10px solid var(--accent);
+  opacity: 0.16;
+}
+
+:global(.wordmark) {
+  display: inline-flex;
+  /* 「Cos」のベースラインと PL のテキストベースラインを揃える基準。
+     ここから .pl の translateY で PL ボックスの縦位置を微調整する。 */
+  align-items: baseline;
+  gap: 5px;
+  margin: 0 0 16px;
+  font-family: var(--display), sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+:global(.wordmark .pl) {
+  display: inline-flex;
+  align-items: center;
+  border: 3px solid currentColor;
+  border-radius: 9px;
+  padding: 0 9px;
+  line-height: 1.18;
+  /* ▼ 微調整ノブ その1：PL ボックス全体（枠＋中の文字）の縦位置。
+     負で上へ、正で下へ。Cos に対する箱の位置を合わせる。 */
+  transform: translateY(-5px);
+}
+:global(.wordmark .pl .pl-t) {
+  display: inline-block;
+  /* ▼ 微調整ノブ その2：箱は動かさず、中の「PL」テキストだけを上下する。
+     負で上へ、正で下へ。0 で枠の中央。 */
+  transform: translateY(2px);
 }
 :global(.kicker) {
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.8rem;
-  letter-spacing: 0.08em;
-  color: var(--muted);
+  letter-spacing: 0.16em;
+  color: var(--accent);
   text-transform: uppercase;
-  margin: 0 0 18px;
+  margin: 0 0 12px;
 }
 :global(h1) {
-  font-size: clamp(2.2rem, 6vw, 3.2rem);
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-  margin: 0 0 10px;
-  font-weight: 700;
+  font-size: clamp(1.85rem, 6vw, 2.6rem);
+  line-height: 1.32;
+  letter-spacing: -0.01em;
+  margin: 0;
+  font-weight: 900;
+  color: var(--ink);
 }
-:global(h1 .full) {
-  display: block;
-  font-size: 1rem;
-  font-weight: 500;
-  letter-spacing: 0;
+:global(h1 .hl) {
+  color: var(--warm);
+}
+:global(.hero .lead) {
   color: var(--muted);
-  margin-top: 14px;
+  font-size: 0.98rem;
+  margin: 16px 0 0;
+  max-width: 50ch;
 }
 
-:global(.id) {
-  font-family: var(--mono);
-  font-size: clamp(0.95rem, 3.2vw, 1.35rem);
-  background: var(--ink);
-  color: var(--paper);
-  display: block;
-  padding: 16px 18px;
-  border-radius: 10px;
-  margin: 28px 0 0;
-  word-break: break-word;
-}
-:global(.id b) {
-  color: #a99cff;
-  font-weight: 700;
-}
-
+/* セクション・STEP 見出し ------------------------------------------------ */
 :global(section) {
   padding: 34px 0;
   border-top: 1px solid var(--line);
 }
-:global(h2) {
-  font-size: 1.25rem;
-  letter-spacing: -0.01em;
+:global(.step) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin: 0 0 6px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+:global(.step-no) {
+  font-family: var(--display), sans-serif;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  background: var(--accent);
+  color: #fff;
+  padding: 4px 9px;
+  border-radius: 7px;
 }
 :global(.hint) {
   color: var(--muted);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   margin: 0 0 18px;
 }
 
+/* チップ（条件選択） --------------------------------------------------- */
 :global(.chips) {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 10px;
 }
 :global(.chip) {
-  font-family: var(--mono);
-  font-size: 0.92rem;
-  border: 1.5px solid var(--line);
-  background: #fff;
-  color: var(--muted);
-  padding: 10px 14px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: 0.12s;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 13px;
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  transition: 0.16s;
 }
-:global(.chip .lbl) {
-  font-family: var(--sans);
-  font-size: 0.82rem;
-}
-:global(.chip[aria-pressed="true"]) {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent);
+:global(.chip:hover) {
+  border-color: var(--line-soft);
+  background: var(--paper-tint);
 }
 :global(.chip.opt) {
   border-style: dashed;
 }
+:global(.chip .ic) {
+  position: relative;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  background-color: var(--faint);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  transition: background-color 0.16s;
+}
+:global(.chip[data-tag="BY"] .ic) {
+  -webkit-mask-image: url("/icons/by.svg");
+  mask-image: url("/icons/by.svg");
+}
+:global(.chip[data-tag="NC"] .ic) {
+  -webkit-mask-image: url("/icons/nc.svg");
+  mask-image: url("/icons/nc.svg");
+}
+:global(.chip[data-tag="NAI"] .ic) {
+  -webkit-mask-image: url("/icons/nai.svg");
+  mask-image: url("/icons/nai.svg");
+}
+:global(.chip[data-tag="TD"] .ic) {
+  -webkit-mask-image: url("/icons/td.svg");
+  mask-image: url("/icons/td.svg");
+}
+:global(.chip[data-tag="MR"] .ic) {
+  -webkit-mask-image: url("/icons/mr.svg");
+  mask-image: url("/icons/mr.svg");
+}
+/* MR は本人頒布 OK の意。許可を示す緑の ✓ バッジを重ねる。 */
+:global(.chip[data-tag="MR"] .ic::after) {
+  content: "";
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  background: var(--ok);
+  border: 2px solid #fff;
+}
+:global(.chip .txt) {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+:global(.chip .name) {
+  font-weight: 700;
+  font-size: 0.94rem;
+}
+:global(.chip .lead) {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+:global(.chip .code) {
+  margin-left: auto;
+  font-family: var(--mono), monospace;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--faint);
+}
+:global(.chip[aria-pressed="true"]) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+:global(.chip[aria-pressed="true"] .ic) {
+  background-color: var(--accent);
+}
+:global(.chip[aria-pressed="true"] .name),
+:global(.chip[aria-pressed="true"] .code) {
+  color: var(--accent-ink);
+}
+:global(.chip[aria-pressed="true"] .lead) {
+  color: var(--accent);
+}
 
+/* 識別子バー ----------------------------------------------------------- */
+:global(.id) {
+  font-family: var(--mono), monospace;
+  font-size: clamp(0.95rem, 3.2vw, 1.3rem);
+  background: var(--ink);
+  color: #fff;
+  display: block;
+  padding: 16px 18px;
+  border-radius: 14px;
+  margin: 22px 0 0;
+  word-break: break-word;
+}
+:global(.id b) {
+  color: var(--warm-on-dark);
+  font-weight: 700;
+}
+
+/* 出力（タブ・パネル） ------------------------------------------------- */
 :global(.tabs) {
   display: flex;
   gap: 6px;
 }
 :global(.tab) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 0.9rem;
   border: 1px solid var(--line);
   border-bottom: none;
-  background: #f2f1ee;
+  background: var(--surface);
   color: var(--muted);
-  padding: 9px 14px;
-  border-radius: 9px 9px 0 0;
+  padding: 9px 15px;
+  border-radius: 11px 11px 0 0;
   cursor: pointer;
 }
 :global(.tab[aria-selected="true"]) {
   background: var(--ink);
-  color: var(--paper);
+  color: #fff;
   border-color: var(--ink);
+}
+/* タブの用途を説明する「?」バッジとツールチップ（hover / キーボード focus で表示）。
+   tab は overflow:visible なので下方向に開いても見切れない（panel の外側に描画される）。 */
+:global(.tab-q) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  opacity: 0.7;
+}
+:global(.tab-tip) {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 5;
+  width: max-content;
+  max-width: min(280px, 78vw);
+  padding: 8px 10px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  border-radius: 8px;
+  box-shadow: 0 8px 22px rgba(28, 20, 48, 0.22);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s;
+  pointer-events: none;
+}
+/* 右側のタブはツールチップを右端基準にして画面外へはみ出させない。 */
+:global(.tab:last-of-type .tab-tip) {
+  right: 0;
+  left: auto;
+}
+:global(.tab:hover .tab-tip),
+:global(.tab:focus-visible .tab-tip) {
+  opacity: 1;
+  visibility: visible;
 }
 :global(.panel) {
   border: 1px solid var(--line);
-  border-radius: 0 10px 10px 10px;
+  border-radius: 0 12px 12px 12px;
   overflow: hidden;
 }
 :global(pre) {
   margin: 0;
   padding: 18px;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.82rem;
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
   max-height: 380px;
   overflow: auto;
-  background: #fff;
+  background: var(--surface);
+  color: var(--code-ink);
 }
+/* モバイルファースト: ボタンを縦積みで等幅に（640px 以上で横並び・右寄せに戻す）。 */
 :global(.bar) {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
   padding: 12px 14px;
   border-top: 1px solid var(--line);
-  background: #faf9f6;
-}
-:global(.bar .meta) {
-  font-size: 0.82rem;
-  color: var(--muted);
+  background: #fff;
 }
 :global(.copy-actions) {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
+}
+/* モバイルでは主要ボタン（コピー/ダウンロード）を等幅に並べてはみ出させない。
+   ヘルプ（?）は .help-wrap 内なので直下セレクタで対象外にする。 */
+:global(.copy-actions > button) {
+  flex: 1;
+}
+
+/* ダウンロード形式を説明する「?」アイコンとツールチップ。
+   パネルは overflow:hidden のため、ツールチップは上方向（パネル内部）へ開いて見切れを防ぐ。 */
+:global(.help-wrap) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+:global(.help) {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  font-family: var(--sans), sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+}
+:global(.help-tip) {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  z-index: 5;
+  width: max-content;
+  max-width: 230px;
+  padding: 8px 10px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  border-radius: 8px;
+  box-shadow: 0 8px 22px rgba(28, 20, 48, 0.22);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s;
+  pointer-events: none;
+}
+/* hover（PC）に加え focus（キーボード / タップ）でも出す。モバイルのタップ対応。 */
+:global(.help:hover + .help-tip),
+:global(.help:focus + .help-tip) {
+  opacity: 1;
+  visibility: visible;
 }
 :global(button.copy) {
-  font-family: var(--sans);
+  font-family: var(--sans), sans-serif;
   font-size: 0.88rem;
   font-weight: 600;
   border: 0;
   background: var(--accent);
   color: #fff;
   padding: 9px 16px;
-  border-radius: 8px;
+  border-radius: 9px;
   cursor: pointer;
   transition: 0.12s;
 }
@@ -206,6 +519,7 @@
   background: var(--ok);
 }
 
+/* エンドポイント・補助ボタン ------------------------------------------- */
 :global(.ep) {
   display: flex;
   flex-wrap: wrap;
@@ -214,30 +528,38 @@
   margin-top: 16px;
   padding: 12px 14px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 12px;
   background: #fff;
 }
 :global(.ep-label) {
   font-size: 0.78rem;
   color: var(--muted);
   font-weight: 600;
+  flex: 1 1 100%; /* ラベルは1行使い、URL とボタンを次行で揃える */
 }
+/* URL は折り返さず、1行の横スクロール可能なテキストボックスとして見せる。
+   min-width:0 が無いと flex アイテムが内容幅で固まり overflow-x が効かない。 */
 :global(.ep code) {
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.8rem;
   color: var(--ink);
-  word-break: break-all;
+  white-space: nowrap;
+  overflow-x: auto;
   flex: 1;
-  min-width: 200px;
+  min-width: 0;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
 }
 :global(.ghost) {
-  font-family: var(--sans);
+  font-family: var(--sans), sans-serif;
   font-size: 0.85rem;
-  border: 1.5px solid var(--line);
+  border: 2px solid var(--line);
   background: #fff;
   color: var(--ink);
   padding: 8px 13px;
-  border-radius: 8px;
+  border-radius: 9px;
   cursor: pointer;
 }
 :global(.ghost.done) {
@@ -251,6 +573,7 @@
   margin-top: 12px;
 }
 
+/* フッター ------------------------------------------------------------- */
 :global(footer) {
   padding: 44px 0 80px;
   border-top: 1px solid var(--line);
@@ -266,4 +589,24 @@
   flex-wrap: wrap;
   gap: 18px;
   margin: 0 0 22px;
+}
+
+/* デスクトップ余白の拡張 ----------------------------------------------- */
+@media (min-width: 640px) {
+  :global(.hero) {
+    padding: 48px 44px 52px;
+    margin-top: 32px;
+  }
+  :global(.chip) {
+    padding: 14px 18px;
+  }
+  /* デスクトップ: 出力バーを横並び・右寄せに戻し、ボタンは自然幅にする。 */
+  :global(.bar) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+  }
+  :global(.copy-actions > button) {
+    flex: 0 0 auto;
+  }
 }

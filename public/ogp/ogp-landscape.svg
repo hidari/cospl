@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <!--
+    CosPL OGP / 横長 1200x630 (og:image)
+    外部ベクターツールで直接編集できる native SVG。
+    フォント: Space Grotesk(見出し/PL), Space Mono(識別子/ドメイン), Zen Kaku Gothic New(本文)。
+    ラスタライズは scripts/build-images.mjs（Playwright）でフォントを与えて行う。
+    ライセンスアイコンは public/icons/*.svg と同じ 0 0 56 56 グリフを translate+scale で円内に配置。
+  -->
+  <rect width="1200" height="630" fill="#ffffff"/>
+
+  <!-- 装飾ボブル -->
+  <circle cx="870" cy="70" r="220" fill="#ff7a2f" opacity="0.12"/>
+  <circle cx="60" cy="350" r="150" fill="#2f8bff" opacity="0.10"/>
+  <circle cx="840" cy="180" r="60" fill="#7b54ff" opacity="0.12"/>
+
+  <!-- ワードマーク Cos[PL] -->
+  <g fill="#1c1430" font-family="'Space Grotesk', sans-serif" font-weight="700">
+    <text x="84" y="152" font-size="64" letter-spacing="-1.5">Cos</text>
+    <rect x="208" y="94" width="98" height="76" rx="20" fill="none" stroke="#1c1430" stroke-width="5"/>
+    <text x="257" y="152" font-size="64" text-anchor="middle">PL</text>
+  </g>
+
+  <!-- メインコピー -->
+  <g fill="#1c1430" font-family="'Zen Kaku Gothic New', sans-serif" font-weight="900" font-size="54" letter-spacing="-0.5">
+    <text x="84" y="330">撮った写真の<tspan fill="#ff7a2f">「使っていい範囲」</tspan>を、</text>
+    <text x="84" y="396">言葉にする。</text>
+  </g>
+
+  <!-- 識別子ピル -->
+  <rect x="84" y="430" width="470" height="58" rx="14" fill="#1c1430"/>
+  <text x="108" y="468" font-family="'Space Mono', monospace" font-size="26" fill="#ffffff">CosPL 1.0 / <tspan fill="#ff9e5c" font-weight="700">BY-NC-NAI-TD</tspan></text>
+
+  <!-- 下段: ドメイン + ライセンスアイコン4種（74px円・border4・グリフは scale0.82/translate14）-->
+  <text x="84" y="556" font-family="'Space Mono', monospace" font-size="24" letter-spacing="1.4" fill="#6b6580">cospl.org</text>
+
+  <g transform="translate(820, 498)">
+    <!-- BY -->
+    <g transform="translate(0,0)">
+      <circle cx="37" cy="37" r="35" fill="none" stroke="#1c1430" stroke-width="4"/>
+      <g transform="translate(14,14) scale(0.82)" fill="#1c1430">
+        <circle cx="28" cy="19" r="10.5"/>
+        <path d="M7 50 a21 21 0 0 1 42 0 Z"/>
+      </g>
+    </g>
+    <!-- NC -->
+    <g transform="translate(86,0)">
+      <circle cx="37" cy="37" r="35" fill="none" stroke="#1c1430" stroke-width="4"/>
+      <g transform="translate(14,14) scale(0.82)" fill="#1c1430">
+        <text x="28" y="28" font-family="'Space Grotesk', sans-serif" font-weight="700" font-size="46" text-anchor="middle" dominant-baseline="central">¥</text>
+        <line x1="9" y1="47" x2="47" y2="9" stroke="#1c1430" stroke-width="5" stroke-linecap="round"/>
+      </g>
+    </g>
+    <!-- NAI -->
+    <g transform="translate(172,0)">
+      <circle cx="37" cy="37" r="35" fill="none" stroke="#1c1430" stroke-width="4"/>
+      <g transform="translate(14,14) scale(0.82)" fill="none" stroke="#1c1430">
+        <line x1="28" y1="4" x2="28" y2="13" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="28" cy="4" r="3.4" fill="#1c1430" stroke="none"/>
+        <rect x="10" y="13" width="36" height="31" rx="9" stroke-width="4.2"/>
+        <circle cx="21" cy="29" r="3.8" fill="#1c1430" stroke="none"/>
+        <circle cx="35" cy="29" r="3.8" fill="#1c1430" stroke="none"/>
+        <line x1="22" y1="38" x2="34" y2="38" stroke-width="3.6" stroke-linecap="round"/>
+      </g>
+    </g>
+    <!-- TD -->
+    <g transform="translate(258,0)">
+      <circle cx="37" cy="37" r="35" fill="none" stroke="#1c1430" stroke-width="4"/>
+      <g transform="translate(14,14) scale(0.82)" fill="#1c1430">
+        <rect x="23" y="6" width="10" height="25" rx="4"/>
+        <path d="M13 27 L28 45 L43 27 Z"/>
+        <rect x="12" y="49" width="32" height="5.4" rx="2.7"/>
+      </g>
+    </g>
+  </g>
+</svg>

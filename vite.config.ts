@@ -5,4 +5,6 @@ import { defineConfig } from "vite";
 // クライアント（index.html / src/client）の両方をビルドする。
 export default defineConfig({
   plugins: [cloudflare()],
+  // dev サーバのポートを固定し、Taskfile.pkl の dev.readyPort と一致させる。
+  server: { port: 5210 },
 });

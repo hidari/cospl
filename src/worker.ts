@@ -17,10 +17,15 @@ import {
   type State,
   type View,
 } from "./core";
+import { LINK_HEADER, prefersMarkdown, robotsTxt, sitemapXml } from "./discovery";
 import type { ParseError } from "./types/errors";
 import { flatMapResult, matchResult, type Result, success } from "./types/result";
 
 const LICENSE_PATH = "/license.md";
+const ROBOTS_PATH = "/robots.txt";
+const SITEMAP_PATH = "/sitemap.xml";
+const HOME_PATH = "/";
+const LLMS_PATH = "/llms.txt";
 
 // CORS は全許可（ツール・エージェントから直接取得できるようにする）
 const CORS_ORIGIN = "access-control-allow-origin";
@@ -88,26 +93,86 @@ function methodNotAllowedResponse(): Response {
   });
 }
 
+// robots.txt（200・text/plain）。origin はリクエストから取得する。
+function robotsResponse(origin: string): Response {
+  return new Response(robotsTxt(origin), {
+    headers: {
+      "content-type": "text/plain; charset=utf-8",
+      [CORS_ORIGIN]: "*",
+      "cache-control": "public, max-age=300",
+    },
+  });
+}
+
+// sitemap.xml（200・application/xml）
+function sitemapResponse(origin: string): Response {
+  return new Response(sitemapXml(origin), {
+    headers: {
+      "content-type": "application/xml; charset=utf-8",
+      [CORS_ORIGIN]: "*",
+      "cache-control": "public, max-age=300",
+    },
+  });
+}
+
+// Accept: text/markdown のとき /llms.txt を Markdown として返す。
+// ASSETS が ok でなければその応答をそのまま返し、嘘の Content-Type を付けない。
+async function markdownHomeResponse(request: Request, env: Env): Promise<Response> {
+  const llmsUrl = new URL(LLMS_PATH, request.url);
+  const res = await env.ASSETS.fetch(new Request(llmsUrl, request));
+  if (!res.ok) {
+    return res;
+  }
+  return new Response(res.body, {
+    status: res.status,
+    headers: {
+      "content-type": "text/markdown; charset=utf-8",
+      [CORS_ORIGIN]: "*",
+      "cache-control": "public, max-age=300",
+    },
+  });
+}
+
+// ホームページの HTML 応答に Link ヘッダを付与する（既存ヘッダ非破壊）。
+async function htmlHomeResponse(request: Request, env: Env): Promise<Response> {
+  const res = await env.ASSETS.fetch(request);
+  const headers = new Headers(res.headers);
+  headers.set("link", LINK_HEADER);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
 export default {
   fetch(request: Request, env: Env): Response | Promise<Response> {
     const url = new URL(request.url);
 
-    if (url.pathname !== LICENSE_PATH) {
-      // /license.md 以外は静的アセットへ委譲
-      return env.ASSETS.fetch(request);
+    if (url.pathname === LICENSE_PATH) {
+      if (request.method === "OPTIONS") {
+        return preflightResponse();
+      }
+      if (request.method !== "GET") {
+        return methodNotAllowedResponse();
+      }
+      return matchResult(parseLicenseRequest(url), {
+        success: licenseResponse,
+        error: errorResponse,
+      });
     }
 
-    if (request.method === "OPTIONS") {
-      return preflightResponse();
+    if (request.method === "GET") {
+      if (url.pathname === ROBOTS_PATH) {
+        return robotsResponse(url.origin);
+      }
+      if (url.pathname === SITEMAP_PATH) {
+        return sitemapResponse(url.origin);
+      }
+      if (url.pathname === HOME_PATH) {
+        return prefersMarkdown(request.headers.get("accept"))
+          ? markdownHomeResponse(request, env)
+          : htmlHomeResponse(request, env);
+      }
     }
 
-    if (request.method !== "GET") {
-      return methodNotAllowedResponse();
-    }
-
-    return matchResult(parseLicenseRequest(url), {
-      success: licenseResponse,
-      error: errorResponse,
-    });
+    // 上記以外・非 GET は静的アセットへ委譲
+    return env.ASSETS.fetch(request);
   },
 } satisfies ExportedHandler<Env>;

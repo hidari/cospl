@@ -1,11 +1,28 @@
 import { describe, expect, test } from "vitest";
 import worker from "../src/worker";
 
-// ASSETS をスタブした Env。/license.md 以外の委譲を決定的に検証する。
+// ASSETS をスタブした Env。パス別に応答を返し、Worker の配線を決定的に検証する。
 const assetBody = "ASSET OK";
+const llmsBody = "# CosPL\n\nstub llms markdown";
+const htmlBody = "<!doctype html><title>CosPL</title>";
 const env = {
   ASSETS: {
-    fetch: async () => new Response(assetBody, { status: 200 }),
+    fetch: async (req: Request) => {
+      const { pathname } = new URL(req.url);
+      if (pathname === "/llms.txt") {
+        return new Response(llmsBody, {
+          status: 200,
+          headers: { "content-type": "text/plain; charset=utf-8" },
+        });
+      }
+      if (pathname === "/") {
+        return new Response(htmlBody, {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        });
+      }
+      return new Response(assetBody, { status: 200 });
+    },
   },
 } as unknown as Env;
 
@@ -105,9 +122,53 @@ describe("OPTIONS /license.md", () => {
 });
 
 describe("その他のパス", () => {
-  test("/license.md 以外は ASSETS へ委譲する", async () => {
-    const res = await call("/");
+  test("既知ルート以外は ASSETS へそのまま委譲する", async () => {
+    const res = await call("/favicon.ico");
     expect(res.status).toBe(200);
     expect(await res.text()).toBe(assetBody);
+  });
+});
+
+describe("GET /robots.txt", () => {
+  test("text/plain で sitemap を参照する robots を返す", async () => {
+    const res = await call("/robots.txt");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("text/plain; charset=utf-8");
+    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+    const body = await res.text();
+    expect(body).toContain("User-agent: *");
+    expect(body).toContain("Sitemap: https://cospl.org/sitemap.xml");
+  });
+});
+
+describe("GET /sitemap.xml", () => {
+  test("application/xml で正規 URL を列挙する", async () => {
+    const res = await call("/sitemap.xml");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/xml; charset=utf-8");
+    const body = await res.text();
+    expect(body).toContain("<urlset");
+    expect(body).toContain("<loc>https://cospl.org/</loc>");
+    expect(body).toContain("<loc>https://cospl.org/llms.txt</loc>");
+  });
+});
+
+describe("GET / の Accept ネゴシエーション", () => {
+  test("Accept: text/markdown は llms.txt を Markdown で返す", async () => {
+    const res = await call("/", { headers: { accept: "text/markdown" } });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("text/markdown; charset=utf-8");
+    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+    expect(await res.text()).toBe(llmsBody);
+  });
+
+  test("通常の Accept は HTML に Link ヘッダを付けて返す", async () => {
+    const res = await call("/", { headers: { accept: "text/html,*/*" } });
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe(htmlBody);
+    const link = res.headers.get("link");
+    expect(link).toContain('rel="alternate"');
+    expect(link).toContain('rel="sitemap"');
+    expect(link).toContain('rel="service-desc"');
   });
 });

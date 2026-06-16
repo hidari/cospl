@@ -204,9 +204,15 @@ describe("DISCOVERY_ROUTES と wrangler.toml の整合", () => {
   // 統合テストは worker.fetch を直接呼ぶため Cloudflare のアセットルーティング層を通らず、
   // この登録漏れを検出できない（CLAUDE.md MUST）。ここで表と設定の一致を静的に保証する。
   test("全 discovery ルートが run_worker_first に登録されている", () => {
-    const runWorkerFirst = wranglerToml.match(/run_worker_first\s*=\s*\[(.*?)\]/s)?.[1] ?? "";
+    // 配列本体を取り出し、各要素を完全一致比較する（substring 照合だと "/api" が
+    // "/api-catalog" に誤マッチしうるため、クォートを剥がした厳密一致にする）。
+    const arrayBody = wranglerToml.match(/run_worker_first\s*=\s*\[(.*?)\]/s)?.[1] ?? "";
+    const registered = arrayBody
+      .split(",")
+      .map((entry) => entry.trim().replace(/^"|"$/g, ""))
+      .filter((entry) => entry.length > 0);
     for (const path of Object.keys(DISCOVERY_ROUTES)) {
-      expect(runWorkerFirst).toContain(`"${path}"`);
+      expect(registered).toContain(path);
     }
   });
 });

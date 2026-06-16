@@ -20,6 +20,9 @@ export type State = Readonly<Record<Tag, boolean>>;
 export type View = "human" | "ai";
 export type Format = "markdown" | "text";
 
+// 既定のタグ選択（tags 省略時・hash 不正時のフォールバック・OpenAPI 既定値の単一ソース）。
+export const DEFAULT_TAGS = "BY-NC-NAI-TD";
+
 // 全タグ false の初期状態を作る純粋関数。リテラルで全 Tag を網羅し、
 // ORDER に Tag を追加すると型エラーで気付ける（as アサーション不要）。
 export const emptyState = (): State => ({

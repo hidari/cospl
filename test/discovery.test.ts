@@ -1,5 +1,12 @@
 import { describe, expect, test } from "vitest";
-import { LINK_HEADER, prefersMarkdown, robotsTxt, sitemapXml } from "../src/discovery";
+import {
+  apiCatalogJson,
+  LINK_HEADER,
+  openApiJson,
+  prefersMarkdown,
+  robotsTxt,
+  sitemapXml,
+} from "../src/discovery";
 
 const ORIGIN = "https://cospl.org";
 
@@ -9,6 +16,45 @@ describe("robotsTxt", () => {
     expect(txt).toContain("User-agent: *");
     expect(txt).toContain("Allow: /");
     expect(txt).toContain("Sitemap: https://cospl.org/sitemap.xml");
+  });
+  test("Content-Signal で CC0 に沿った許容方針を宣言する", () => {
+    expect(robotsTxt(ORIGIN)).toContain("Content-Signal: ai-train=yes, search=yes, ai-input=yes");
+  });
+  test("主要 AI クローラの明示ブロックを含む", () => {
+    const txt = robotsTxt(ORIGIN);
+    expect(txt).toContain("User-agent: GPTBot");
+    expect(txt).toContain("User-agent: Claude-Web");
+    expect(txt).toContain("User-agent: Google-Extended");
+  });
+  test("名指しした各クローラのグループにも Content-Signal を複製する", () => {
+    // RFC 9309 はクローラが最も具体的なグループ1つだけを使うため、wildcard だけでなく
+    // 各 bot グループにも Content-Signal が無いと名指しクローラに方針が届かない。
+    const txt = robotsTxt(ORIGIN);
+    expect(txt).toContain(
+      "User-agent: GPTBot\nAllow: /\nContent-Signal: ai-train=yes, search=yes, ai-input=yes",
+    );
+  });
+});
+
+describe("apiCatalogJson", () => {
+  test("RFC 9264 linkset 形式で /license.md を広告する", () => {
+    const parsed = JSON.parse(apiCatalogJson(ORIGIN));
+    expect(parsed.linkset).toHaveLength(1);
+    const entry = parsed.linkset[0];
+    expect(entry.anchor).toBe("https://cospl.org/license.md");
+    expect(entry["service-desc"][0].href).toBe("https://cospl.org/openapi.json");
+    expect(entry["service-doc"][0].href).toBe("https://cospl.org/llms.txt");
+  });
+});
+
+describe("openApiJson", () => {
+  test("GET /license.md の OpenAPI 3.1 を返す", () => {
+    const parsed = JSON.parse(openApiJson(ORIGIN));
+    expect(parsed.openapi).toBe("3.1.0");
+    expect(parsed.servers[0].url).toBe("https://cospl.org");
+    const op = parsed.paths["/license.md"].get;
+    const names = op.parameters.map((p: { name: string }) => p.name);
+    expect(names).toEqual(["tags", "view", "format"]);
   });
 });
 
@@ -57,10 +103,11 @@ describe("prefersMarkdown", () => {
 });
 
 describe("LINK_HEADER", () => {
-  test("alternate / sitemap / service-desc の3つを含む", () => {
+  test("alternate / sitemap / service-desc / api-catalog を含む", () => {
     expect(LINK_HEADER).toContain('rel="alternate"');
     expect(LINK_HEADER).toContain('type="text/markdown"');
     expect(LINK_HEADER).toContain('rel="sitemap"');
     expect(LINK_HEADER).toContain('rel="service-desc"');
+    expect(LINK_HEADER).toContain('rel="api-catalog"');
   });
 });

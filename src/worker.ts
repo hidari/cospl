@@ -15,6 +15,7 @@
 
 import {
   aiMD,
+  DEFAULT_TAGS,
   type Format,
   humanMD,
   humanText,
@@ -24,7 +25,14 @@ import {
   type State,
   type View,
 } from "./core";
-import { LINK_HEADER, prefersMarkdown, robotsTxt, sitemapXml } from "./discovery";
+import {
+  apiCatalogJson,
+  LINK_HEADER,
+  openApiJson,
+  prefersMarkdown,
+  robotsTxt,
+  sitemapXml,
+} from "./discovery";
 import type { ParseError } from "./types/errors";
 import { flatMapResult, matchResult, type Result, success } from "./types/result";
 
@@ -33,6 +41,8 @@ const ROBOTS_PATH = "/robots.txt";
 const SITEMAP_PATH = "/sitemap.xml";
 const HOME_PATH = "/";
 const LLMS_PATH = "/llms.txt";
+const API_CATALOG_PATH = "/.well-known/api-catalog";
+const OPENAPI_PATH = "/openapi.json";
 
 // CORS は全許可（ツール・エージェントから直接取得できるようにする）
 const CORS_ORIGIN = "access-control-allow-origin";
@@ -56,7 +66,7 @@ function parseLicenseRequest(url: URL): Result<LicenseRequest, ParseError> {
   const rawTags = url.searchParams.get("tags");
   const rawView = url.searchParams.get("view");
   const rawFormat = url.searchParams.get("format");
-  const tags = parseTags(rawTags === null ? "BY-NC-NAI-TD" : rawTags);
+  const tags = parseTags(rawTags === null ? DEFAULT_TAGS : rawTags);
   return flatMapResult(tags, (state) =>
     flatMapResult(parseView(rawView), (view) =>
       flatMapResult(parseFormat(rawFormat), (format) => success({ state, view, format })),
@@ -158,6 +168,12 @@ export default {
       }
       if (url.pathname === SITEMAP_PATH) {
         return sitemapResponse(url.origin);
+      }
+      if (url.pathname === API_CATALOG_PATH) {
+        return cachedResponse(apiCatalogJson(url.origin), "application/linkset+json");
+      }
+      if (url.pathname === OPENAPI_PATH) {
+        return cachedResponse(openApiJson(url.origin), "application/json");
       }
       if (url.pathname === HOME_PATH) {
         return prefersMarkdown(request.headers.get("accept"))

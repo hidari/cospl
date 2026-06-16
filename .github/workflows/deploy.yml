@@ -61,6 +61,12 @@ jobs:
           check_200 "https://cospl.org/license.md" || { echo "::error::health check failed: /license.md did not return 200"; exit 1; }
           check_200 "https://cospl.org/robots.txt" || { echo "::error::health check failed: /robots.txt did not return 200"; exit 1; }
           check_200 "https://cospl.org/sitemap.xml" || { echo "::error::health check failed: /sitemap.xml did not return 200"; exit 1; }
+          check_200 "https://cospl.org/.well-known/api-catalog" || { echo "::error::health check failed: /.well-known/api-catalog did not return 200"; exit 1; }
+          check_200 "https://cospl.org/openapi.json" || { echo "::error::health check failed: /openapi.json did not return 200"; exit 1; }
+
+          # robots.txt に Content Signals が宣言されていることを確認する。
+          robots=$(curl -fsSL "https://cospl.org/robots.txt" || true)
+          echo "${robots}" | grep -qi "^Content-Signal:" || { echo "::error::health check failed: robots.txt に Content-Signal が無い"; exit 1; }
 
           # Worker が / を処理していることの検証（run_worker_first から / が漏れる回帰の防止）。
           # 静的 index.html が直接配信されると Link ヘッダ付与と Markdown ネゴシエーションが効かなくなる。

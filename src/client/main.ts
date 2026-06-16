@@ -3,6 +3,7 @@
 
 import {
   aiMD,
+  DEFAULT_TAGS,
   emptyState,
   humanMD,
   parseTag,
@@ -160,7 +161,7 @@ function initialTags(): State {
     }
   }
   // 既定値は必ずパースに成功する。万一の失敗でも emptyState で型安全に畳む。
-  return getOrElse(parseTags("BY-NC-NAI-TD"), emptyState());
+  return getOrElse(parseTags(DEFAULT_TAGS), emptyState());
 }
 
 function bindEvents(getState: () => AppState, dispatch: (action: Action) => void): void {

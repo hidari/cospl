@@ -170,5 +170,29 @@ describe("GET / の Accept ネゴシエーション", () => {
     expect(link).toContain('rel="alternate"');
     expect(link).toContain('rel="sitemap"');
     expect(link).toContain('rel="service-desc"');
+    expect(link).toContain('rel="api-catalog"');
+  });
+});
+
+describe("GET /.well-known/api-catalog", () => {
+  test("application/linkset+json で API カタログを返す", async () => {
+    const res = await call("/.well-known/api-catalog");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/linkset+json");
+    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+    const body = JSON.parse(await res.text());
+    expect(body.linkset[0].anchor).toBe("https://cospl.org/license.md");
+    expect(body.linkset[0]["service-desc"][0].href).toBe("https://cospl.org/openapi.json");
+  });
+});
+
+describe("GET /openapi.json", () => {
+  test("application/json で OpenAPI 3.1 を返す", async () => {
+    const res = await call("/openapi.json");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/json");
+    const body = JSON.parse(await res.text());
+    expect(body.openapi).toBe("3.1.0");
+    expect(body.paths["/license.md"].get).toBeDefined();
   });
 });

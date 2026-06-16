@@ -13,10 +13,16 @@ export function robotsTxt(origin: string): string {
   ].join("\n");
 }
 
+// XML 特殊文字（& < >）をエスケープする。loc に流す origin を防御的に処理する。
+function escapeXml(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 // sitemap.xml（sitemaps.org protocol 0.9）。正規 URL を列挙する。
 export function sitemapXml(origin: string): string {
   const paths = ["/", "/llms.txt", "/license.md"];
-  const urls = paths.map((path) => `  <url><loc>${origin}${path}</loc></url>`).join("\n");
+  const safeOrigin = escapeXml(origin);
+  const urls = paths.map((path) => `  <url><loc>${safeOrigin}${path}</loc></url>`).join("\n");
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',

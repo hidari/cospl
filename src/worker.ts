@@ -37,6 +37,17 @@ const LLMS_PATH = "/llms.txt";
 // CORS は全許可（ツール・エージェントから直接取得できるようにする）
 const CORS_ORIGIN = "access-control-allow-origin";
 
+// 動的生成レスポンス共通のヘッダ（CORS 全許可・5分キャッシュ）を付けて 200 を返す
+function cachedResponse(body: BodyInit | null, contentType: string): Response {
+  return new Response(body, {
+    headers: {
+      "content-type": contentType,
+      [CORS_ORIGIN]: "*",
+      "cache-control": "public, max-age=300",
+    },
+  });
+}
+
 // パース済みリクエスト（tags・view・format の組）
 type LicenseRequest = { state: State; view: View; format: Format };
 
@@ -60,13 +71,7 @@ function licenseResponse({ state, view, format }: LicenseRequest): Response {
   const asText = !isAi && format === "text";
   const body = isAi ? aiMD(state) : asText ? humanText(state) : humanMD(state);
   const contentType = asText ? "text/plain; charset=utf-8" : "text/markdown; charset=utf-8";
-  return new Response(body, {
-    headers: {
-      "content-type": contentType,
-      [CORS_ORIGIN]: "*",
-      "cache-control": "public, max-age=300",
-    },
-  });
+  return cachedResponse(body, contentType);
 }
 
 // 失敗時のレスポンス（400 + エラー Markdown）
@@ -102,24 +107,12 @@ function methodNotAllowedResponse(): Response {
 
 // robots.txt（200・text/plain）。origin はリクエストから取得する。
 function robotsResponse(origin: string): Response {
-  return new Response(robotsTxt(origin), {
-    headers: {
-      "content-type": "text/plain; charset=utf-8",
-      [CORS_ORIGIN]: "*",
-      "cache-control": "public, max-age=300",
-    },
-  });
+  return cachedResponse(robotsTxt(origin), "text/plain; charset=utf-8");
 }
 
 // sitemap.xml（200・application/xml）
 function sitemapResponse(origin: string): Response {
-  return new Response(sitemapXml(origin), {
-    headers: {
-      "content-type": "application/xml; charset=utf-8",
-      [CORS_ORIGIN]: "*",
-      "cache-control": "public, max-age=300",
-    },
-  });
+  return cachedResponse(sitemapXml(origin), "application/xml; charset=utf-8");
 }
 
 // Accept: text/markdown のとき /llms.txt を Markdown として返す。
@@ -130,14 +123,7 @@ async function markdownHomeResponse(request: Request, env: Env): Promise<Respons
   if (!res.ok) {
     return res;
   }
-  return new Response(res.body, {
-    status: res.status,
-    headers: {
-      "content-type": "text/markdown; charset=utf-8",
-      [CORS_ORIGIN]: "*",
-      "cache-control": "public, max-age=300",
-    },
-  });
+  return cachedResponse(res.body, "text/markdown; charset=utf-8");
 }
 
 // ホームページの HTML 応答に Link ヘッダを付与する（既存ヘッダ非破壊）。
@@ -145,6 +131,7 @@ async function htmlHomeResponse(request: Request, env: Env): Promise<Response> {
   const res = await env.ASSETS.fetch(request);
   const headers = new Headers(res.headers);
   headers.set("link", LINK_HEADER);
+  headers.set(CORS_ORIGIN, "*");
   return new Response(res.body, { status: res.status, headers });
 }
 

@@ -22,6 +22,11 @@ describe("sitemapXml", () => {
     expect(xml).toContain("<loc>https://cospl.org/license.md</loc>");
     expect(xml).toContain("</urlset>");
   });
+  test("origin の XML 特殊文字をエスケープする", () => {
+    const xml = sitemapXml("https://example.com/a&b<c>");
+    expect(xml).toContain("<loc>https://example.com/a&amp;b&lt;c&gt;/</loc>");
+    expect(xml).not.toContain("a&b<c>");
+  });
 });
 
 describe("prefersMarkdown", () => {
@@ -42,6 +47,12 @@ describe("prefersMarkdown", () => {
   });
   test("application/json は false", () => {
     expect(prefersMarkdown("application/json")).toBe(false);
+  });
+  test("複数値 Accept に text/markdown が混在すれば true（curl/httpie パターン）", () => {
+    expect(prefersMarkdown("text/html,*/*;q=0.1,text/markdown;q=0.5")).toBe(true);
+  });
+  test("先頭以外に text/markdown があっても true", () => {
+    expect(prefersMarkdown("application/json, text/markdown;q=0.9")).toBe(true);
   });
 });
 

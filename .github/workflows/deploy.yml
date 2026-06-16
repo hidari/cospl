@@ -46,9 +46,11 @@ jobs:
       - name: Health check
         run: |
           # 静的アセット配信・Worker ロジック・エージェント発見性ルートを確認する。
+          # いずれもデプロイ直後のエッジ伝播待ちでフレークしうるためリトライする。
+          # リダイレクト時に挙動が割れないよう全 curl で -L を付ける。
           check_200() {
             for i in $(seq 1 10); do
-              code=$(curl -fsS -o /dev/null -w "%{http_code}" "$1" || true)
+              code=$(curl -fsSL -o /dev/null -w "%{http_code}" "$1" || true)
               echo "  ${1} attempt ${i}: HTTP ${code}"
               [ "${code}" = "200" ] && return 0
               sleep 10
@@ -61,12 +63,26 @@ jobs:
           check_200 "https://cospl.org/sitemap.xml" || { echo "::error::health check failed: /sitemap.xml did not return 200"; exit 1; }
 
           # Worker が / を処理していることの検証（run_worker_first から / が漏れる回帰の防止）。
-          # 静的 index.html が直接配信されると以下の2つが効かなくなる。
-          link=$(curl -fsS -D - -o /dev/null "https://cospl.org/" | grep -i "^link:" || true)
-          echo "  / link header: ${link}"
-          echo "${link}" | grep -qi 'rel="alternate"' || { echo "::error::health check failed: / に Link ヘッダが無い（run_worker_first に / があるか確認）"; exit 1; }
+          # 静的 index.html が直接配信されると Link ヘッダ付与と Markdown ネゴシエーションが効かなくなる。
+          check_link_header() {
+            for i in $(seq 1 5); do
+              link=$(curl -fsSL -D - -o /dev/null "https://cospl.org/" | grep -i "^link:" || true)
+              echo "  / link header attempt ${i}: ${link}"
+              echo "${link}" | grep -qi 'rel="alternate"' && return 0
+              sleep 10
+            done
+            return 1
+          }
+          check_link_header || { echo "::error::health check failed: / に Link ヘッダが無い（run_worker_first に / があるか確認）"; exit 1; }
 
-          ctype=$(curl -fsS -H "Accept: text/markdown" -o /dev/null -w "%{content_type}" "https://cospl.org/")
-          echo "  / markdown negotiation content-type: ${ctype}"
-          echo "${ctype}" | grep -qi "text/markdown" || { echo "::error::health check failed: Accept: text/markdown が Markdown を返さない"; exit 1; }
+          check_markdown() {
+            for i in $(seq 1 5); do
+              ctype=$(curl -fsSL -H "Accept: text/markdown" -o /dev/null -w "%{content_type}" "https://cospl.org/" || true)
+              echo "  / markdown negotiation attempt ${i}: ${ctype}"
+              echo "${ctype}" | grep -qi "text/markdown" && return 0
+              sleep 10
+            done
+            return 1
+          }
+          check_markdown || { echo "::error::health check failed: Accept: text/markdown が Markdown を返さない"; exit 1; }
           echo "healthy"

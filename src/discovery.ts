@@ -4,7 +4,7 @@
 // robots.txt（RFC 9309）。エージェントの取得を歓迎して全許可し、sitemap を参照する。
 export function robotsTxt(origin: string): string {
   return [
-    "# CosPL — AI エージェント・クローラを歓迎します",
+    "# CosPL — AI agents and crawlers are welcome",
     "User-agent: *",
     "Allow: /",
     "",

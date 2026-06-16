@@ -1,10 +1,17 @@
-// Cloudflare Worker — /license.md を生成し、それ以外は静的アセットへ委譲する。
-// 例:
-//   /license.md?tags=BY-NC-NAI-TD              -> README（Markdown）
-//   /license.md?tags=BY-NC-NAI-TD&format=text  -> README（プレーンテキスト）
-//   /license.md?tags=BY-NC-NAI-TD&view=ai      -> AI向け宣言
-//   /license.md?tags=ZZZ                        -> 400（未知タグ）
-// 生成ロジックは src/core.ts をサイトと共有する。
+// Cloudflare Worker — リクエストパスに応じて動的生成または静的アセット委譲を行う。
+//
+// 動的生成ルート（Worker が処理）:
+//   /robots.txt                               -> text/plain（全許可 + sitemap 参照）
+//   /sitemap.xml                              -> application/xml（正規 URL 一覧）
+//   / [Accept: text/markdown]                 -> /llms.txt を Markdown として配信
+//   / [通常]                                  -> HTML + Link ヘッダ付与
+//   /license.md?tags=BY-NC-NAI-TD             -> README（Markdown）
+//   /license.md?tags=BY-NC-NAI-TD&format=text -> README（プレーンテキスト）
+//   /license.md?tags=BY-NC-NAI-TD&view=ai     -> AI向け宣言
+//   /license.md?tags=ZZZ                       -> 400（未知タグ）
+//
+// 上記以外（非 GET 含む）は静的アセット（ASSETS）へ委譲する。
+// 生成ロジックは src/core.ts をサイトと共有し、発見性リソースは src/discovery.ts が担う。
 
 import {
   aiMD,
@@ -17,13 +24,29 @@ import {
   type State,
   type View,
 } from "./core";
+import { LINK_HEADER, prefersMarkdown, robotsTxt, sitemapXml } from "./discovery";
 import type { ParseError } from "./types/errors";
 import { flatMapResult, matchResult, type Result, success } from "./types/result";
 
 const LICENSE_PATH = "/license.md";
+const ROBOTS_PATH = "/robots.txt";
+const SITEMAP_PATH = "/sitemap.xml";
+const HOME_PATH = "/";
+const LLMS_PATH = "/llms.txt";
 
 // CORS は全許可（ツール・エージェントから直接取得できるようにする）
 const CORS_ORIGIN = "access-control-allow-origin";
+
+// 動的生成レスポンス共通のヘッダ（CORS 全許可・5分キャッシュ）を付けて 200 を返す
+function cachedResponse(body: BodyInit | null, contentType: string): Response {
+  return new Response(body, {
+    headers: {
+      "content-type": contentType,
+      [CORS_ORIGIN]: "*",
+      "cache-control": "public, max-age=300",
+    },
+  });
+}
 
 // パース済みリクエスト（tags・view・format の組）
 type LicenseRequest = { state: State; view: View; format: Format };
@@ -48,13 +71,7 @@ function licenseResponse({ state, view, format }: LicenseRequest): Response {
   const asText = !isAi && format === "text";
   const body = isAi ? aiMD(state) : asText ? humanText(state) : humanMD(state);
   const contentType = asText ? "text/plain; charset=utf-8" : "text/markdown; charset=utf-8";
-  return new Response(body, {
-    headers: {
-      "content-type": contentType,
-      [CORS_ORIGIN]: "*",
-      "cache-control": "public, max-age=300",
-    },
-  });
+  return cachedResponse(body, contentType);
 }
 
 // 失敗時のレスポンス（400 + エラー Markdown）
@@ -88,26 +105,68 @@ function methodNotAllowedResponse(): Response {
   });
 }
 
+// robots.txt（200・text/plain）。origin はリクエストから取得する。
+function robotsResponse(origin: string): Response {
+  return cachedResponse(robotsTxt(origin), "text/plain; charset=utf-8");
+}
+
+// sitemap.xml（200・application/xml）
+function sitemapResponse(origin: string): Response {
+  return cachedResponse(sitemapXml(origin), "application/xml; charset=utf-8");
+}
+
+// Accept: text/markdown のとき /llms.txt を Markdown として返す。
+// ASSETS が ok でなければその応答をそのまま返し、嘘の Content-Type を付けない。
+async function markdownHomeResponse(request: Request, env: Env): Promise<Response> {
+  const llmsUrl = new URL(LLMS_PATH, request.url);
+  const res = await env.ASSETS.fetch(new Request(llmsUrl.toString(), { method: "GET" }));
+  if (!res.ok) {
+    return res;
+  }
+  return cachedResponse(res.body, "text/markdown; charset=utf-8");
+}
+
+// ホームページの HTML 応答に Link ヘッダを付与する（既存ヘッダ非破壊）。
+async function htmlHomeResponse(request: Request, env: Env): Promise<Response> {
+  const res = await env.ASSETS.fetch(request);
+  const headers = new Headers(res.headers);
+  headers.set("link", LINK_HEADER);
+  headers.set(CORS_ORIGIN, "*");
+  return new Response(res.body, { status: res.status, headers });
+}
+
 export default {
   fetch(request: Request, env: Env): Response | Promise<Response> {
     const url = new URL(request.url);
 
-    if (url.pathname !== LICENSE_PATH) {
-      // /license.md 以外は静的アセットへ委譲
-      return env.ASSETS.fetch(request);
+    if (url.pathname === LICENSE_PATH) {
+      if (request.method === "OPTIONS") {
+        return preflightResponse();
+      }
+      if (request.method !== "GET") {
+        return methodNotAllowedResponse();
+      }
+      return matchResult(parseLicenseRequest(url), {
+        success: licenseResponse,
+        error: errorResponse,
+      });
     }
 
-    if (request.method === "OPTIONS") {
-      return preflightResponse();
+    if (request.method === "GET") {
+      if (url.pathname === ROBOTS_PATH) {
+        return robotsResponse(url.origin);
+      }
+      if (url.pathname === SITEMAP_PATH) {
+        return sitemapResponse(url.origin);
+      }
+      if (url.pathname === HOME_PATH) {
+        return prefersMarkdown(request.headers.get("accept"))
+          ? markdownHomeResponse(request, env)
+          : htmlHomeResponse(request, env);
+      }
     }
 
-    if (request.method !== "GET") {
-      return methodNotAllowedResponse();
-    }
-
-    return matchResult(parseLicenseRequest(url), {
-      success: licenseResponse,
-      error: errorResponse,
-    });
+    // 上記以外・非 GET は静的アセットへ委譲
+    return env.ASSETS.fetch(request);
   },
 } satisfies ExportedHandler<Env>;

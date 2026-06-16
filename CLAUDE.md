@@ -53,6 +53,8 @@
   1. `as any` は完全禁止
   2. `as const` と `as unknown`（型ガード前提の場合）は許可
   3. 新規コードでの `as` アサーションは原則禁止、型ガードや型述語（is）、Valibotパース等で代替する
+- Cloudflare Workers + static assets 構成で、実体の静的アセットが存在するパス（例: `/` = index.html）を Worker で加工・上書きする場合は、必ず `wrangler.toml` の `[assets] run_worker_first` にそのパスを登録すること（理由: 未登録だとアセットが Worker を経由せず直接配信され、ヘッダ付与やコンテントネゴシエーションが本番でのみ無効化される。実体の無いパスはアセットミスで Worker に届くため登録不要）
+- 上記の Worker ルーティング挙動は ASSETS をスタブする統合テストでは検出できない。Worker が処理するルートは deploy workflow の health check（本番スモーク）で実挙動を検証すること（理由: 統合テストは `worker.fetch` を直接呼び、Cloudflare のアセットルーティング層を通らないため、`run_worker_first` 漏れを見逃す）
 
 ## [MUST] テストコード
 

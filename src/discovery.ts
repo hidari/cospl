@@ -1,6 +1,8 @@
 // AI エージェント・クローラ向けの発見性リソースを生成・判定する純粋関数群。
 // 副作用は持たず入出力は文字列/boolean のみ。ルーティングと I/O は src/worker.ts が担う。
 
+import { DEFAULT_TAGS } from "./core";
+
 // 明示ブロックを置く主要 AI クローラ。CC0 サイトなので全て Allow: / にする。
 const AI_CRAWLERS = [
   "GPTBot",
@@ -16,16 +18,23 @@ const AI_CRAWLERS = [
   "PerplexityBot",
 ];
 
-// robots.txt（RFC 9309）。全許可に加え、Content Signals（draft-romm-aipref-contentsignals）で
-// 利用方針を宣言し、主要 AI クローラを明示する。サイト本文は CC0 なので許容的に宣言する。
+// Content Signals（draft-romm-aipref-contentsignals）の利用方針宣言。
+// サイト本文は CC0 なので全用途を許容的に宣言する。
+const CONTENT_SIGNAL = "Content-Signal: ai-train=yes, search=yes, ai-input=yes";
+
+// robots.txt（RFC 9309）。全許可に加え Content Signals で利用方針を宣言し、主要 AI クローラを明示する。
+// クローラは「最も具体的に一致する User-agent グループ1つ」だけを使うため（RFC 9309 §2.2.1）、
+// 名指しした各クローラにも Content-Signal が届くよう全グループに複製する。
 export function robotsTxt(origin: string): string {
-  const botBlocks = AI_CRAWLERS.map((bot) => `User-agent: ${bot}\nAllow: /`).join("\n\n");
+  const botBlocks = AI_CRAWLERS.map(
+    (bot) => `User-agent: ${bot}\nAllow: /\n${CONTENT_SIGNAL}`,
+  ).join("\n\n");
   return [
     "# CosPL — AI agents and crawlers are welcome",
     "# Site content is CC0 (public domain); all uses are permitted.",
     "User-agent: *",
     "Allow: /",
-    "Content-Signal: ai-train=yes, search=yes, ai-input=yes",
+    CONTENT_SIGNAL,
     "",
     botBlocks,
     "",
@@ -109,7 +118,7 @@ export function openApiJson(origin: string): string {
               in: "query",
               required: false,
               description: "Hyphen-joined tag identifier. Use 'none' for an empty tag set.",
-              schema: { type: "string", default: "BY-NC-NAI-TD" },
+              schema: { type: "string", default: DEFAULT_TAGS },
             },
             {
               name: "view",

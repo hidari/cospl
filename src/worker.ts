@@ -15,6 +15,7 @@
 
 import {
   aiMD,
+  DEFAULT_TAGS,
   type Format,
   humanMD,
   humanText,
@@ -65,7 +66,7 @@ function parseLicenseRequest(url: URL): Result<LicenseRequest, ParseError> {
   const rawTags = url.searchParams.get("tags");
   const rawView = url.searchParams.get("view");
   const rawFormat = url.searchParams.get("format");
-  const tags = parseTags(rawTags === null ? "BY-NC-NAI-TD" : rawTags);
+  const tags = parseTags(rawTags === null ? DEFAULT_TAGS : rawTags);
   return flatMapResult(tags, (state) =>
     flatMapResult(parseView(rawView), (view) =>
       flatMapResult(parseFormat(rawFormat), (format) => success({ state, view, format })),

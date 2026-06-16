@@ -26,6 +26,14 @@ describe("robotsTxt", () => {
     expect(txt).toContain("User-agent: Claude-Web");
     expect(txt).toContain("User-agent: Google-Extended");
   });
+  test("名指しした各クローラのグループにも Content-Signal を複製する", () => {
+    // RFC 9309 はクローラが最も具体的なグループ1つだけを使うため、wildcard だけでなく
+    // 各 bot グループにも Content-Signal が無いと名指しクローラに方針が届かない。
+    const txt = robotsTxt(ORIGIN);
+    expect(txt).toContain(
+      "User-agent: GPTBot\nAllow: /\nContent-Signal: ai-train=yes, search=yes, ai-input=yes",
+    );
+  });
 });
 
 describe("apiCatalogJson", () => {

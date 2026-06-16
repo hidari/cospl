@@ -1,10 +1,17 @@
-// Cloudflare Worker — /license.md を生成し、それ以外は静的アセットへ委譲する。
-// 例:
-//   /license.md?tags=BY-NC-NAI-TD              -> README（Markdown）
-//   /license.md?tags=BY-NC-NAI-TD&format=text  -> README（プレーンテキスト）
-//   /license.md?tags=BY-NC-NAI-TD&view=ai      -> AI向け宣言
-//   /license.md?tags=ZZZ                        -> 400（未知タグ）
-// 生成ロジックは src/core.ts をサイトと共有する。
+// Cloudflare Worker — リクエストパスに応じて動的生成または静的アセット委譲を行う。
+//
+// 動的生成ルート（Worker が処理）:
+//   /robots.txt                               -> text/plain（全許可 + sitemap 参照）
+//   /sitemap.xml                              -> application/xml（正規 URL 一覧）
+//   / [Accept: text/markdown]                 -> /llms.txt を Markdown として配信
+//   / [通常]                                  -> HTML + Link ヘッダ付与
+//   /license.md?tags=BY-NC-NAI-TD             -> README（Markdown）
+//   /license.md?tags=BY-NC-NAI-TD&format=text -> README（プレーンテキスト）
+//   /license.md?tags=BY-NC-NAI-TD&view=ai     -> AI向け宣言
+//   /license.md?tags=ZZZ                       -> 400（未知タグ）
+//
+// 上記以外（非 GET 含む）は静的アセット（ASSETS）へ委譲する。
+// 生成ロジックは src/core.ts をサイトと共有し、発見性リソースは src/discovery.ts が担う。
 
 import {
   aiMD,
@@ -119,7 +126,7 @@ function sitemapResponse(origin: string): Response {
 // ASSETS が ok でなければその応答をそのまま返し、嘘の Content-Type を付けない。
 async function markdownHomeResponse(request: Request, env: Env): Promise<Response> {
   const llmsUrl = new URL(LLMS_PATH, request.url);
-  const res = await env.ASSETS.fetch(new Request(llmsUrl, request));
+  const res = await env.ASSETS.fetch(new Request(llmsUrl.toString(), { method: "GET" }));
   if (!res.ok) {
     return res;
   }
@@ -138,7 +145,7 @@ async function htmlHomeResponse(request: Request, env: Env): Promise<Response> {
   const res = await env.ASSETS.fetch(request);
   const headers = new Headers(res.headers);
   headers.set("link", LINK_HEADER);
-  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+  return new Response(res.body, { status: res.status, headers });
 }
 
 export default {

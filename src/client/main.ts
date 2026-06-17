@@ -155,7 +155,11 @@ function render(state: AppState): void {
     el.setAttribute("tabindex", human ? "-1" : "0");
   });
   ifSome(byId("panel-out"), (el) => el.setAttribute("aria-labelledby", tabId(state.view)));
+}
 
+// 状態を URL hash へ同期する（プレビュー更新とは分離）。タグ/ビュー変更は即時、フィールドは
+// blur（change）と共有リンク押下でまとめて反映する。入力中に PII を逐次 URL へ書かないため。
+function syncUrl(state: AppState): void {
   history.replaceState(null, "", serializeHash(state.tags, state.draft));
 }
 
@@ -169,7 +173,8 @@ function todayISO(): string {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
-// 入力欄を draft で初期化し、入力で setField を dispatch する。
+// 入力欄を draft で初期化する。input でプレビューだけ更新し（URL は汚さない）、
+// change（値変更を伴う blur）でまとめて URL へ同期する。
 function bindFields(getState: () => AppState, dispatch: (action: Action) => void): void {
   const fields: ReadonlyArray<readonly [string, keyof Fields]> = [
     ["f-photographer", "photographer"],
@@ -181,6 +186,7 @@ function bindFields(getState: () => AppState, dispatch: (action: Action) => void
       if (el instanceof HTMLInputElement) {
         el.value = getState().draft[field];
         el.addEventListener("input", () => dispatch({ type: "setField", field, value: el.value }));
+        el.addEventListener("change", () => syncUrl(getState()));
       }
     });
   }
@@ -246,7 +252,11 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
 
   bindCopy("copy", () => currentMarkdown(getState()));
   bindCopy("ep-copy", () => endpoint(getState()));
-  bindCopy("link", () => location.href);
+  // 未確定の入力（blur 前）も取りこぼさないよう、コピー直前に URL を最新化する。
+  bindCopy("link", () => {
+    syncUrl(getState());
+    return location.href;
+  });
 
   bindFields(getState, dispatch);
 
@@ -283,9 +293,15 @@ function main(): void {
   const dispatch = (action: Action): void => {
     state = update(state, action);
     render(state);
+    // フィールド入力中（setField）は URL を書かない。タグ/ビュー変更は即時同期する。
+    if (action.type !== "setField") {
+      syncUrl(state);
+    }
   };
   bindEvents(() => state, dispatch);
   render(state);
+  // 初期ロードで URL を正規化（裸タグ→新形式、当日日付の反映）。PII フィールドは空なので含まれない。
+  syncUrl(state);
 }
 
 main();

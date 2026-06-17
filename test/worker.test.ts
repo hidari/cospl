@@ -109,7 +109,7 @@ describe("非対応メソッド", () => {
   test("POST は 405 を返す", async () => {
     const res = await call("/license.md", { method: "POST" });
     expect(res.status).toBe(405);
-    expect(res.headers.get("allow")).toBe("GET, OPTIONS");
+    expect(res.headers.get("allow")).toBe("GET, HEAD, OPTIONS");
   });
 });
 
@@ -118,7 +118,7 @@ describe("OPTIONS /license.md", () => {
     const res = await call("/license.md", { method: "OPTIONS" });
     expect(res.status).toBe(200);
     expect(res.headers.get("access-control-allow-origin")).toBe("*");
-    expect(res.headers.get("access-control-allow-methods")).toBe("GET, OPTIONS");
+    expect(res.headers.get("access-control-allow-methods")).toBe("GET, HEAD, OPTIONS");
     expect(res.headers.get("access-control-max-age")).toBe("86400");
   });
 });
@@ -214,5 +214,57 @@ describe("DISCOVERY_ROUTES と wrangler.toml の整合", () => {
     for (const path of Object.keys(DISCOVERY_ROUTES)) {
       expect(registered).toContain(path);
     }
+  });
+});
+
+describe("セキュリティヘッダ", () => {
+  test("生成レスポンス（/license.md）に基本セキュリティヘッダを付与する", async () => {
+    const res = await call("/license.md");
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("referrer-policy")).toBe("strict-origin-when-cross-origin");
+    expect(res.headers.get("strict-transport-security")).toContain("max-age=");
+    expect(res.headers.get("x-frame-options")).toBe("DENY");
+  });
+  test("発見性レスポンス（/robots.txt）にも付与する", async () => {
+    const res = await call("/robots.txt");
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("strict-transport-security")).toContain("max-age=");
+  });
+  test("400 エラーレスポンスにも付与する", async () => {
+    const res = await call("/license.md?tags=ZZZ");
+    expect(res.status).toBe(400);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+  });
+  test("HTML ホームには厳格な CSP を付与する（インライン無しなので 'self' で足りる）", async () => {
+    const res = await call("/");
+    const csp = res.headers.get("content-security-policy");
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("object-src 'none'");
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+  });
+});
+
+describe("HEAD リクエスト", () => {
+  test("HEAD /license.md は 405 ではなく 200 をヘッダのみで返す", async () => {
+    const res = await call("/license.md", { method: "HEAD" });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("text/markdown; charset=utf-8");
+    expect(await res.text()).toBe("");
+  });
+  test("HEAD / は GET 同等のヘッダ（Link 含む）を返し本文は空", async () => {
+    const res = await call("/", { method: "HEAD" });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("link")).toContain('rel="api-catalog"');
+    expect(await res.text()).toBe("");
+  });
+  test("HEAD /openapi.json も 200 を返す", async () => {
+    const res = await call("/openapi.json", { method: "HEAD" });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/json");
+  });
+  test("POST /license.md は引き続き 405", async () => {
+    const res = await call("/license.md", { method: "POST" });
+    expect(res.status).toBe(405);
   });
 });

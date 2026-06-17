@@ -142,9 +142,18 @@ function render(state: AppState): void {
     });
   }
 
-  // tabs の aria-selected を同期
-  ifSome(byId("tab-h"), (el) => el.setAttribute("aria-selected", String(state.view === "human")));
-  ifSome(byId("tab-a"), (el) => el.setAttribute("aria-selected", String(state.view === "ai")));
+  // tabs の aria-selected と roving tabindex を同期し、選択タブに tabpanel を紐付ける。
+  // 選択タブのみ tabindex=0（Tab で1つだけ到達、タブ間は矢印キーで移動）。
+  const human = state.view === "human";
+  ifSome(byId("tab-h"), (el) => {
+    el.setAttribute("aria-selected", String(human));
+    el.setAttribute("tabindex", human ? "0" : "-1");
+  });
+  ifSome(byId("tab-a"), (el) => {
+    el.setAttribute("aria-selected", String(!human));
+    el.setAttribute("tabindex", human ? "-1" : "0");
+  });
+  ifSome(byId("panel-out"), (el) => el.setAttribute("aria-labelledby", human ? "tab-h" : "tab-a"));
 
   history.replaceState(null, "", hashFragment(state));
 }
@@ -162,6 +171,24 @@ function initialTags(): State {
   }
   // 既定値は必ずパースに成功する。万一の失敗でも emptyState で型安全に畳む。
   return getOrElse(parseTags(DEFAULT_TAGS), emptyState());
+}
+
+// tablist のキー操作で移動先の view を決める（WAI-ARIA tabs パターン）。
+// タブは2つなので左右どちらの矢印でも切り替え、Home/End で端へ。対象外キーは null。
+function nextView(current: View, key: string): View | null {
+  switch (key) {
+    case "ArrowRight":
+    case "ArrowDown":
+    case "ArrowLeft":
+    case "ArrowUp":
+      return current === "human" ? "ai" : "human";
+    case "Home":
+      return "human";
+    case "End":
+      return "ai";
+    default:
+      return null;
+  }
 }
 
 function bindEvents(getState: () => AppState, dispatch: (action: Action) => void): void {
@@ -185,6 +212,19 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
   ifSome(byId("tab-a"), (el) =>
     el.addEventListener("click", () => dispatch({ type: "setView", view: "ai" })),
   );
+
+  // tablist 内の矢印 / Home / End でタブ移動（フォーカスも移す）。
+  ifSome(fromNullable(document.querySelector<HTMLElement>('[role="tablist"]')), (tablist) => {
+    tablist.addEventListener("keydown", (event) => {
+      const view = nextView(getState().view, event.key);
+      if (view === null) {
+        return;
+      }
+      event.preventDefault();
+      dispatch({ type: "setView", view });
+      ifSome(byId(view === "human" ? "tab-h" : "tab-a"), (el) => el.focus());
+    });
+  });
 
   bindCopy("copy", () => currentMarkdown(getState()));
   bindCopy("ep-copy", () => endpoint(getState()));

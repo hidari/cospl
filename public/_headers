@@ -1,0 +1,8 @@
+# Cloudflare Workers Assets のレスポンスヘッダ定義（静的アセット配信にのみ適用され、
+# Worker 生成レスポンスには効かない）。Vite が dist/client 直下へコピーして CF が解釈する。
+
+# 内容ハッシュ付きアセット（Vite が中身でファイル名を bust する）は不変なので
+# 長期 immutable キャッシュにし、再訪時の再検証を不要にする。
+# 注: /ogp/* や /fonts/* はファイル名が固定で差し替えが起きうるため immutable にしない。
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

@@ -9,7 +9,7 @@ import {
   unknownTagError,
 } from "./types/errors";
 import { none, type Option, some } from "./types/option";
-import { fail, type Result, success } from "./types/result";
+import { fail, getOrElse, type Result, success } from "./types/result";
 
 // タグの定義順（単一ソース）。union 型と検証用 Set をここから起こす。
 export const ORDER = ["BY", "NC", "NAI", "TD", "MR"] as const;
@@ -129,8 +129,12 @@ function cleanText(raw: string, maxCodePoints: number): string {
     }
   }
   const trimmed = kept.join("").trim();
-  const codePoints = [...trimmed];
-  return codePoints.length > maxCodePoints ? codePoints.slice(0, maxCodePoints).join("") : trimmed;
+  // UTF-16 長はコードポイント数以上なので、上限以下なら必ず切り詰め不要。
+  // 共通ケースでコードポイント配列への展開を省く。
+  if (trimmed.length <= maxCodePoints) {
+    return trimmed;
+  }
+  return [...trimmed].slice(0, maxCodePoints).join("");
 }
 
 // YYYY-MM-DD 形式かつ実在する暦日かを判定する。正規表現一致だけでは 2026-13-40 等を通すため、
@@ -143,7 +147,9 @@ function isValidDate(raw: string): boolean {
   const year = Number(match[1]);
   const month = Number(match[2]);
   const day = Number(match[3]);
-  if (month < 1 || month > 12) {
+  // year < 1000 を弾く。0000-0099 は new Date(year, ...) が 1900 年代に解釈され閏判定が狂う
+  // JS の既知挙動を避けつつ、撮影日として無意味な極端な年を排除する。
+  if (year < 1000 || month < 1 || month > 12) {
     return false;
   }
   // new Date(year, month, 0) は「month の前月の最終日」= 当月（1-based month）の日数。
@@ -173,8 +179,7 @@ export function sanitizeFields(input: Fields): Fields {
 
 // DEFAULT_TAGS は必ずパースに成功するが、型上 Result なので安全に State へ畳むヘルパー。
 function defaultTagState(): State {
-  const parsed = parseTags(DEFAULT_TAGS);
-  return parsed.success ? parsed.data : emptyState();
+  return getOrElse(parseTags(DEFAULT_TAGS), emptyState());
 }
 
 // hash 文字列（先頭 # は任意）からタグ状態とフィールドを復元する。
@@ -187,12 +192,10 @@ export function parseHash(hash: string): { tags: State; fields: Fields } {
     return { tags: defaultTagState(), fields: emptyFields };
   }
   if (!raw.includes("=")) {
-    const parsed = parseTags(raw);
-    return { tags: parsed.success ? parsed.data : defaultTagState(), fields: emptyFields };
+    return { tags: getOrElse(parseTags(raw), defaultTagState()), fields: emptyFields };
   }
   const params = new URLSearchParams(raw);
-  const parsedTags = parseTags(params.get("tags") ?? DEFAULT_TAGS);
-  const tags = parsedTags.success ? parsedTags.data : defaultTagState();
+  const tags = getOrElse(parseTags(params.get("tags") ?? DEFAULT_TAGS), defaultTagState());
   const fields = cleanFields({
     date: params.get("date") ?? "",
     photographer: params.get("photographer") ?? "",

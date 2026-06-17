@@ -212,7 +212,15 @@ describe("cleanFields / sanitizeFields", () => {
   });
 
   test("形式不正・非実在日はフォールバック（cleanFields は空・sanitizeFields はプレースホルダ）", () => {
-    for (const bad of ["2026-13-40", "2026-02-30", "2026/06/17", "20260617", "abc"]) {
+    for (const bad of [
+      "2026-13-40",
+      "2026-02-30",
+      "2026/06/17",
+      "20260617",
+      "abc",
+      "0000-01-01", // year < 1000 は弾く（JS Date の 0-99 解釈ずれ回避）
+      "0099-02-29",
+    ]) {
       expect(cleanFields({ ...empty, date: bad }).date).toBe("");
       expect(sanitizeFields({ ...empty, date: bad }).date).toBe(DEFAULT_FIELDS.date);
     }

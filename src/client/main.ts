@@ -142,7 +142,7 @@ function render(state: AppState): void {
     });
   }
 
-  // tabs の aria-selected と roving tabindex を同期し、選択タブに tabpanel を紐付ける。
+  // tabs の aria-selected と roving tabindex を同期する。
   // 選択タブのみ tabindex=0（Tab で1つだけ到達、タブ間は矢印キーで移動）。
   const human = state.view === "human";
   ifSome(byId("tab-h"), (el) => {
@@ -153,7 +153,7 @@ function render(state: AppState): void {
     el.setAttribute("aria-selected", String(!human));
     el.setAttribute("tabindex", human ? "-1" : "0");
   });
-  ifSome(byId("panel-out"), (el) => el.setAttribute("aria-labelledby", human ? "tab-h" : "tab-a"));
+  ifSome(byId("panel-out"), (el) => el.setAttribute("aria-labelledby", tabId(state.view)));
 
   history.replaceState(null, "", hashFragment(state));
 }
@@ -171,6 +171,11 @@ function initialTags(): State {
   }
   // 既定値は必ずパースに成功する。万一の失敗でも emptyState で型安全に畳む。
   return getOrElse(parseTags(DEFAULT_TAGS), emptyState());
+}
+
+// view に対応するタブ要素の id。aria-labelledby とフォーカス移動で共用する。
+function tabId(view: View): string {
+  return view === "human" ? "tab-h" : "tab-a";
 }
 
 // tablist のキー操作で移動先の view を決める（WAI-ARIA tabs パターン）。
@@ -222,7 +227,7 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
       }
       event.preventDefault();
       dispatch({ type: "setView", view });
-      ifSome(byId(view === "human" ? "tab-h" : "tab-a"), (el) => el.focus());
+      ifSome(byId(tabId(view)), (el) => el.focus());
     });
   });
 

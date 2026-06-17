@@ -243,6 +243,15 @@ describe("セキュリティヘッダ", () => {
     expect(csp).toContain("object-src 'none'");
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
   });
+  test("Worker フォールスルー応答（未知パス）にもセキュリティヘッダを付与する", async () => {
+    // 各ビルダーへの分散付与では塞げない経路（asset-miss / markdown ホームのエラー経路）を
+    // fetch 境界の finalizer が保証する。注: run_worker_first に無い実在アセット
+    // （favicon・JS・CSS・フォント）は Worker を経由せず CF が直接配信するため、このヘッダは
+    // 付かない（CF 側 Transform Rule の領域）。本テストは Worker 内経路の保証に限定される。
+    const res = await call("/no-such-path");
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("x-frame-options")).toBe("DENY");
+  });
 });
 
 describe("HEAD リクエスト", () => {
@@ -262,6 +271,12 @@ describe("HEAD リクエスト", () => {
     const res = await call("/openapi.json", { method: "HEAD" });
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("application/json");
+  });
+  test("HEAD で Worker フォールスルー経路もヘッダのみ返す", async () => {
+    const res = await call("/no-such-path", { method: "HEAD" });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(await res.text()).toBe("");
   });
   test("POST /license.md は引き続き 405", async () => {
     const res = await call("/license.md", { method: "POST" });

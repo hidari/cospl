@@ -60,8 +60,9 @@ export const DISCOVERY_ROUTES: Readonly<
 // CORS は全許可（ツール・エージェントから直接取得できるようにする）
 const CORS_ORIGIN = "access-control-allow-origin";
 
-// 全レスポンス共通のセキュリティヘッダ（多層防御）。HSTS は HTTPS 文書に1度届けば
-// ブラウザがホスト全体へ適用する。CSP は HTML 文書にのみ別途付与する（下記）。
+// 全レスポンス共通のセキュリティヘッダ（多層防御）。fetch 境界の withSecurityHeaders で
+// Worker が生成する全応答（アセット委譲・エラー経路含む）へ一括付与する。HSTS は HTTPS 文書に
+// 1度届けばブラウザがホスト全体へ適用する。CSP は HTML 文書にのみ別途付与する（下記）。
 const SECURITY_HEADERS: Record<string, string> = {
   "x-content-type-options": "nosniff",
   "referrer-policy": "strict-origin-when-cross-origin",
@@ -85,14 +86,14 @@ const CONTENT_SECURITY_POLICY = [
   "upgrade-insecure-requests",
 ].join("; ");
 
-// 動的生成レスポンス共通のヘッダ（CORS 全許可・5分キャッシュ・セキュリティ）を付けて 200 を返す
+// 動的生成レスポンス共通のヘッダ（CORS 全許可・5分キャッシュ）を付けて 200 を返す。
+// セキュリティヘッダは fetch 境界の withSecurityHeaders でまとめて付与する。
 function cachedResponse(body: BodyInit | null, contentType: string): Response {
   return new Response(body, {
     headers: {
       "content-type": contentType,
       [CORS_ORIGIN]: "*",
       "cache-control": "public, max-age=300",
-      ...SECURITY_HEADERS,
     },
   });
 }
@@ -131,7 +132,6 @@ function errorResponse(error: ParseError): Response {
     headers: {
       "content-type": "text/markdown; charset=utf-8",
       [CORS_ORIGIN]: "*",
-      ...SECURITY_HEADERS,
     },
   });
 }
@@ -143,7 +143,6 @@ function preflightResponse(): Response {
       [CORS_ORIGIN]: "*",
       "access-control-allow-methods": "GET, HEAD, OPTIONS",
       "access-control-max-age": "86400",
-      ...SECURITY_HEADERS,
     },
   });
 }
@@ -152,7 +151,7 @@ function preflightResponse(): Response {
 function methodNotAllowedResponse(): Response {
   return new Response(null, {
     status: 405,
-    headers: { allow: "GET, HEAD, OPTIONS", [CORS_ORIGIN]: "*", ...SECURITY_HEADERS },
+    headers: { allow: "GET, HEAD, OPTIONS", [CORS_ORIGIN]: "*" },
   });
 }
 
@@ -167,16 +166,24 @@ async function markdownHomeResponse(request: Request, env: Env): Promise<Respons
   return cachedResponse(res.body, "text/markdown; charset=utf-8");
 }
 
-// ホームページの HTML 応答に Link ヘッダ・セキュリティヘッダ・CSP を付与する（既存ヘッダ非破壊）。
+// ホームページの HTML 応答に Link ヘッダと CSP を付与する（既存ヘッダ非破壊）。
+// 基本セキュリティヘッダは fetch 境界で付くので、ここは HTML 固有の CSP のみ。
 async function htmlHomeResponse(request: Request, env: Env): Promise<Response> {
   const res = await env.ASSETS.fetch(request);
   const headers = new Headers(res.headers);
   headers.set("link", LINK_HEADER);
   headers.set(CORS_ORIGIN, "*");
+  headers.set("content-security-policy", CONTENT_SECURITY_POLICY);
+  return new Response(res.body, { status: res.status, headers });
+}
+
+// Worker が生成する全応答に共通セキュリティヘッダを一括付与する finalizer。set は冪等なので
+// 二重適用しても安全。これにより各ビルダーへの分散付与と、付与漏れ（アセット委譲・エラー経路）を防ぐ。
+function withSecurityHeaders(res: Response): Response {
+  const headers = new Headers(res.headers);
   for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
     headers.set(key, value);
   }
-  headers.set("content-security-policy", CONTENT_SECURITY_POLICY);
   return new Response(res.body, { status: res.status, headers });
 }
 
@@ -218,7 +225,8 @@ export default {
     // HEAD は GET と同じ経路で組み立て、ヘッダのみ返す（本文を落とす）。HTTP 仕様上
     // GET 可能なリソースは HEAD も通すべきで、405 を返すと HEAD を使うクローラがコケる。
     const isHead = request.method === "HEAD";
-    const response = await resolve(request, env, isHead ? "GET" : request.method);
+    const built = await resolve(request, env, isHead ? "GET" : request.method);
+    const response = withSecurityHeaders(built);
     return isHead
       ? new Response(null, { status: response.status, headers: response.headers })
       : response;

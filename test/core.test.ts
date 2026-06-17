@@ -187,7 +187,7 @@ describe("cleanFields / sanitizeFields", () => {
   });
 
   test("双方向テキスト制御文字（Trojan Source）を除去する", () => {
-    expect(cleanFields({ ...empty, photographer: "a‮b⁦c" }).photographer).toBe("abc");
+    expect(cleanFields({ ...empty, photographer: "a\u202Eb\u2066c" }).photographer).toBe("abc");
   });
 
   test("山括弧を除去する（休眠 XSS の保険）", () => {
@@ -264,7 +264,7 @@ describe("parseHash / serializeHash", () => {
   });
 
   test("parseHash は値もサニタイズする（hash も外部入力）", () => {
-    expect(parseHash("#tags=BY&photographer=a‮b<x>").fields.photographer).toBe("abx");
+    expect(parseHash("#tags=BY&photographer=a\u202Eb<x>").fields.photographer).toBe("abx");
   });
 
   test("serializeHash は既定 / 空フィールドを出力しない", () => {

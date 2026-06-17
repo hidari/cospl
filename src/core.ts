@@ -172,11 +172,11 @@ export function sanitizeFields(input: Fields): Fields {
 }
 
 // 人間向け README を生成する
-export function humanMD(state: State): string {
+export function humanMD(state: State, fields: Fields = DEFAULT_FIELDS): string {
   const id = ident(state);
   const L: string[] = [];
   L.push("# 撮影データの取り扱いについて", "");
-  L.push(`適用: ${id} ／ 最終更新: [YYYY-MM-DD]`, "");
+  L.push(`適用: ${id} ／ 最終更新: ${fields.date}`, "");
   L.push("この度は撮影にご協力いただき、ありがとうございました！");
   L.push("お渡しした写真データの取り扱いについて、以下の点をご確認いただければ幸いです。", "");
   L.push(
@@ -196,10 +196,10 @@ export function humanMD(state: State): string {
     L.push("## SNS・Web掲載とクレジットについて");
     L.push("- SNSへ投稿される際はタグではなく本文内でのメンションをお願いします");
     L.push("- 可能であれば画像内にクレジット表記をお願いします");
-    L.push("  - 例） Photo. [撮影者名] / Model. [モデル名]", "");
+    L.push(`  - 例） Photo. ${fields.photographer} / Model. [モデル名]`, "");
   }
   L.push("## 権利関係について");
-  L.push("- 写真の著作権は撮影者（[撮影者名]）に帰属します");
+  L.push(`- 写真の著作権は撮影者（${fields.photographer}）に帰属します`);
   L.push("- 被写体であるモデルの肖像権は、モデルご本人に帰属します");
   L.push("- 衣装が表現するキャラクターの著作権は原作の権利者に帰属し、本文書の対象外です", "");
   const bans: string[] = [];
@@ -227,15 +227,15 @@ export function humanMD(state: State): string {
     L.push("- 公開後であっても、取り下げのご依頼は撮影者・モデルのどちらからでも可能です");
     L.push("- ご依頼をいただいた場合は、合理的な範囲・期間で速やかに対応します", "");
   }
-  L.push("## 連絡先", "- [連絡先をここに記入]", "");
-  L.push("----", `適用: ${id} ／ 文責: [撮影者名]`);
+  L.push("## 連絡先", `- ${fields.contact}`, "");
+  L.push("----", `適用: ${id} ／ 文責: ${fields.photographer}`);
   return L.join("\n");
 }
 
 // 同梱用のプレーンテキスト版 README。文面は humanMD と同一で、非技術者に紛らわしい
 // Markdown 見出し記号（# / ##）だけを外す。リンク等の特殊記法は使っていないため変換は最小で済む。
-export function humanText(state: State): string {
-  return humanMD(state)
+export function humanText(state: State, fields: Fields = DEFAULT_FIELDS): string {
+  return humanMD(state, fields)
     .split("\n")
     .map((line) => line.replace(/^#{1,6}\s+/, ""))
     .join("\n");

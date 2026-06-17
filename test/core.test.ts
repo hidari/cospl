@@ -224,6 +224,43 @@ describe("cleanFields / sanitizeFields", () => {
   });
 });
 
+describe("humanMD のフィールド反映", () => {
+  const filled: Fields = {
+    date: "2026-06-17",
+    photographer: "Hidari",
+    contact: "mail@example.com",
+  };
+
+  test("引数なしは従来どおりプレースホルダを残す（既定出力の不変）", () => {
+    const md = humanMD(unwrapState("BY-NC-NAI-TD"));
+    expect(md).toContain("最終更新: [YYYY-MM-DD]");
+    expect(md).toContain("Photo. [撮影者名] / Model. [モデル名]");
+    expect(md).toContain("著作権は撮影者（[撮影者名]）");
+    expect(md).toContain("文責: [撮影者名]");
+    expect(md).toContain("- [連絡先をここに記入]");
+  });
+
+  test("fields 指定で日付・撮影者名（3 箇所）・連絡先が置換される", () => {
+    const md = humanMD(unwrapState("BY-NC-NAI-TD"), filled);
+    expect(md).toContain("最終更新: 2026-06-17");
+    expect(md).toContain("Photo. Hidari / Model. [モデル名]");
+    expect(md).toContain("著作権は撮影者（Hidari）");
+    expect(md).toContain("文責: Hidari");
+    expect(md).toContain("- mail@example.com");
+    expect(md).toContain("[モデル名]");
+  });
+
+  test("humanText でも置換され見出し記号だけ外れる", () => {
+    const text = humanText(unwrapState("BY-NC-NAI-TD"), filled);
+    expect(text).toContain("文責: Hidari");
+    expect(text).not.toMatch(/^#/m);
+  });
+
+  test("aiMD はフィールド非対応で不変", () => {
+    expect(aiMD(unwrapState("BY-NC-NAI-TD"))).not.toContain("Hidari");
+  });
+});
+
 describe("生成文書は golden と byte 一致する（回帰）", () => {
   for (const [raw, expected] of Object.entries(goldenCases)) {
     test(`${raw}: tags / ident / humanMD / aiMD`, () => {

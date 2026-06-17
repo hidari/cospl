@@ -120,22 +120,33 @@ function downloadFile(filename: string, text: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
+// フラッシュ復帰タイマーと元の文言をボタンごとに保持する。1400ms 以内の再クリック時に
+// 進行中フラッシュを引き継ぎ、誤った文言の復元や幅ロックの早期解除を防ぐ。
+const flashState = new WeakMap<
+  HTMLElement,
+  { original: string; timer: ReturnType<typeof setTimeout> }
+>();
+
 function flash(btn: HTMLElement, label: string): void {
-  const original = btn.textContent ?? "";
-  // フラッシュ中の文言差し替えでボタンが縮むと、幅が内容依存のコンテナ（共有ポップアップ等）が
-  // レイアウトシフトする。現在幅を min-width で固定して防ぐ（box-sizing:border-box のため
-  // offsetWidth=border-box 幅をそのまま使える）。
-  btn.style.minWidth = `${btn.offsetWidth}px`;
+  const pending = flashState.get(btn);
+  // 進行中フラッシュがあれば元の文言と幅ロックを引き継ぐ。無ければ現在値を確定し、文言差し替えで
+  // ボタンが縮んで幅依存コンテナ（共有ポップアップ等）がレイアウトシフトするのを防ぐため、
+  // 現在幅を min-width で固定する（box-sizing:border-box なので offsetWidth=border-box 幅を使える）。
+  const original = pending ? pending.original : (btn.textContent ?? "");
+  if (pending) clearTimeout(pending.timer);
+  else btn.style.minWidth = `${btn.offsetWidth}px`;
   btn.textContent = label;
   btn.classList.add("done");
   // 視覚的なボタン文言の変化はスクリーンリーダーに伝わらないため、aria-live 領域へも結果を流す。
   setText("flash-status", label);
-  setTimeout(() => {
+  const timer = setTimeout(() => {
     btn.textContent = original;
     btn.classList.remove("done");
     btn.style.minWidth = "";
+    flashState.delete(btn);
     setText("flash-status", "");
   }, 1400);
+  flashState.set(btn, { original, timer });
 }
 
 // 描画（状態から DOM へ反映する副作用） --------------------------------------

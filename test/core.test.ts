@@ -12,9 +12,9 @@ import {
   parseTag,
   parseTags,
   parseView,
+  type State,
   sanitizeFields,
   serializeHash,
-  type State,
   tagsFrom,
 } from "../src/core";
 import golden from "./__fixtures__/golden.json";

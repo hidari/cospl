@@ -422,12 +422,16 @@
   cursor: pointer;
 }
 :global(.tab[aria-selected="true"]) {
-  background: var(--ink);
-  color: #fff;
-  border-color: var(--ink);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  /* 1px 下へ食い込ませ、自身の背景でパネル上辺ボーダーを覆い隠してパネルと一体化させる。
+     z-index で後続要素のパネルより前面に出す（positioning はベースの .tab が担う）。 */
+  z-index: 1;
+  margin-bottom: -1px;
 }
-/* タブの用途を説明する「?」バッジとツールチップ（hover / キーボード focus で表示）。
-   tab は overflow:visible なので下方向に開いても見切れない（panel の外側に描画される）。 */
+/* タブの用途を説明する「?」バッジとツールチップ（バッジを直接 hover したときだけ表示）。
+   吹き出しはタブの上方向に開き、下のテキストエリアを阻害しない。 */
 :global(.tab-q) {
   display: inline-flex;
   align-items: center;
@@ -439,10 +443,11 @@
   font-size: 0.62rem;
   font-weight: 700;
   opacity: 0.7;
+  cursor: help;
 }
 :global(.tab-tip) {
   position: absolute;
-  top: calc(100% + 6px);
+  bottom: calc(100% + 6px);
   left: 0;
   z-index: 5;
   width: max-content;
@@ -466,13 +471,16 @@
   right: 0;
   left: auto;
 }
-:global(.tab:hover .tab-tip),
+/* 「?」バッジの直接ホバー、またはタブのキーボードフォーカス時に表示。
+   タブ本体のマウス通過（＝選択操作）では出さない。focus-visible はマウスクリックでは
+   発火しないため、キーボード利用者のアクセスを保ちつつ過剰表示は避けられる。 */
+:global(.tab-q:hover + .tab-tip),
 :global(.tab:focus-visible .tab-tip) {
   opacity: 1;
   visibility: visible;
 }
 :global(.panel) {
-  border: 1px solid var(--line);
+  border: 1px solid var(--accent);
   border-radius: 0 12px 12px 12px;
   overflow: hidden;
 }
@@ -484,7 +492,9 @@
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
-  max-height: 380px;
+  /* タブ切替で出力量が変わっても枠の高さを一定に保ち、下の要素のレイアウトシフトを防ぐ。
+     長い出力はスクロール、短い出力は下に余白。 */
+  height: 380px;
   overflow: auto;
   background: var(--surface);
   color: var(--code-ink);

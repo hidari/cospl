@@ -186,7 +186,12 @@ function bindFields(getState: () => AppState, dispatch: (action: Action) => void
       if (el instanceof HTMLInputElement) {
         el.value = getState().draft[field];
         el.addEventListener("input", () => dispatch({ type: "setField", field, value: el.value }));
-        el.addEventListener("change", () => syncUrl(getState()));
+        // change では URL 同期前に draft を最新化する。一部ブラウザは date ピッカー選択時に
+        // input を発火しないため、change だけが来ても draft とプレビューを取り残さない。
+        el.addEventListener("change", () => {
+          dispatch({ type: "setField", field, value: el.value });
+          syncUrl(getState());
+        });
       }
     });
   }
@@ -293,14 +298,16 @@ function main(): void {
   const dispatch = (action: Action): void => {
     state = update(state, action);
     render(state);
-    // フィールド入力中（setField）は URL を書かない。タグ/ビュー変更は即時同期する。
-    if (action.type !== "setField") {
+    // URL へ即時同期するのはタグ・ビュー変更のみ。フィールド入力（setField）は blur まで書かない。
+    // ホワイトリストで明示し、新 action は既定で URL 非同期（安全側）にする。
+    if (action.type === "toggleTag" || action.type === "setView") {
       syncUrl(state);
     }
   };
   bindEvents(() => state, dispatch);
   render(state);
-  // 初期ロードで URL を正規化（裸タグ→新形式、当日日付の反映）。PII フィールドは空なので含まれない。
+  // 初期ロードで URL を正規化（裸タグ→新形式）。date は当日を初期値とするため URL に含まれる。
+  // PII の photographer / contact は空なので含まれない。
   syncUrl(state);
 }
 

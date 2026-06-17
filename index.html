@@ -42,6 +42,21 @@
         言葉にする</h1>
       <p class="lead">写真の使いみちは、なんとなくじゃなく自分で決める。<br>"CosPL"&nbsp;は、撮影者とモデルの取り決めを、誰にでも伝わる形にする共通ルールです。</p>
     </div>
+    <details class="hero-share" id="share">
+      <summary class="hero-share-toggle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/>
+          <path d="M12 15V3"/>
+          <path d="m8 7 4-4 4 4"/>
+        </svg>
+        共有
+      </summary>
+      <div class="hero-share-pop">
+        <button class="ghost" id="share-url" type="button">サイトURLをコピー</button>
+        <button class="ghost" id="share-msg" type="button">シェアメッセージをコピー</button>
+      </div>
+    </details>
   </header>
 
   <main>
@@ -89,6 +104,9 @@
       <label for="f-contact">連絡先</label>
       <input id="f-contact" type="text" maxlength="100" autocomplete="off" inputmode="text" placeholder="[連絡先をここに記入]">
     </div>
+    <div class="fill-actions">
+      <button class="ghost" id="clear-fields" type="button">入力をクリア</button>
+    </div>
   </details>
 
   <section>
@@ -102,12 +120,13 @@
       <pre id="out"></pre>
       <div class="bar">
         <span class="copy-actions">
-          <button class="ghost" id="copy">コピーする</button>
-          <button class="copy" id="download">ダウンロード</button>
           <span class="help-wrap">
-            <button class="help" type="button" aria-label="ダウンロード形式の説明" aria-describedby="dl-help-tip">?</button>
-            <span class="help-tip" role="tooltip" id="dl-help-tip">中身は Markdown です。README.txt として保存されますが Markdown が分かる方は拡張子を .md に変えて利用することもできます。</span>
+            <button class="help" type="button" aria-label="出力操作の説明" aria-describedby="out-help-tip">?</button>
+            <span class="help-tip" role="tooltip" id="out-help-tip">コピー＝README 本文。ダウンロード＝README.txt（中身は Markdown）。ページリンク＝今の設定を含む共有 URL。</span>
           </span>
+          <button class="ghost" type="button" id="link">この設定のページリンクをコピー</button>
+          <button class="ghost" type="button" id="copy">コピーする</button>
+          <button class="copy" type="button" id="download">ダウンロード</button>
         </span>
       </div>
     </div>
@@ -115,14 +134,13 @@
     <div class="ep">
       <span class="ep-label">Markdownエンドポイント</span>
       <code id="ep"></code>
-      <button class="ghost" id="ep-copy">URLをコピー</button>
-    </div>
-
-    <div class="row">
-      <button class="ghost" id="link">この設定のページリンクをコピー</button>
+      <button class="ghost" type="button" id="ep-copy">URLをコピー</button>
     </div>
   </section>
   </main>
+
+  <!-- コピー・保存・クリア等のフラッシュ結果をスクリーンリーダーへ通知する視覚非表示の領域。 -->
+  <div id="flash-status" class="sr-only" role="status" aria-live="polite"></div>
 
   <footer>
     <nav class="links" aria-label="関連リンク">

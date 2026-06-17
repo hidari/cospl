@@ -3,13 +3,16 @@
 
 import {
   aiMD,
+  EMPTY_FIELDS,
   type Fields,
   humanMD,
   parseHash,
   parseTag,
+  SITE_URL,
   type State,
   sanitizeFields,
   serializeHash,
+  siteShareMessage,
   type Tag,
   tagsFrom,
   type View,
@@ -24,7 +27,8 @@ type AppState = { tags: State; view: View; draft: Fields };
 type Action =
   | { type: "toggleTag"; tag: Tag }
   | { type: "setView"; view: View }
-  | { type: "setField"; field: keyof Fields; value: string };
+  | { type: "setField"; field: keyof Fields; value: string }
+  | { type: "clearFields" };
 
 // 純粋な状態遷移
 function update(state: AppState, action: Action): AppState {
@@ -35,6 +39,8 @@ function update(state: AppState, action: Action): AppState {
       return { ...state, view: action.view };
     case "setField":
       return { ...state, draft: { ...state.draft, [action.field]: action.value } };
+    case "clearFields":
+      return { ...state, draft: EMPTY_FIELDS };
   }
 }
 
@@ -118,9 +124,12 @@ function flash(btn: HTMLElement, label: string): void {
   const original = btn.textContent ?? "";
   btn.textContent = label;
   btn.classList.add("done");
+  // 視覚的なボタン文言の変化はスクリーンリーダーに伝わらないため、aria-live 領域へも結果を流す。
+  setText("flash-status", label);
   setTimeout(() => {
     btn.textContent = original;
     btn.classList.remove("done");
+    setText("flash-status", "");
   }, 1400);
 }
 
@@ -173,15 +182,17 @@ function todayISO(): string {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
+// 入力欄 DOM id とフィールドキーの対応（初期化・クリアで共有する単一ソース）。
+const FIELD_BINDINGS: ReadonlyArray<readonly [string, keyof Fields]> = [
+  ["f-photographer", "photographer"],
+  ["f-date", "date"],
+  ["f-contact", "contact"],
+];
+
 // 入力欄を draft で初期化する。input でプレビューだけ更新し（URL は汚さない）、
 // change（値変更を伴う blur）でまとめて URL へ同期する。
 function bindFields(getState: () => AppState, dispatch: (action: Action) => void): void {
-  const fields: ReadonlyArray<readonly [string, keyof Fields]> = [
-    ["f-photographer", "photographer"],
-    ["f-date", "date"],
-    ["f-contact", "contact"],
-  ];
-  for (const [id, field] of fields) {
+  for (const [id, field] of FIELD_BINDINGS) {
     ifSome(byId(id), (el) => {
       if (el instanceof HTMLInputElement) {
         el.value = getState().draft[field];
@@ -263,13 +274,60 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
     return location.href;
   });
 
+  // サイト共有。設定を含まない素の URL と SNS 貼り付け用の文面を配る（状態に依存しない定数）。
+  bindShareDisclosure();
+  bindCopy("share-url", () => SITE_URL);
+  bindCopy("share-msg", () => siteShareMessage());
+
   bindFields(getState, dispatch);
+
+  // 入力欄のクリア。draft を空にする（dispatch 経由で URL からも PII を除去）と同時に、
+  // input への programmatic 代入は input イベントを発火しないため、DOM の値も明示的に空へ戻す。
+  ifSome(byId("clear-fields"), (btn) => {
+    btn.addEventListener("click", () => {
+      dispatch({ type: "clearFields" });
+      for (const [id] of FIELD_BINDINGS) {
+        ifSome(byId(id), (el) => {
+          if (el instanceof HTMLInputElement) {
+            el.value = "";
+          }
+        });
+      }
+      flash(btn, "クリアしました");
+    });
+  });
 
   ifSome(byId("download"), (btn) => {
     btn.addEventListener("click", () => {
       const state = getState();
       downloadFile(downloadName(state), currentMarkdown(state));
       flash(btn, "保存しました");
+    });
+  });
+}
+
+// サイト共有ディスクロージャ。トグル・展開状態の公開・キーボード操作はネイティブ <details> が
+// 担うため、<details> が持たない「Escape / 外側クリックでの閉じ」だけをここで補う。
+function bindShareDisclosure(): void {
+  ifSome(byId("share"), (el) => {
+    if (!(el instanceof HTMLDetailsElement)) {
+      return;
+    }
+    // 外側クリックで閉じる（開いている間のみ）。summary・ポップ内ボタンは details 内なので除外される。
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      if (el.open && target instanceof Node && !el.contains(target)) {
+        el.open = false;
+      }
+    });
+    // Escape で閉じて summary へフォーカスを戻す。
+    document.addEventListener("keydown", (event) => {
+      if (el.open && event.key === "Escape") {
+        el.open = false;
+        ifSome(fromNullable(el.querySelector<HTMLElement>("summary")), (summary) =>
+          summary.focus(),
+        );
+      }
     });
   });
 }
@@ -298,9 +356,10 @@ function main(): void {
   const dispatch = (action: Action): void => {
     state = update(state, action);
     render(state);
-    // URL へ即時同期するのはタグ・ビュー変更のみ。フィールド入力（setField）は blur まで書かない。
-    // ホワイトリストで明示し、新 action は既定で URL 非同期（安全側）にする。
-    if (action.type === "toggleTag" || action.type === "setView") {
+    // URL へ即時同期する action をホワイトリストで明示する。フィールド入力（setField）は blur まで
+    // 書かない一方、クリア（clearFields）は PII を URL から消す操作なので即時同期して安全側に倒す。
+    // 新 action は既定で URL 非同期（安全側）にする。
+    if (action.type === "toggleTag" || action.type === "setView" || action.type === "clearFields") {
       syncUrl(state);
     }
   };

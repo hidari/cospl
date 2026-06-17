@@ -1,0 +1,791 @@
+# テンプレートのフィールド事前入力 Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** README テンプレートの撮影者名・日付・連絡先プレースホルダを、トップページの折りたたみ入力欄から任意に埋め、URL（hash）で復元・共有できるようにする。
+
+**Architecture:** 純粋ロジック（型・サニタイズ・hash 相互変換・文書生成）はすべて DOM 非依存の `src/core.ts` に集約しユニットテストする。`src/client/main.ts` は DOM 配線のみ。サーバ `src/worker.ts` と `humanMD` のデフォルト出力は無改修で、フィールド反映はクライアント限定。
+
+**Tech Stack:** TypeScript, Vite, CSS Modules, Vitest, Biome。自前 Result/Option 型。
+
+## Global Constraints
+
+- 開発コマンドは必ず `pkf run <task>` を使う（`pnpm` 直叩き禁止）。lint=`pkf run lint`、test=`pkf run test`、typecheck=`pkf run typecheck`、全部=`pkf run check`
+- TypeScript で `any` と `try-catch` 禁止。失敗しうる操作は自前 Result/Option を使う
+- `as any` 禁止。新規コードの `as` アサーションは原則禁止（型ガード・型述語・Valibot 等で代替）。`as const` と型ガード前提の `as unknown` のみ許可
+- 外部入力は徹底的に疑う（多層防御）。サニタイズは一層であり、出力描画は `textContent` を厳守して二重に守る
+- 警告・エラーは常に 0 を維持する。Biome の `noControlCharactersInRegex` を踏まないよう制御文字除去は正規表現ではなくコードポイント走査で行う
+- ファイル末尾は必ず 1 つの空行。コード内コメントは日本語
+- `humanMD` / `aiMD` のデフォルト出力（引数なし呼び出し）はバイト不変。golden（`test/__fixtures__/golden.json`）は再生成しない
+- コミットは Conventional Commits プレフィックス
+
+---
+
+### Task 1: フィールド型とサニタイズ（core）
+
+**Files:**
+- Modify: `src/core.ts`（`parseFormat` の後、`humanMD` の前あたりに追加）
+- Test: `test/core.test.ts`（末尾に describe を追加）
+
+**Interfaces:**
+- Consumes: なし
+- Produces:
+  - `type Fields = Readonly<{ date: string; photographer: string; contact: string }>`
+  - `const DEFAULT_FIELDS: Fields`（値は現行プレースホルダ `[YYYY-MM-DD]` / `[撮影者名]` / `[連絡先をここに記入]`）
+  - `function cleanFields(input: Fields): Fields`（クリーニングのみ。空・不正は空文字。日付は不正なら空文字）
+  - `function sanitizeFields(input: Fields): Fields`（`cleanFields` 後、空を `DEFAULT_FIELDS` の各値へ畳む。文書生成用）
+
+- [ ] **Step 1: 失敗するテストを書く**
+
+`test/core.test.ts` の import に `DEFAULT_FIELDS`, `cleanFields`, `sanitizeFields`, `type Fields` を追加し、末尾に以下を追記する。
+
+```ts
+describe("cleanFields / sanitizeFields", () => {
+  const empty: Fields = { date: "", photographer: "", contact: "" };
+
+  test("空入力は sanitizeFields で既定プレースホルダに畳まれる", () => {
+    expect(sanitizeFields(empty)).toEqual(DEFAULT_FIELDS);
+  });
+
+  test("空入力は cleanFields では空のまま（プレースホルダにしない）", () => {
+    expect(cleanFields(empty)).toEqual(empty);
+  });
+
+  test("改行・C0 制御文字を除去する", () => {
+    expect(cleanFields({ ...empty, photographer: "Hi\n\tdari" }).photographer).toBe("Hidari");
+  });
+
+  test("双方向テキスト制御文字（Trojan Source）を除去する", () => {
+    expect(cleanFields({ ...empty, photographer: "a\u202Eb\u2066c" }).photographer).toBe("abc");
+  });
+
+  test("山括弧を除去する（休眠 XSS の保険）", () => {
+    expect(cleanFields({ ...empty, contact: "<script>x</script>" }).contact).toBe("scriptx/script");
+  });
+
+  test("撮影者名はコードポイント 50 で切る", () => {
+    const long = "あ".repeat(60);
+    expect([...cleanFields({ ...empty, photographer: long }).photographer].length).toBe(50);
+  });
+
+  test("連絡先はコードポイント 100 で切る", () => {
+    const long = "x".repeat(120);
+    expect(cleanFields({ ...empty, contact: long }).contact.length).toBe(100);
+  });
+
+  test("サロゲートペア（絵文字）を途中で割らない", () => {
+    const emoji = "😀".repeat(60);
+    const cut = cleanFields({ ...empty, photographer: emoji }).photographer;
+    expect([...cut].length).toBe(50);
+    // 壊れた半端なコードユニットが残っていない
+    expect(cut).toBe("😀".repeat(50));
+  });
+
+  test("形式不正・非実在日はフォールバック（cleanFields は空・sanitizeFields はプレースホルダ）", () => {
+    for (const bad of ["2026-13-40", "2026-02-30", "2026/06/17", "20260617", "abc"]) {
+      expect(cleanFields({ ...empty, date: bad }).date).toBe("");
+      expect(sanitizeFields({ ...empty, date: bad }).date).toBe(DEFAULT_FIELDS.date);
+    }
+  });
+
+  test("実在する暦日は保持する（閏日含む）", () => {
+    for (const ok of ["2026-06-17", "2026-02-28", "2024-02-29"]) {
+      expect(cleanFields({ ...empty, date: ok }).date).toBe(ok);
+      expect(sanitizeFields({ ...empty, date: ok }).date).toBe(ok);
+    }
+  });
+});
+```
+
+- [ ] **Step 2: テストが失敗することを確認**
+
+Run: `pkf run test`
+Expected: FAIL（`DEFAULT_FIELDS` / `cleanFields` / `sanitizeFields` is not exported）
+
+- [ ] **Step 3: 最小実装を書く**
+
+`src/core.ts` の `parseFormat` 関数の後、`humanMD` の前に追加する。
+
+```ts
+// 撮影者名・日付・連絡先のフィールド。未入力時は現行プレースホルダ文字列を既定にする。
+export type Fields = Readonly<{ date: string; photographer: string; contact: string }>;
+
+// 未入力時に文書へ残すプレースホルダ（現行テンプレートのリテラルと一致させる単一ソース）。
+export const DEFAULT_FIELDS: Fields = {
+  date: "[YYYY-MM-DD]",
+  photographer: "[撮影者名]",
+  contact: "[連絡先をここに記入]",
+};
+
+// 除去対象コードポイントの判定。C0/C1 制御文字（改行・タブ含む）と双方向テキスト制御文字
+// （Trojan Source 型の視覚的文言偽装に使われる）を弾く。正規表現を避けてコードポイントで判定し、
+// Biome の noControlCharactersInRegex を踏まず、かつサロゲートペアを安全に扱う。
+function isStrippableCodePoint(cp: number): boolean {
+  return (
+    cp <= 0x1f || // C0 制御文字
+    (cp >= 0x7f && cp <= 0x9f) || // DEL + C1 制御文字
+    (cp >= 0x202a && cp <= 0x202e) || // 双方向埋め込み / 上書き
+    (cp >= 0x2066 && cp <= 0x2069) // 双方向分離
+  );
+}
+
+// フリーテキストを徹底サニタイズする。制御 / 双方向文字と山括弧を除去し、trim 後に
+// コードポイント単位で長さを切る（UTF-16 単位で切るとサロゲートペアを割って壊すため）。
+function cleanText(raw: string, maxCodePoints: number): string {
+  const kept: string[] = [];
+  for (const ch of raw) {
+    const cp = ch.codePointAt(0) ?? 0;
+    if (!isStrippableCodePoint(cp) && ch !== "<" && ch !== ">") {
+      kept.push(ch);
+    }
+  }
+  const trimmed = kept.join("").trim();
+  const codePoints = [...trimmed];
+  return codePoints.length > maxCodePoints ? codePoints.slice(0, maxCodePoints).join("") : trimmed;
+}
+
+// YYYY-MM-DD 形式かつ実在する暦日かを判定する。正規表現一致だけでは 2026-13-40 等を通すため、
+// 月末日数（閏年含む）まで検証する。
+function isValidDate(raw: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  if (!match) {
+    return false;
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12) {
+    return false;
+  }
+  // new Date(year, month, 0) は「month の前月の最終日」= 当月（1-based month）の日数。
+  const daysInMonth = new Date(year, month, 0).getDate();
+  return day >= 1 && day <= daysInMonth;
+}
+
+// 生入力をクリーニングのみ行う（空・不正は空文字のまま）。hash 直列化と入力欄復元に使う。
+export function cleanFields(input: Fields): Fields {
+  const date = input.date.trim();
+  return {
+    date: isValidDate(date) ? date : "",
+    photographer: cleanText(input.photographer, 50),
+    contact: cleanText(input.contact, 100),
+  };
+}
+
+// クリーニング後、空フィールドを既定プレースホルダへ畳んだ文書生成用 Fields。
+export function sanitizeFields(input: Fields): Fields {
+  const cleaned = cleanFields(input);
+  return {
+    date: cleaned.date || DEFAULT_FIELDS.date,
+    photographer: cleaned.photographer || DEFAULT_FIELDS.photographer,
+    contact: cleaned.contact || DEFAULT_FIELDS.contact,
+  };
+}
+```
+
+- [ ] **Step 4: テストが通ることを確認**
+
+Run: `pkf run test`
+Expected: PASS（既存テストも全て緑のまま）
+
+- [ ] **Step 5: コミット**
+
+```bash
+git add src/core.ts test/core.test.ts
+git commit -m "feat: フィールド型と外部入力サニタイズを core に追加"
+```
+
+---
+
+### Task 2: 文書生成にフィールドを反映（core）
+
+**Files:**
+- Modify: `src/core.ts`（`humanMD` 関数 L99-158、`humanText` 関数 L162-167）
+- Test: `test/core.test.ts`
+
+**Interfaces:**
+- Consumes: `Fields`, `DEFAULT_FIELDS`（Task 1）
+- Produces:
+  - `humanMD(state: State, fields?: Fields): string`（`fields` 省略時は `DEFAULT_FIELDS`）
+  - `humanText(state: State, fields?: Fields): string`
+
+- [ ] **Step 1: 失敗するテストを書く**
+
+`test/core.test.ts` 末尾に追記する。
+
+```ts
+describe("humanMD のフィールド反映", () => {
+  const filled: Fields = {
+    date: "2026-06-17",
+    photographer: "Hidari",
+    contact: "mail@example.com",
+  };
+
+  test("引数なしは従来どおりプレースホルダを残す（既定出力の不変）", () => {
+    const md = humanMD(unwrapState("BY-NC-NAI-TD"));
+    expect(md).toContain("最終更新: [YYYY-MM-DD]");
+    expect(md).toContain("Photo. [撮影者名] / Model. [モデル名]");
+    expect(md).toContain("著作権は撮影者（[撮影者名]）");
+    expect(md).toContain("文責: [撮影者名]");
+    expect(md).toContain("- [連絡先をここに記入]");
+  });
+
+  test("fields 指定で日付・撮影者名（3 箇所）・連絡先が置換される", () => {
+    const md = humanMD(unwrapState("BY-NC-NAI-TD"), filled);
+    expect(md).toContain("最終更新: 2026-06-17");
+    expect(md).toContain("Photo. Hidari / Model. [モデル名]");
+    expect(md).toContain("著作権は撮影者（Hidari）");
+    expect(md).toContain("文責: Hidari");
+    expect(md).toContain("- mail@example.com");
+    // モデル名は対象外なのでプレースホルダのまま
+    expect(md).toContain("[モデル名]");
+  });
+
+  test("humanText でも置換され見出し記号だけ外れる", () => {
+    const text = humanText(unwrapState("BY-NC-NAI-TD"), filled);
+    expect(text).toContain("文責: Hidari");
+    expect(text).not.toMatch(/^#/m);
+  });
+
+  test("aiMD はフィールド非対応で不変", () => {
+    // aiMD は fields 引数を取らない（撮影者名等のプレースホルダを持たない）
+    expect(aiMD(unwrapState("BY-NC-NAI-TD"))).not.toContain("Hidari");
+  });
+});
+```
+
+- [ ] **Step 2: テストが失敗することを確認**
+
+Run: `pkf run test`
+Expected: FAIL（「fields 指定で…置換される」が失敗。`humanMD` がまだ第2引数を無視）
+
+- [ ] **Step 3: 最小実装を書く**
+
+`src/core.ts` の `humanMD` シグネチャを変更し、4 箇所のリテラルを `fields` 参照に置き換える。
+
+シグネチャ（L100 付近）:
+
+```ts
+export function humanMD(state: State, fields: Fields = DEFAULT_FIELDS): string {
+```
+
+置換 1（最終更新日。現状 `適用: ${id} ／ 最終更新: [YYYY-MM-DD]`）:
+
+```ts
+  L.push(`適用: ${id} ／ 最終更新: ${fields.date}`, "");
+```
+
+置換 2（クレジット例。現状 `  - 例） Photo. [撮影者名] / Model. [モデル名]`）:
+
+```ts
+    L.push(`  - 例） Photo. ${fields.photographer} / Model. [モデル名]`, "");
+```
+
+置換 3（著作権者。現状 `- 写真の著作権は撮影者（[撮影者名]）に帰属します`）:
+
+```ts
+  L.push(`- 写真の著作権は撮影者（${fields.photographer}）に帰属します`);
+```
+
+置換 4（連絡先と文責。現状の 2 行）:
+
+```ts
+  L.push("## 連絡先", `- ${fields.contact}`, "");
+  L.push("----", `適用: ${id} ／ 文責: ${fields.photographer}`);
+```
+
+`humanText` シグネチャ（L162 付近）を変更し fields を渡す:
+
+```ts
+export function humanText(state: State, fields: Fields = DEFAULT_FIELDS): string {
+  return humanMD(state, fields)
+    .split("\n")
+    .map((line) => line.replace(/^#{1,6}\s+/, ""))
+    .join("\n");
+}
+```
+
+- [ ] **Step 4: テストが通ることを確認**
+
+Run: `pkf run test`
+Expected: PASS（golden 回帰テストも緑＝引数なし出力が不変）
+
+- [ ] **Step 5: コミット**
+
+```bash
+git add src/core.ts test/core.test.ts
+git commit -m "feat: humanMD/humanText にフィールド差し込みを追加（既定出力は不変）"
+```
+
+---
+
+### Task 3: hash の相互変換（core）
+
+**Files:**
+- Modify: `src/core.ts`（`sanitizeFields` の後に追加）
+- Test: `test/core.test.ts`
+
+**Interfaces:**
+- Consumes: `State`, `Fields`, `DEFAULT_TAGS`, `emptyState`, `parseTags`, `tagsFrom`, `cleanFields`（既存 + Task 1）
+- Produces:
+  - `function parseHash(hash: string): { tags: State; fields: Fields }`
+  - `function serializeHash(state: State, fields: Fields): string`（先頭 `#` 付き。既定 / 空フィールドは出力しない）
+
+- [ ] **Step 1: 失敗するテストを書く**
+
+`test/core.test.ts` の import に `parseHash`, `serializeHash` を追加し、末尾に追記する。
+
+```ts
+describe("parseHash / serializeHash", () => {
+  test("裸タグ hash は後方互換で読める（フィールドは空）", () => {
+    const { tags, fields } = parseHash("#BY-NC");
+    expect(tagsFrom(tags)).toEqual(["BY", "NC"]);
+    expect(fields).toEqual({ date: "", photographer: "", contact: "" });
+  });
+
+  test("空 hash は既定タグ・空フィールド", () => {
+    const { tags, fields } = parseHash("");
+    expect(tagsFrom(tags)).toEqual(["BY", "NC", "NAI", "TD"]);
+    expect(fields).toEqual({ date: "", photographer: "", contact: "" });
+  });
+
+  test("URLSearchParams 形式からタグとフィールドを復元する", () => {
+    const { tags, fields } = parseHash(
+      "#tags=BY&date=2026-06-17&photographer=Hidari&contact=mail@example.com",
+    );
+    expect(tagsFrom(tags)).toEqual(["BY"]);
+    expect(fields).toEqual({
+      date: "2026-06-17",
+      photographer: "Hidari",
+      contact: "mail@example.com",
+    });
+  });
+
+  test("不正タグは既定タグにフォールバックする", () => {
+    expect(tagsFrom(parseHash("#tags=ZZZ").tags)).toEqual(["BY", "NC", "NAI", "TD"]);
+  });
+
+  test("parseHash は値もサニタイズする（hash も外部入力）", () => {
+    expect(parseHash("#tags=BY&photographer=a\u202Eb<x>").fields.photographer).toBe("abx");
+  });
+
+  test("serializeHash は既定 / 空フィールドを出力しない", () => {
+    const tags = unwrapState("BY-NC-NAI-TD");
+    expect(serializeHash(tags, { date: "", photographer: "", contact: "" })).toBe(
+      "#tags=BY-NC-NAI-TD",
+    );
+  });
+
+  test("serializeHash はタグなしを none で表す", () => {
+    expect(serializeHash(unwrapState("none"), { date: "", photographer: "", contact: "" })).toBe(
+      "#tags=none",
+    );
+  });
+
+  test("serialize → parse はラウンドトリップする（日本語含む）", () => {
+    const tags = unwrapState("BY-TD");
+    const fields: Fields = { date: "2026-06-17", photographer: "ひだり", contact: "x@example.com" };
+    const round = parseHash(serializeHash(tags, fields));
+    expect(tagsFrom(round.tags)).toEqual(["BY", "TD"]);
+    expect(round.fields).toEqual(fields);
+  });
+});
+```
+
+- [ ] **Step 2: テストが失敗することを確認**
+
+Run: `pkf run test`
+Expected: FAIL（`parseHash` / `serializeHash` is not exported）
+
+- [ ] **Step 3: 最小実装を書く**
+
+`src/core.ts` の `sanitizeFields` の後に追加する。
+
+```ts
+// DEFAULT_TAGS は必ずパースに成功するが、型上 Result なので安全に State へ畳むヘルパー。
+function defaultTagState(): State {
+  const parsed = parseTags(DEFAULT_TAGS);
+  return parsed.success ? parsed.data : emptyState();
+}
+
+// hash 文字列（先頭 # は任意）からタグ状態とフィールドを復元する。
+// "=" を含まない hash は従来の裸タグ列とみなして後方互換に扱う。フィールドは外部入力として
+// cleanFields でサニタイズする（空・不正は空文字のまま）。
+export function parseHash(hash: string): { tags: State; fields: Fields } {
+  const raw = hash.replace(/^#/, "");
+  const emptyFields: Fields = { date: "", photographer: "", contact: "" };
+  if (!raw) {
+    return { tags: defaultTagState(), fields: emptyFields };
+  }
+  if (!raw.includes("=")) {
+    const parsed = parseTags(raw);
+    return { tags: parsed.success ? parsed.data : defaultTagState(), fields: emptyFields };
+  }
+  const params = new URLSearchParams(raw);
+  const parsedTags = parseTags(params.get("tags") ?? DEFAULT_TAGS);
+  const tags = parsedTags.success ? parsedTags.data : defaultTagState();
+  const fields = cleanFields({
+    date: params.get("date") ?? "",
+    photographer: params.get("photographer") ?? "",
+    contact: params.get("contact") ?? "",
+  });
+  return { tags, fields };
+}
+
+// タグ状態とフィールドを hash 文字列（先頭 # 付き）へ直列化する。フィールドは再サニタイズし、
+// 既定（空）の値は URL を汚さないよう出力しない。タグが空なら "none"。
+export function serializeHash(state: State, fields: Fields): string {
+  const tags = tagsFrom(state);
+  const cleaned = cleanFields(fields);
+  const params = new URLSearchParams();
+  params.set("tags", tags.length ? tags.join("-") : "none");
+  if (cleaned.date) {
+    params.set("date", cleaned.date);
+  }
+  if (cleaned.photographer) {
+    params.set("photographer", cleaned.photographer);
+  }
+  if (cleaned.contact) {
+    params.set("contact", cleaned.contact);
+  }
+  return `#${params.toString()}`;
+}
+```
+
+- [ ] **Step 4: テストが通ることを確認**
+
+Run: `pkf run test`
+Expected: PASS
+
+- [ ] **Step 5: コミット**
+
+```bash
+git add src/core.ts test/core.test.ts
+git commit -m "feat: タグとフィールドの hash 相互変換を追加（裸タグ後方互換）"
+```
+
+---
+
+### Task 4: 入力欄の HTML（折りたたみ）
+
+**Files:**
+- Modify: `index.html`（STEP1 の `</section>`（L79）と STEP2 の `<section>`（L81）の間に挿入）
+
+**Interfaces:**
+- Consumes: なし（DOM 配線は Task 6）
+- Produces: DOM 要素 `#f-photographer`（text）, `#f-date`（date）, `#f-contact`（text）と `<details class="fill">`
+
+- [ ] **Step 1: HTML を追加**
+
+`index.html` の STEP1 セクション終了 `</section>`（L79）の直後、STEP2 の `<section>` の直前に挿入する。
+
+```html
+  <details class="fill">
+    <summary>任意：名前や日付を入れる</summary>
+    <p class="hint">空欄なら文書にはプレースホルダ（[撮影者名] 等）が残ります。入力した内容は URL に付き、共有・復元できます。実名や連絡先を載せたくない場合は空のままにしてください。</p>
+    <div class="fill-grid">
+      <label for="f-photographer">撮影者名</label>
+      <input id="f-photographer" type="text" maxlength="50" autocomplete="off" inputmode="text" placeholder="[撮影者名]">
+      <label for="f-date">最終更新日</label>
+      <input id="f-date" type="date" autocomplete="off">
+      <label for="f-contact">連絡先</label>
+      <input id="f-contact" type="text" maxlength="100" autocomplete="off" inputmode="text" placeholder="[連絡先をここに記入]">
+    </div>
+  </details>
+```
+
+- [ ] **Step 2: ビルドが通ることを確認**
+
+Run: `pkf run lint`
+Expected: PASS（HTML は Biome 対象外だが構文崩れの巻き込みがないこと）
+
+- [ ] **Step 3: コミット**
+
+```bash
+git add index.html
+git commit -m "feat: 名前・日付・連絡先の折りたたみ入力欄を追加"
+```
+
+---
+
+### Task 5: 入力欄のスタイル
+
+**Files:**
+- Modify: `src/client/styles.module.css`（チップ節と識別子バー節の近く、`:global(.hint)` 以降の適切な位置）
+
+**Interfaces:**
+- Consumes: 既存のカラートークン（`--line`, `--muted`, `--accent` 等）
+- Produces: `.fill` / `.fill summary` / `.fill-grid` / 入力欄のスタイル
+
+- [ ] **Step 1: CSS を追加**
+
+`src/client/styles.module.css` の識別子バー節（`/* 識別子バー */` の前）に追加する。既存の `:global(...)` 流儀に合わせる。
+
+```css
+/* 任意フィールド入力（折りたたみ） --------------------------------------- */
+:global(.fill) {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+:global(.fill > summary) {
+  cursor: pointer;
+  padding: 14px 16px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--ink);
+  list-style-position: inside;
+}
+:global(.fill[open] > summary) {
+  border-bottom: 1px solid var(--line);
+}
+:global(.fill .hint) {
+  margin: 14px 16px 0;
+}
+:global(.fill-grid) {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  padding: 12px 16px 18px;
+}
+:global(.fill-grid label) {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-top: 8px;
+}
+:global(.fill-grid input) {
+  width: 100%;
+  font-family: var(--sans), sans-serif;
+  font-size: 0.92rem;
+  color: var(--ink);
+  padding: 10px 12px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+:global(.fill-grid input:focus-visible) {
+  border-color: var(--accent);
+  outline: none;
+}
+```
+
+- [ ] **Step 2: lint が通ることを確認**
+
+Run: `pkf run lint`
+Expected: PASS
+
+- [ ] **Step 3: コミット**
+
+```bash
+git add src/client/styles.module.css
+git commit -m "style: 折りたたみ入力欄のスタイルを追加"
+```
+
+---
+
+### Task 6: クライアント配線（main）
+
+**Files:**
+- Modify: `src/client/main.ts`（import・`AppState`・`Action`・`update`・`currentMarkdown`・`render`・`bindEvents`・`main`・`initialTags`/`hashFragment` の置換）
+
+**Interfaces:**
+- Consumes: `parseHash`, `serializeHash`, `sanitizeFields`, `Fields`（Task 1-3）, 既存 `aiMD`, `humanMD`, `parseTag`, `tagsFrom`, `type State`, `type Tag`, `type View`
+- Produces: 入力欄と状態・hash・プレビューの双方向同期
+
+- [ ] **Step 1: import を更新**
+
+`src/client/main.ts` の core import ブロック（L4-15）を次に置き換える。`DEFAULT_TAGS`, `emptyState`, `parseTags` は `parseHash` に集約されるため除去する。
+
+```ts
+import {
+  aiMD,
+  type Fields,
+  humanMD,
+  parseHash,
+  parseTag,
+  serializeHash,
+  sanitizeFields,
+  type State,
+  type Tag,
+  tagsFrom,
+  type View,
+} from "../core";
+```
+
+`types/result` の import から `getOrElse` を除去する（`initialTags` 廃止で未使用になる）。L17 を次に置き換える。
+
+```ts
+import { fail, type Result, success } from "../types/result";
+```
+
+- [ ] **Step 2: AppState と Action を拡張**
+
+L21 の `AppState` と L23 の `Action` を置き換える。`draft` は UI の生入力を保持する（Fields 形状を流用）。
+
+```ts
+// アプリ状態（タグ集合 + 出力ビュー + フィールド生入力）。不変に扱う。
+type AppState = { tags: State; view: View; draft: Fields };
+
+type Action =
+  | { type: "toggleTag"; tag: Tag }
+  | { type: "setView"; view: View }
+  | { type: "setField"; field: keyof Fields; value: string };
+```
+
+`update`（L26-33）に分岐を追加する。
+
+```ts
+function update(state: AppState, action: Action): AppState {
+  switch (action.type) {
+    case "toggleTag":
+      return { ...state, tags: { ...state.tags, [action.tag]: !state.tags[action.tag] } };
+    case "setView":
+      return { ...state, view: action.view };
+    case "setField":
+      return { ...state, draft: { ...state.draft, [action.field]: action.value } };
+  }
+}
+```
+
+- [ ] **Step 3: currentMarkdown と render を更新**
+
+`currentMarkdown`（L37-39）を置き換える。
+
+```ts
+function currentMarkdown(state: AppState): string {
+  return state.view === "ai" ? aiMD(state.tags) : humanMD(state.tags, sanitizeFields(state.draft));
+}
+```
+
+`render`（L158）の hash 同期行を置き換える。
+
+```ts
+  history.replaceState(null, "", serializeHash(state.tags, state.draft));
+```
+
+`hashFragment` 関数（L57-60）を削除する（`serializeHash` に置換済み）。
+
+- [ ] **Step 4: 初期化を hash 駆動に置き換える**
+
+`initialTags`（L163-174）を削除し、当日取得と入力欄バインドのヘルパーを追加する。`tabId` 関数の前あたりに置く。
+
+```ts
+// 当日を YYYY-MM-DD で返す（DOM 境界で現在日時を読み、core は純粋に保つ）。
+function todayISO(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+// 入力欄を draft で初期化し、入力で setField を dispatch する。
+function bindFields(getState: () => AppState, dispatch: (action: Action) => void): void {
+  const fields: ReadonlyArray<readonly [string, keyof Fields]> = [
+    ["f-photographer", "photographer"],
+    ["f-date", "date"],
+    ["f-contact", "contact"],
+  ];
+  for (const [id, field] of fields) {
+    ifSome(byId(id), (el) => {
+      if (el instanceof HTMLInputElement) {
+        el.value = getState().draft[field];
+        el.addEventListener("input", () => dispatch({ type: "setField", field, value: el.value }));
+      }
+    });
+  }
+}
+```
+
+- [ ] **Step 5: bindEvents から bindFields を呼ぶ**
+
+`bindEvents` 末尾（`download` バインドの後、L245 の `}` の前）に追加する。
+
+```ts
+  bindFields(getState, dispatch);
+```
+
+- [ ] **Step 6: main を hash 駆動に更新**
+
+`main`（L258-268）を置き換える。
+
+```ts
+function main(): void {
+  // CSS Module のローカルクラスを body に適用（スタイルの起点）
+  ifSome(fromNullable(styles.app), (cls) => document.body.classList.add(cls));
+  const { tags, fields } = parseHash(location.hash);
+  // 日付未指定なら当日を初期表示。名前・連絡先は空のまま（プレースホルダ表示）。
+  let state: AppState = {
+    tags,
+    view: "human",
+    draft: { ...fields, date: fields.date || todayISO() },
+  };
+  const dispatch = (action: Action): void => {
+    state = update(state, action);
+    render(state);
+  };
+  bindEvents(() => state, dispatch);
+  render(state);
+}
+```
+
+- [ ] **Step 7: lint・typecheck・test が通ることを確認**
+
+Run: `pkf run check`
+Expected: PASS（lint 0 警告・型エラーなし・全テスト緑）
+
+- [ ] **Step 8: コミット**
+
+```bash
+git add src/client/main.ts
+git commit -m "feat: 入力欄と状態・hash・プレビューを双方向同期"
+```
+
+---
+
+### Task 7: 最終検証とブラウザ動作確認
+
+**Files:** なし（検証のみ）
+
+**Interfaces:**
+- Consumes: 全タスクの成果物
+
+- [ ] **Step 1: フルチェック**
+
+Run: `pkf run check`
+Expected: PASS（lint・typecheck・test すべて緑、警告 0）
+
+- [ ] **Step 2: 本番相当ビルド**
+
+Run: `pkf run build`
+Expected: tsc 型チェック通過 + vite build 成功
+
+- [ ] **Step 3: 手動スモーク（任意・dev サーバ）**
+
+`pkf run dev` を起動し、ブラウザで以下を確認:
+- 折りたたみを開き撮影者名を入れると README プレビューの 3 箇所と URL hash に反映される
+- 日付が当日で初期表示される
+- URL を再読み込みすると入力値が復元される
+- 既存の `#BY-NC-NAI-TD` 形式の URL で開いてもタグが復元される（後方互換）
+
+- [ ] **Step 4: 完了処理**
+
+`pre-merge-quality-gate` で simplify / code-reviewer / boy-scout / e2e 影響を通してから PR 作成・マージへ。
+
+---
+
+## Self-Review
+
+**Spec coverage:**
+- クライアント限定・サーバ無改修 → Task 2（デフォルト引数で既定出力不変）、worker 無変更で担保
+- hash 同期（query でなく）・裸タグ後方互換 → Task 3, Task 6
+- 対象 3 フィールド（モデル名除外）→ Task 1 DEFAULT_FIELDS, Task 2 置換（モデル名はプレースホルダ維持）
+- 全域サニタイズ（Result 不使用）・双方向制御文字・コードポイント長・実在日検証 → Task 1
+- 折りたたみ UI → Task 4, Task 5
+- 当日初期値・hash 優先 → Task 6
+- テスト（仕様としてのテスト）→ Task 1-3 に網羅。golden 不変は Task 2 で確認
+
+**Placeholder scan:** プラン内に TBD/TODO・抽象指示なし。各コードステップに実コードあり。
+
+**Type consistency:** `Fields` 形状 `{ date; photographer; contact }` は全タスクで一致。`parseHash` 戻り値 `{ tags; fields }`、`serializeHash(state, fields)`、`sanitizeFields(input)`、`cleanFields(input)` のシグネチャは Task 1-3 と Task 6 の利用箇所で整合。

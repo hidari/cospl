@@ -78,6 +78,19 @@
     <div class="id" id="ident" aria-live="polite">CosPL 1.0 / <b>BY-NC-NAI-TD</b></div>
   </section>
 
+  <details class="fill">
+    <summary>任意：名前や日付を入れる</summary>
+    <p class="hint">空欄なら文書にはプレースホルダ（[撮影者名] 等）が残ります。入力した内容は URL に付き、共有・復元できます。実名や連絡先を載せたくない場合は空のままにしてください。</p>
+    <div class="fill-grid">
+      <label for="f-photographer">撮影者名</label>
+      <input id="f-photographer" type="text" maxlength="50" autocomplete="off" inputmode="text" placeholder="[撮影者名]">
+      <label for="f-date">最終更新日</label>
+      <input id="f-date" type="date" autocomplete="off">
+      <label for="f-contact">連絡先</label>
+      <input id="f-contact" type="text" maxlength="100" autocomplete="off" inputmode="text" placeholder="[連絡先をここに記入]">
+    </div>
+  </details>
+
   <section>
     <p class="step"><span class="step-no">STEP 2</span>決めた内容を書き出す</p>
     <p class="hint">納品データ同梱用 README と、AI 向けの宣言を切り替えられます。</p>

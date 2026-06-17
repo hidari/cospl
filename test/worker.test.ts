@@ -109,7 +109,7 @@ describe("非対応メソッド", () => {
   test("POST は 405 を返す", async () => {
     const res = await call("/license.md", { method: "POST" });
     expect(res.status).toBe(405);
-    expect(res.headers.get("allow")).toBe("GET, OPTIONS");
+    expect(res.headers.get("allow")).toBe("GET, HEAD, OPTIONS");
   });
 });
 
@@ -118,7 +118,7 @@ describe("OPTIONS /license.md", () => {
     const res = await call("/license.md", { method: "OPTIONS" });
     expect(res.status).toBe(200);
     expect(res.headers.get("access-control-allow-origin")).toBe("*");
-    expect(res.headers.get("access-control-allow-methods")).toBe("GET, OPTIONS");
+    expect(res.headers.get("access-control-allow-methods")).toBe("GET, HEAD, OPTIONS");
     expect(res.headers.get("access-control-max-age")).toBe("86400");
   });
 });
@@ -214,5 +214,72 @@ describe("DISCOVERY_ROUTES と wrangler.toml の整合", () => {
     for (const path of Object.keys(DISCOVERY_ROUTES)) {
       expect(registered).toContain(path);
     }
+  });
+});
+
+describe("セキュリティヘッダ", () => {
+  test("生成レスポンス（/license.md）に基本セキュリティヘッダを付与する", async () => {
+    const res = await call("/license.md");
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("referrer-policy")).toBe("strict-origin-when-cross-origin");
+    expect(res.headers.get("strict-transport-security")).toContain("max-age=");
+    expect(res.headers.get("x-frame-options")).toBe("DENY");
+  });
+  test("発見性レスポンス（/robots.txt）にも付与する", async () => {
+    const res = await call("/robots.txt");
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("strict-transport-security")).toContain("max-age=");
+  });
+  test("400 エラーレスポンスにも付与する", async () => {
+    const res = await call("/license.md?tags=ZZZ");
+    expect(res.status).toBe(400);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+  });
+  test("HTML ホームには厳格な CSP を付与する（インライン無しなので 'self' で足りる）", async () => {
+    const res = await call("/");
+    const csp = res.headers.get("content-security-policy");
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("object-src 'none'");
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+  });
+  test("Worker フォールスルー応答（未知パス）にもセキュリティヘッダを付与する", async () => {
+    // 各ビルダーへの分散付与では塞げない経路（asset-miss / markdown ホームのエラー経路）を
+    // fetch 境界の finalizer が保証する。注: run_worker_first に無い実在アセット
+    // （favicon・JS・CSS・フォント）は Worker を経由せず CF が直接配信するため、このヘッダは
+    // 付かない（CF 側 Transform Rule の領域）。本テストは Worker 内経路の保証に限定される。
+    const res = await call("/no-such-path");
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("x-frame-options")).toBe("DENY");
+  });
+});
+
+describe("HEAD リクエスト", () => {
+  test("HEAD /license.md は 405 ではなく 200 をヘッダのみで返す", async () => {
+    const res = await call("/license.md", { method: "HEAD" });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("text/markdown; charset=utf-8");
+    expect(await res.text()).toBe("");
+  });
+  test("HEAD / は GET 同等のヘッダ（Link 含む）を返し本文は空", async () => {
+    const res = await call("/", { method: "HEAD" });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("link")).toContain('rel="api-catalog"');
+    expect(await res.text()).toBe("");
+  });
+  test("HEAD /openapi.json も 200 を返す", async () => {
+    const res = await call("/openapi.json", { method: "HEAD" });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/json");
+  });
+  test("HEAD で Worker フォールスルー経路もヘッダのみ返す", async () => {
+    const res = await call("/no-such-path", { method: "HEAD" });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(await res.text()).toBe("");
+  });
+  test("POST /license.md は引き続き 405", async () => {
+    const res = await call("/license.md", { method: "POST" });
+    expect(res.status).toBe(405);
   });
 });

@@ -81,11 +81,11 @@
   <section>
     <p class="step"><span class="step-no">STEP 2</span>決めた内容を書き出す</p>
     <p class="hint">納品データ同梱用 README と、AI 向けの宣言を切り替えられます。</p>
-    <div class="tabs" role="tablist">
-      <button class="tab" id="tab-h" role="tab" aria-selected="true" aria-label="README用">README用<span class="tab-q" aria-hidden="true">?</span><span class="tab-tip" aria-hidden="true">撮影データと一緒に納品フォルダへ同梱する、人が読むテキスト形式。</span></button>
-      <button class="tab" id="tab-a" role="tab" aria-selected="false" aria-label="AI向け宣言">AI向け宣言<span class="tab-q" aria-hidden="true">?</span><span class="tab-tip" aria-hidden="true">クローラや AI エージェントに読ませる、機械向けの宣言。</span></button>
+    <div class="tabs" role="tablist" aria-label="出力フォーマット">
+      <button class="tab" id="tab-h" role="tab" aria-selected="true" aria-controls="panel-out" aria-label="README用">README用<span class="tab-q" aria-hidden="true">?</span><span class="tab-tip" aria-hidden="true">撮影データと一緒に納品フォルダへ同梱する、人が読むテキスト形式。</span></button>
+      <button class="tab" id="tab-a" role="tab" aria-selected="false" aria-controls="panel-out" tabindex="-1" aria-label="AI向け宣言">AI向け宣言<span class="tab-q" aria-hidden="true">?</span><span class="tab-tip" aria-hidden="true">クローラや AI エージェントに読ませる、機械向けの宣言。</span></button>
     </div>
-    <div class="panel">
+    <div class="panel" id="panel-out" role="tabpanel" aria-labelledby="tab-h" tabindex="0">
       <pre id="out"></pre>
       <div class="bar">
         <span class="copy-actions">

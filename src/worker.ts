@@ -60,7 +60,34 @@ export const DISCOVERY_ROUTES: Readonly<
 // CORS は全許可（ツール・エージェントから直接取得できるようにする）
 const CORS_ORIGIN = "access-control-allow-origin";
 
-// 動的生成レスポンス共通のヘッダ（CORS 全許可・5分キャッシュ）を付けて 200 を返す
+// 全レスポンス共通のセキュリティヘッダ（多層防御）。fetch 境界の withSecurityHeaders で
+// Worker が生成する全応答（アセット委譲・エラー経路含む）へ一括付与する。HSTS は HTTPS 文書に
+// 1度届けばブラウザがホスト全体へ適用する。CSP は HTML 文書にのみ別途付与する（下記）。
+const SECURITY_HEADERS: Record<string, string> = {
+  "x-content-type-options": "nosniff",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "strict-transport-security": "max-age=63072000; includeSubDomains",
+  "x-frame-options": "DENY",
+};
+
+// HTML 文書にのみ付与する CSP。ビルド成果物はインライン script/style を持たず、全リソースが
+// same-origin（JS/CSS/フォント/アイコン SVG/画像）なので 'unsafe-inline' 無しの 'self' で足りる。
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "img-src 'self' data:",
+  "style-src 'self'",
+  "script-src 'self'",
+  "font-src 'self'",
+  "connect-src 'self'",
+  "base-uri 'none'",
+  "form-action 'none'",
+  "frame-ancestors 'none'",
+  "object-src 'none'",
+  "upgrade-insecure-requests",
+].join("; ");
+
+// 動的生成レスポンス共通のヘッダ（CORS 全許可・5分キャッシュ）を付けて 200 を返す。
+// セキュリティヘッダは fetch 境界の withSecurityHeaders でまとめて付与する。
 function cachedResponse(body: BodyInit | null, contentType: string): Response {
   return new Response(body, {
     headers: {
@@ -114,7 +141,7 @@ function preflightResponse(): Response {
   return new Response(null, {
     headers: {
       [CORS_ORIGIN]: "*",
-      "access-control-allow-methods": "GET, OPTIONS",
+      "access-control-allow-methods": "GET, HEAD, OPTIONS",
       "access-control-max-age": "86400",
     },
   });
@@ -124,7 +151,7 @@ function preflightResponse(): Response {
 function methodNotAllowedResponse(): Response {
   return new Response(null, {
     status: 405,
-    headers: { allow: "GET, OPTIONS", [CORS_ORIGIN]: "*" },
+    headers: { allow: "GET, HEAD, OPTIONS", [CORS_ORIGIN]: "*" },
   });
 }
 
@@ -139,45 +166,69 @@ async function markdownHomeResponse(request: Request, env: Env): Promise<Respons
   return cachedResponse(res.body, "text/markdown; charset=utf-8");
 }
 
-// ホームページの HTML 応答に Link ヘッダを付与する（既存ヘッダ非破壊）。
+// ホームページの HTML 応答に Link ヘッダと CSP を付与する（既存ヘッダ非破壊）。
+// 基本セキュリティヘッダは fetch 境界で付くので、ここは HTML 固有の CSP のみ。
 async function htmlHomeResponse(request: Request, env: Env): Promise<Response> {
   const res = await env.ASSETS.fetch(request);
   const headers = new Headers(res.headers);
   headers.set("link", LINK_HEADER);
   headers.set(CORS_ORIGIN, "*");
+  headers.set("content-security-policy", CONTENT_SECURITY_POLICY);
   return new Response(res.body, { status: res.status, headers });
 }
 
+// Worker が生成する全応答に共通セキュリティヘッダを一括付与する finalizer。set は冪等なので
+// 二重適用しても安全。これにより各ビルダーへの分散付与と、付与漏れ（アセット委譲・エラー経路）を防ぐ。
+function withSecurityHeaders(res: Response): Response {
+  const headers = new Headers(res.headers);
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    headers.set(key, value);
+  }
+  return new Response(res.body, { status: res.status, headers });
+}
+
+// GET と同じ経路で応答を組み立てる。HEAD は呼び出し側で GET 扱いにして渡す。
+async function resolve(request: Request, env: Env, method: string): Promise<Response> {
+  const url = new URL(request.url);
+
+  if (url.pathname === LICENSE_PATH) {
+    if (method === "OPTIONS") {
+      return preflightResponse();
+    }
+    if (method !== "GET") {
+      return methodNotAllowedResponse();
+    }
+    return matchResult(parseLicenseRequest(url), {
+      success: licenseResponse,
+      error: errorResponse,
+    });
+  }
+
+  if (method === "GET") {
+    const route = DISCOVERY_ROUTES[url.pathname];
+    if (route) {
+      return cachedResponse(route.generate(url.origin), route.contentType);
+    }
+    if (url.pathname === HOME_PATH) {
+      return prefersMarkdown(request.headers.get("accept"))
+        ? markdownHomeResponse(request, env)
+        : htmlHomeResponse(request, env);
+    }
+  }
+
+  // 上記以外・非 GET は静的アセットへ委譲
+  return env.ASSETS.fetch(request);
+}
+
 export default {
-  fetch(request: Request, env: Env): Response | Promise<Response> {
-    const url = new URL(request.url);
-
-    if (url.pathname === LICENSE_PATH) {
-      if (request.method === "OPTIONS") {
-        return preflightResponse();
-      }
-      if (request.method !== "GET") {
-        return methodNotAllowedResponse();
-      }
-      return matchResult(parseLicenseRequest(url), {
-        success: licenseResponse,
-        error: errorResponse,
-      });
-    }
-
-    if (request.method === "GET") {
-      const route = DISCOVERY_ROUTES[url.pathname];
-      if (route) {
-        return cachedResponse(route.generate(url.origin), route.contentType);
-      }
-      if (url.pathname === HOME_PATH) {
-        return prefersMarkdown(request.headers.get("accept"))
-          ? markdownHomeResponse(request, env)
-          : htmlHomeResponse(request, env);
-      }
-    }
-
-    // 上記以外・非 GET は静的アセットへ委譲
-    return env.ASSETS.fetch(request);
+  async fetch(request: Request, env: Env): Promise<Response> {
+    // HEAD は GET と同じ経路で組み立て、ヘッダのみ返す（本文を落とす）。HTTP 仕様上
+    // GET 可能なリソースは HEAD も通すべきで、405 を返すと HEAD を使うクローラがコケる。
+    const isHead = request.method === "HEAD";
+    const built = await resolve(request, env, isHead ? "GET" : request.method);
+    const response = withSecurityHeaders(built);
+    return isHead
+      ? new Response(null, { status: response.status, headers: response.headers })
+      : response;
   },
 } satisfies ExportedHandler<Env>;

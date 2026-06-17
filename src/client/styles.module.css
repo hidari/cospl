@@ -378,6 +378,12 @@
   border-color: var(--accent);
   outline: none;
 }
+/* 入力欄のクリアボタン（名前入り URL の誤共有を防ぐ）。グリッド下に右寄せで控えめに置く。 */
+:global(.fill-actions) {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 16px 16px;
+}
 
 /* 識別子バー ----------------------------------------------------------- */
 :global(.id) {
@@ -617,11 +623,23 @@
   border-color: var(--ok);
   color: var(--ok);
 }
-:global(.row) {
+/* サイト共有バー（ヒーロー直下）。設定を含まない素の URL / 文面を配る補助操作。 */
+:global(.share) {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 12px;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 18px 0 6px;
+}
+:global(.share-label) {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+:global(.share-actions) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* フッター ------------------------------------------------------------- */
@@ -640,6 +658,19 @@
   flex-wrap: wrap;
   gap: 18px;
   margin: 0 0 22px;
+}
+
+/* スクリーンリーダー専用（視覚的には隠すが読み上げ対象に残す）ユーティリティ。 */
+:global(.sr-only) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* デスクトップ余白の拡張 ----------------------------------------------- */

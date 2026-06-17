@@ -3,6 +3,8 @@ import {
   aiMD,
   cleanFields,
   DEFAULT_FIELDS,
+  EMPTY_FIELDS,
+  emptyState,
   type Fields,
   humanMD,
   humanText,
@@ -12,9 +14,11 @@ import {
   parseTag,
   parseTags,
   parseView,
+  SITE_URL,
   type State,
   sanitizeFields,
   serializeHash,
+  siteShareMessage,
   tagsFrom,
 } from "../src/core";
 import golden from "./__fixtures__/golden.json";
@@ -323,6 +327,32 @@ describe("humanMD のフィールド反映", () => {
 
   test("aiMD はフィールド非対応で不変", () => {
     expect(aiMD(unwrapState("BY-NC-NAI-TD"))).not.toContain("Hidari");
+  });
+});
+
+describe("サイト共有", () => {
+  test("SITE_URL は cospl.org のルート", () => {
+    expect(SITE_URL).toBe("https://cospl.org/");
+  });
+
+  test("siteShareMessage は SNS 貼り付け用の3行（タイトル・タグライン・URL）", () => {
+    expect(siteShareMessage()).toBe(
+      "CosPL — Cosplay Public License\n撮った写真の ”使っていい範囲” を言葉にする\nhttps://cospl.org/",
+    );
+  });
+
+  test("siteShareMessage は SITE_URL で終わる", () => {
+    expect(siteShareMessage().endsWith(SITE_URL)).toBe(true);
+  });
+});
+
+describe("EMPTY_FIELDS", () => {
+  test("全フィールドが空文字", () => {
+    expect(EMPTY_FIELDS).toEqual({ date: "", photographer: "", contact: "" });
+  });
+
+  test("空フィールドは serializeHash で tags=none のみになり PII を残さない", () => {
+    expect(serializeHash(emptyState(), EMPTY_FIELDS)).toBe("#tags=none");
   });
 });
 

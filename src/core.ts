@@ -106,6 +106,21 @@ export const DEFAULT_FIELDS: Fields = {
   contact: "[連絡先をここに記入]",
 };
 
+// 全フィールド空の初期値（入力欄クリアと hash 復元の単一ソース）。空のまま serializeHash すると
+// date / photographer / contact は URL に出力されず、PII を残さない。
+export const EMPTY_FIELDS: Fields = { date: "", photographer: "", contact: "" };
+
+// サイト共有 -----------------------------------------------------------------
+
+// サイトのトップ URL（設定を含まない素の共有先）。og:url とも一致させる。
+export const SITE_URL = "https://cospl.org/";
+
+// SNS 等へそのまま貼り付ける共有メッセージ（タイトル / タグライン / URL の3行）。
+// ヒーロー・OGP の文言と整合させ、文面変更は単体テストで検知する。
+export function siteShareMessage(): string {
+  return `CosPL — Cosplay Public License\n撮った写真の ”使っていい範囲” を言葉にする\n${SITE_URL}`;
+}
+
 // 除去対象コードポイントの判定。C0/C1 制御文字（改行・タブ含む）と双方向テキスト制御文字
 // （Trojan Source 型の視覚的文言偽装に使われる）を弾く。正規表現を避けてコードポイントで判定し、
 // Biome の noControlCharactersInRegex を踏まず、かつサロゲートペアを安全に扱う。
@@ -187,12 +202,11 @@ function defaultTagState(): State {
 // cleanFields でサニタイズする（空・不正は空文字のまま）。
 export function parseHash(hash: string): { tags: State; fields: Fields } {
   const raw = hash.replace(/^#/, "");
-  const emptyFields: Fields = { date: "", photographer: "", contact: "" };
   if (!raw) {
-    return { tags: defaultTagState(), fields: emptyFields };
+    return { tags: defaultTagState(), fields: EMPTY_FIELDS };
   }
   if (!raw.includes("=")) {
-    return { tags: getOrElse(parseTags(raw), defaultTagState()), fields: emptyFields };
+    return { tags: getOrElse(parseTags(raw), defaultTagState()), fields: EMPTY_FIELDS };
   }
   const params = new URLSearchParams(raw);
   const tags = getOrElse(parseTags(params.get("tags") ?? DEFAULT_TAGS), defaultTagState());

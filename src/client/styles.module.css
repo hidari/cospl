@@ -331,6 +331,54 @@
   color: var(--accent-ink);
 }
 
+/* 任意フィールド入力（折りたたみ） --------------------------------------- */
+:global(.fill) {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+:global(.fill > summary) {
+  cursor: pointer;
+  padding: 14px 16px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--ink);
+  list-style-position: inside;
+}
+:global(.fill[open] > summary) {
+  border-bottom: 1px solid var(--line);
+}
+:global(.fill .hint) {
+  margin: 14px 16px 0;
+}
+:global(.fill-grid) {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  padding: 12px 16px 18px;
+}
+:global(.fill-grid label) {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-top: 8px;
+}
+:global(.fill-grid input) {
+  width: 100%;
+  font-family: var(--sans), sans-serif;
+  font-size: 0.92rem;
+  color: var(--ink);
+  padding: 10px 12px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+:global(.fill-grid input:focus-visible) {
+  border-color: var(--accent);
+  outline: none;
+}
+
 /* 識別子バー ----------------------------------------------------------- */
 :global(.id) {
   font-family: var(--mono), monospace;

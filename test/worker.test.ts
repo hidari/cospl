@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import worker, { DISCOVERY_ROUTES } from "../src/worker";
+import worker, { buildCsp, DISCOVERY_ROUTES } from "../src/worker";
 // workerd ランタイムでは node:fs が使えないため、Vite の ?raw で内容を埋め込んで検査する。
 import wranglerToml from "../wrangler.toml?raw";
 
@@ -251,6 +251,29 @@ describe("セキュリティヘッダ", () => {
     const res = await call("/no-such-path");
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
     expect(res.headers.get("x-frame-options")).toBe("DENY");
+  });
+});
+
+describe("buildCsp（環境別 CSP 生成）", () => {
+  // 本番ビルドでは import.meta.env.DEV が false に静的置換され緩いブランチは除去されるが、
+  // それを ambient 環境に依存せず保証するため、生成を純粋関数に切り出して両分岐を直接検証する。
+  test("本番（isDev=false）は style-src を 'self' のみに保ち 'unsafe-inline' を一切含まない", () => {
+    const csp = buildCsp(false);
+    // 末尾のセミコロンまで含めて照合し、'self' の後に 'unsafe-inline' が続く緩い形を弾く
+    // （"style-src 'self'" だけだと緩い値の部分文字列にもマッチしてしまう）。
+    expect(csp).toContain("style-src 'self';");
+    expect(csp).not.toContain("'unsafe-inline'");
+  });
+
+  test("dev（isDev=true）は style-src に 'unsafe-inline' を許可する（Vite が注入する HMR 用インライン style 向け）", () => {
+    const csp = buildCsp(true);
+    expect(csp).toContain("style-src 'self' 'unsafe-inline'");
+  });
+
+  test("dev でも style-src 以外は緩めない（script-src は 'self' のまま）", () => {
+    const csp = buildCsp(true);
+    expect(csp).toContain("script-src 'self'");
+    expect(csp).not.toContain("script-src 'self' 'unsafe-inline'");
   });
 });
 

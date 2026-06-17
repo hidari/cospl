@@ -3,6 +3,8 @@
 // 動的生成ルート（Worker が処理）:
 //   /robots.txt                               -> text/plain（全許可 + sitemap 参照）
 //   /sitemap.xml                              -> application/xml（正規 URL 一覧）
+//   /.well-known/api-catalog                  -> application/linkset+json（API カタログ）
+//   /openapi.json                             -> application/json（OpenAPI 定義）
 //   / [Accept: text/markdown]                 -> /llms.txt を Markdown として配信
 //   / [通常]                                  -> HTML + Link ヘッダ付与
 //   /license.md?tags=BY-NC-NAI-TD             -> README（Markdown）
@@ -70,21 +72,30 @@ const SECURITY_HEADERS: Record<string, string> = {
   "x-frame-options": "DENY",
 };
 
-// HTML 文書にのみ付与する CSP。ビルド成果物はインライン script/style を持たず、全リソースが
+// HTML 文書にのみ付与する CSP。本番のビルド成果物はインライン script/style を持たず、全リソースが
 // same-origin（JS/CSS/フォント/アイコン SVG/画像）なので 'unsafe-inline' 無しの 'self' で足りる。
-const CONTENT_SECURITY_POLICY = [
-  "default-src 'self'",
-  "img-src 'self' data:",
-  "style-src 'self'",
-  "script-src 'self'",
-  "font-src 'self'",
-  "connect-src 'self'",
-  "base-uri 'none'",
-  "form-action 'none'",
-  "frame-ancestors 'none'",
-  "object-src 'none'",
-  "upgrade-insecure-requests",
-].join("; ");
+// dev だけは例外で、Vite が HMR 用に注入するインライン <style> を通すため style-src にのみ
+// 'unsafe-inline' を許可する（他ディレクティブは厳格に保つ）。isDev は呼び出し側で
+// import.meta.env.DEV を渡す。本番ビルドでは false に静的置換され、緩い枝は dead-code 除去される。
+export function buildCsp(isDev: boolean): string {
+  const styleSrc = isDev ? "style-src 'self' 'unsafe-inline'" : "style-src 'self'";
+  return [
+    "default-src 'self'",
+    "img-src 'self' data:",
+    styleSrc,
+    "script-src 'self'",
+    "font-src 'self'",
+    "connect-src 'self'",
+    "base-uri 'none'",
+    "form-action 'none'",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "upgrade-insecure-requests",
+  ].join("; ");
+}
+
+// HTML ホーム応答に付与する CSP を起動時に一度だけ構築する（純粋関数はテストで両分岐を検証）。
+const CONTENT_SECURITY_POLICY = buildCsp(import.meta.env.DEV);
 
 // 動的生成レスポンス共通のヘッダ（CORS 全許可・5分キャッシュ）を付けて 200 を返す。
 // セキュリティヘッダは fetch 境界の withSecurityHeaders でまとめて付与する。

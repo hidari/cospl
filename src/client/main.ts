@@ -122,6 +122,10 @@ function downloadFile(filename: string, text: string): void {
 
 function flash(btn: HTMLElement, label: string): void {
   const original = btn.textContent ?? "";
+  // フラッシュ中の文言差し替えでボタンが縮むと、幅が内容依存のコンテナ（共有ポップアップ等）が
+  // レイアウトシフトする。現在幅を min-width で固定して防ぐ（box-sizing:border-box のため
+  // offsetWidth=border-box 幅をそのまま使える）。
+  btn.style.minWidth = `${btn.offsetWidth}px`;
   btn.textContent = label;
   btn.classList.add("done");
   // 視覚的なボタン文言の変化はスクリーンリーダーに伝わらないため、aria-live 領域へも結果を流す。
@@ -129,6 +133,7 @@ function flash(btn: HTMLElement, label: string): void {
   setTimeout(() => {
     btn.textContent = original;
     btn.classList.remove("done");
+    btn.style.minWidth = "";
     setText("flash-status", "");
   }, 1400);
 }

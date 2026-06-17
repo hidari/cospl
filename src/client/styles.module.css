@@ -426,8 +426,7 @@
   color: var(--accent-ink);
   border-color: var(--accent);
   /* 1px 下へ食い込ませ、自身の背景でパネル上辺ボーダーを覆い隠してパネルと一体化させる。
-     z-index で後続要素のパネルより前面に出す（重なり順を逆転）。 */
-  position: relative;
+     z-index で後続要素のパネルより前面に出す（positioning はベースの .tab が担う）。 */
   z-index: 1;
   margin-bottom: -1px;
 }
@@ -472,8 +471,11 @@
   right: 0;
   left: auto;
 }
-/* 「?」バッジを直接ホバーしたときだけ表示し、タブ本体ホバー（＝選択操作）では出さない。 */
-:global(.tab-q:hover + .tab-tip) {
+/* 「?」バッジの直接ホバー、またはタブのキーボードフォーカス時に表示。
+   タブ本体のマウス通過（＝選択操作）では出さない。focus-visible はマウスクリックでは
+   発火しないため、キーボード利用者のアクセスを保ちつつ過剰表示は避けられる。 */
+:global(.tab-q:hover + .tab-tip),
+:global(.tab:focus-visible .tab-tip) {
   opacity: 1;
   visibility: visible;
 }

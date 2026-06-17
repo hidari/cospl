@@ -38,6 +38,8 @@ hash フラグメント（`#...`）は HTTP でサーバへ送信されない。
 
 後方互換: `=` を含まない hash は従来どおり裸のタグ列とみなす。既存の共有リンクを壊さない。
 
+URL への反映タイミングはプレビュー更新と分離する。タグ・ビュー変更は即時同期するが、フィールド入力は逐次（入力中）に書かず、フォーカスアウト（`change`）と共有リンクボタン押下でまとめて同期する。理由: 一文字ごとにアドレスバーへ PII が書かれるのは利用者に不安を与えるため。プレビューは `input` で即時更新するので体感は変わらない。
+
 ### フリーテキストは Result ではなく全域サニタイズ
 
 タグは閉じた語彙なので `parseTags` は「未知トークン → fail」と Result で厳格に扱う。一方フリーテキストには「未知」が存在せず、意味のある失敗がない。よって Result ではなく全域のサニタイズ関数（最悪でもプレースホルダに畳む）が正しい。日付のみ形式検証してフォールバックする。
@@ -72,7 +74,7 @@ hash フラグメント（`#...`）は HTTP でサーバへ送信されない。
 - `AppState` に `fields: Fields` を追加
 - アクション `{ type: "setField"; field: keyof Fields; value: string }` を追加し、reducer を拡張
 - `<details>` 内の各 input の `input` イベントで `setField` を dispatch
-- `render` で hash を `serializeHash` で同期（既存の `history.replaceState` 経路を置き換え）
+- URL 同期（`serializeHash` + `history.replaceState`）は `render`（プレビュー更新）から分離した `syncUrl` に置く。タグ・ビュー変更時は dispatch から即時呼び、フィールドは入力欄の `change`（フォーカスアウト）と共有リンクボタン押下、および初期ロード時のみ呼ぶ
 - 初期化時に `parseHash(location.hash)` でタグとフィールドを復元
 - 日付 input の初期値: hash に date があればそれを復元し、無ければ当日を入れる。`new Date()` は DOM 境界（main 側）で取得し、文字列にして core へ渡す（core は純粋なまま保つ）
 

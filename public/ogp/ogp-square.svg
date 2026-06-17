@@ -1,82 +1,91 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" width="1200" height="1200">
-  <!--
-    CosPL OGP / 正方形 1200x1200
-    外部ベクターツールで直接編集できる native SVG。
-    フォント: Space Grotesk(見出し/PL), Space Mono(識別子/ドメイン), Zen Kaku Gothic New(本文/サブ)。
-    ラスタライズは scripts/build-images.mjs（Playwright）でフォントを与えて行う。
-    ライセンスアイコンは public/icons/*.svg と同じ 0 0 56 56 グリフを translate+scale で円内に配置。
-  -->
-  <rect width="1200" height="1200" fill="#ffffff"/>
-
-  <!-- 装飾ボブル -->
-  <circle cx="810" cy="110" r="260" fill="#ff7a2f" opacity="0.12"/>
-  <circle cx="30" cy="450" r="150" fill="#7b54ff" opacity="0.12"/>
-  <circle cx="960" cy="990" r="120" fill="#2f8bff" opacity="0.10"/>
-
-  <!-- ワードマーク Cos[PL] -->
-  <g fill="#1c1430" font-family="'Space Grotesk', sans-serif" font-weight="700">
-    <text x="96" y="222" font-size="84" letter-spacing="-2">Cos</text>
-    <rect x="258" y="124" width="128" height="100" rx="24" fill="none" stroke="#1c1430" stroke-width="7"/>
-    <text x="322" y="222" font-size="84" text-anchor="middle">PL</text>
-  </g>
-
-  <!-- メインコピー（3行） -->
-  <g fill="#1c1430" font-family="'Zen Kaku Gothic New', sans-serif" font-weight="900" font-size="76" letter-spacing="-0.5">
-    <text x="96" y="438">撮った写真の</text>
-    <text x="96" y="532"><tspan fill="#ff7a2f">「使っていい範囲」</tspan>を、</text>
-    <text x="96" y="626">言葉にする。</text>
-  </g>
-
-  <!-- サブコピー（2行） -->
-  <g fill="#6b6580" font-family="'Zen Kaku Gothic New', sans-serif" font-weight="500" font-size="31">
-    <text x="96" y="712">写真の使いみちは、なんとなくじゃなく自分で決める。</text>
-    <text x="96" y="763">撮影者とモデルの取り決めを、誰にでも伝わる形に。</text>
-  </g>
-
-  <!-- 識別子ピル -->
-  <rect x="96" y="812" width="540" height="66" rx="16" fill="#1c1430"/>
-  <text x="124" y="856" font-family="'Space Mono', monospace" font-size="30" fill="#ffffff">CosPL 1.0 / <tspan fill="#ff9e5c" font-weight="700">BY-NC-NAI-TD</tspan></text>
-
-  <!-- 下段: ドメイン + ライセンスアイコン4種（88px円・border5・グリフは scale0.93/translate18）-->
-  <text x="96" y="1058" font-family="'Space Mono', monospace" font-size="32" letter-spacing="1.9" fill="#6b6580">cospl.org</text>
-
-  <g transform="translate(720, 1000)">
-    <!-- BY -->
-    <g transform="translate(0,0)">
-      <circle cx="44" cy="44" r="41" fill="none" stroke="#1c1430" stroke-width="5"/>
-      <g transform="translate(18,18) scale(0.93)" fill="#1c1430">
-        <circle cx="28" cy="19" r="10.5"/>
-        <path d="M7 50 a21 21 0 0 1 42 0 Z"/>
-      </g>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 1200 1200" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;">
+    <rect x="0" y="0" width="1200" height="1200" style="fill:white;"/>
+    <circle cx="810" cy="110" r="260" style="fill:rgb(255,122,47);fill-opacity:0.12;"/>
+    <circle cx="30" cy="450" r="150" style="fill:rgb(123,84,255);fill-opacity:0.12;"/>
+    <circle cx="960" cy="990" r="120" style="fill:rgb(47,139,255);fill-opacity:0.1;"/>
+    <g>
+        <g transform="matrix(1,0,0,1,96,222)">
+            <text x="0px" y="0px" style="font-family:'Space Grotesk', sans-serif;font-weight:700;font-size:84px;fill:rgb(28,20,48);">C<tspan x="58.982px 108.613px " y="0px 0px ">os</tspan></text>
+        </g>
+        <g transform="matrix(1.07534,0,0,1,-19.437799,13)">
+            <path d="M386,148L386,200C386,213.246 375.999,224 363.681,224L280.319,224C268.001,224 258,213.246 258,200L258,148C258,134.754 268.001,124 280.319,124L363.681,124C375.999,124 386,134.754 386,148Z" style="fill:none;stroke:rgb(28,20,48);stroke-width:7px;"/>
+        </g>
+        <g transform="matrix(1,0,0,1,326,222)">
+            <text x="-53.669px" y="0px" style="font-family:'Space Grotesk', sans-serif;font-weight:700;font-size:84px;fill:rgb(28,20,48);">PL</text>
+        </g>
     </g>
-    <!-- NC -->
-    <g transform="translate(104,0)">
-      <circle cx="44" cy="44" r="41" fill="none" stroke="#1c1430" stroke-width="5"/>
-      <g transform="translate(18,18) scale(0.93)" fill="#1c1430">
-        <text x="28" y="28" font-family="'Space Grotesk', sans-serif" font-weight="700" font-size="46" text-anchor="middle" dominant-baseline="central">¥</text>
-        <line x1="9" y1="47" x2="47" y2="9" stroke="#1c1430" stroke-width="5" stroke-linecap="round"/>
-      </g>
+    <g>
+        <g transform="matrix(1,0,0,1,96,438)">
+            <text x="0px" y="0px" style="font-family:'Zen Kaku Gothic New', sans-serif;font-weight:700;font-size:76px;fill:rgb(28,20,48);">撮<tspan x="75.62px 151.24px 226.86px 302.48px 378.1px " y="0px 0px 0px 0px 0px ">った写真の</tspan></text>
+        </g>
+        <g transform="matrix(1,0,0,1,96,532)">
+            <text x="0px" y="0px" style="font-family:'Space Grotesk', sans-serif;font-weight:700;font-size:76px;fill:rgb(255,122,47);">“</text>
+            <text x="37.62px" y="0px" style="font-family:'Zen Kaku Gothic New', sans-serif;font-weight:700;font-size:76px;fill:rgb(255,122,47);">使<tspan x="113.24px 188.86px 264.48px 340.1px 415.72px 491.34px " y="0px 0px 0px 0px 0px 0px ">っていい範囲</tspan></text>
+            <text x="566.96px" y="0px" style="font-family:'Space Grotesk', sans-serif;font-weight:700;font-size:76px;fill:rgb(255,122,47);">”</text>
+            <text x="625.315px" y="0px" style="font-family:'Zen Kaku Gothic New', sans-serif;font-weight:700;font-size:76px;fill:rgb(28,20,48);">を</text>
+        </g>
+        <g transform="matrix(1,0,0,1,96,626)">
+            <text x="0px" y="0px" style="font-family:'Zen Kaku Gothic New', sans-serif;font-weight:700;font-size:76px;fill:rgb(28,20,48);">言<tspan x="75.62px 151.24px 226.86px 302.48px 378.1px " y="0px 0px 0px 0px 0px ">葉にする。</tspan></text>
+        </g>
     </g>
-    <!-- NAI -->
-    <g transform="translate(208,0)">
-      <circle cx="44" cy="44" r="41" fill="none" stroke="#1c1430" stroke-width="5"/>
-      <g transform="translate(18,18) scale(0.93)" fill="none" stroke="#1c1430">
-        <line x1="28" y1="4" x2="28" y2="13" stroke-width="3.5" stroke-linecap="round"/>
-        <circle cx="28" cy="4" r="3.4" fill="#1c1430" stroke="none"/>
-        <rect x="10" y="13" width="36" height="31" rx="9" stroke-width="4.2"/>
-        <circle cx="21" cy="29" r="3.8" fill="#1c1430" stroke="none"/>
-        <circle cx="35" cy="29" r="3.8" fill="#1c1430" stroke="none"/>
-        <line x1="22" y1="38" x2="34" y2="38" stroke-width="3.6" stroke-linecap="round"/>
-      </g>
+    <g>
+        <g transform="matrix(1,0,0,1,96,712)">
+            <text x="0px" y="0px" style="font-family:'Zen Kaku Gothic New', sans-serif;font-weight:500;font-size:31px;fill:rgb(107,101,128);">写真の使いみちは、なんとなくじゃなく自分で決める。</text>
+        </g>
+        <g transform="matrix(1,0,0,1,96,763)">
+            <text x="0px" y="0px" style="font-family:'Zen Kaku Gothic New', sans-serif;font-weight:500;font-size:31px;fill:rgb(107,101,128);">撮影者とモデルの取り決めを、誰にでも伝わる形に。</text>
+        </g>
     </g>
-    <!-- TD -->
-    <g transform="translate(312,0)">
-      <circle cx="44" cy="44" r="41" fill="none" stroke="#1c1430" stroke-width="5"/>
-      <g transform="translate(18,18) scale(0.93)" fill="#1c1430">
-        <rect x="23" y="6" width="10" height="25" rx="4"/>
-        <path d="M13 27 L28 45 L43 27 Z"/>
-        <rect x="12" y="49" width="32" height="5.4" rx="2.7"/>
-      </g>
+    <path d="M636,828L636,862C636,870.831 628.831,878 620,878L112,878C103.169,878 96,870.831 96,862L96,828C96,819.169 103.169,812 112,812L620,812C628.831,812 636,819.169 636,828Z" style="fill:rgb(28,20,48);"/>
+    <g transform="matrix(1,0,0,1,124,856)">
+        <text x="0px" y="0px" style="font-family:'Space Mono', monospace;font-size:30px;fill:white;">CosPL 1.0 /</text>
+        <text x="216.738px" y="0px" style="font-family:'Space Mono', monospace;font-weight:700;font-size:30px;fill:rgb(255,158,92);">BY-NC-NAI-TD</text>
     </g>
-  </g>
+    <g transform="matrix(1,0,0,1,96,1058)">
+        <text x="0px" y="0px" style="font-family:'Space Mono', monospace;font-size:32px;fill:rgb(107,101,128);">c<tspan x="19.874px 39.747px 59.621px 79.495px 99.368px 119.242px 139.115px 158.989px " y="0px 0px 0px 0px 0px 0px 0px 0px ">ospl.org</tspan></text>
+    </g>
+    <g transform="matrix(1,0,0,1,720,1000)">
+        <g>
+            <circle cx="44" cy="44" r="41" style="fill:none;stroke:rgb(28,20,48);stroke-width:5px;"/>
+            <g transform="matrix(0.93,0,0,0.93,18,18)">
+                <circle cx="28" cy="19" r="10.5" style="fill:rgb(28,20,48);"/>
+                <path d="M7,50C7,38.48 16.48,29 28,29C39.52,29 49,38.48 49,50L7,50Z" style="fill:rgb(28,20,48);fill-rule:nonzero;"/>
+            </g>
+        </g>
+        <g transform="matrix(1,0,0,1,104,0)">
+            <circle cx="44" cy="44" r="41" style="fill:none;stroke:rgb(28,20,48);stroke-width:5px;"/>
+            <g transform="matrix(0.93,0,0,0.93,18,18)">
+                <g transform="matrix(1.430115,0,0,1.430115,27.956989,50.940083)">
+                    <text x="-12.792px" y="0px" style="font-family:'Space Grotesk', sans-serif;font-weight:700;font-size:46px;fill:rgb(28,20,48);">¥</text>
+                </g>
+                <g transform="matrix(0.9771,0.212779,-0.212779,0.9771,7.285368,-4.167473)">
+                    <path d="M9,47L47,9" style="fill:none;fill-rule:nonzero;stroke:rgb(28,20,48);stroke-width:5px;stroke-linecap:round;"/>
+                </g>
+            </g>
+        </g>
+        <g transform="matrix(1,0,0,1,208,0)">
+            <circle cx="44" cy="44" r="41" style="fill:none;stroke:rgb(28,20,48);stroke-width:5px;"/>
+            <g transform="matrix(1.078716,0,0,1.078716,13.955235,17.91077)">
+                <path d="M28,4L28,13" style="fill:none;fill-rule:nonzero;stroke:rgb(28,20,48);stroke-width:3.5px;stroke-linecap:round;"/>
+                <circle cx="28" cy="4" r="3.4" style="fill:rgb(28,20,48);"/>
+                <path d="M46,21.343L46,35.657C46,40.262 42.262,44 37.657,44L18.343,44C13.738,44 10,40.262 10,35.657L10,21.343C10,16.738 13.738,13 18.343,13L37.657,13C42.262,13 46,16.738 46,21.343Z" style="fill:none;stroke:rgb(28,20,48);stroke-width:4.2px;"/>
+                <circle cx="21" cy="29" r="3.8" style="fill:rgb(28,20,48);"/>
+                <circle cx="35" cy="29" r="3.8" style="fill:rgb(28,20,48);"/>
+                <path d="M22,38L34,38" style="fill:none;fill-rule:nonzero;stroke:rgb(28,20,48);stroke-width:3.6px;stroke-linecap:round;"/>
+                <g transform="matrix(0.960197,0.107773,-0.301247,0.918065,9.118698,0.822233)">
+                    <path d="M9,47L47,9" style="fill:none;fill-rule:nonzero;stroke:rgb(28,20,48);stroke-width:5px;stroke-linecap:round;"/>
+                </g>
+            </g>
+        </g>
+        <g transform="matrix(1,0,0,1,312,0)">
+            <circle cx="44" cy="44" r="41" style="fill:none;stroke:rgb(28,20,48);stroke-width:5px;"/>
+            <g transform="matrix(0.93,0,0,0.93,18,18)">
+                <path d="M33,10.301L33,26.699C33,29.073 31.073,31 28.699,31L27.301,31C24.927,31 23,29.073 23,26.699L23,10.301C23,7.927 24.927,6 27.301,6L28.699,6C31.073,6 33,7.927 33,10.301Z" style="fill:rgb(28,20,48);"/>
+                <path d="M13,27L28,45L43,27L13,27Z" style="fill:rgb(28,20,48);fill-rule:nonzero;"/>
+                <path d="M44,51.7C44,53.19 42.79,54.4 41.3,54.4L14.7,54.4C13.21,54.4 12,53.19 12,51.7C12,50.21 13.21,49 14.7,49L41.3,49C42.79,49 44,50.21 44,51.7Z" style="fill:rgb(28,20,48);"/>
+            </g>
+        </g>
+    </g>
 </svg>

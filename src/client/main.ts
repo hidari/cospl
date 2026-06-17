@@ -275,6 +275,7 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
   });
 
   // サイト共有。設定を含まない素の URL と SNS 貼り付け用の文面を配る（状態に依存しない定数）。
+  bindShareDisclosure();
   bindCopy("share-url", () => SITE_URL);
   bindCopy("share-msg", () => siteShareMessage());
 
@@ -301,6 +302,32 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
       const state = getState();
       downloadFile(downloadName(state), currentMarkdown(state));
       flash(btn, "保存しました");
+    });
+  });
+}
+
+// サイト共有ディスクロージャ。トグル・展開状態の公開・キーボード操作はネイティブ <details> が
+// 担うため、<details> が持たない「Escape / 外側クリックでの閉じ」だけをここで補う。
+function bindShareDisclosure(): void {
+  ifSome(byId("share"), (el) => {
+    if (!(el instanceof HTMLDetailsElement)) {
+      return;
+    }
+    // 外側クリックで閉じる（開いている間のみ）。summary・ポップ内ボタンは details 内なので除外される。
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      if (el.open && target instanceof Node && !el.contains(target)) {
+        el.open = false;
+      }
+    });
+    // Escape で閉じて summary へフォーカスを戻す。
+    document.addEventListener("keydown", (event) => {
+      if (el.open && event.key === "Escape") {
+        el.open = false;
+        ifSome(fromNullable(el.querySelector<HTMLElement>("summary")), (summary) =>
+          summary.focus(),
+        );
+      }
     });
   });
 }

@@ -14,6 +14,13 @@ run_worker_first = ["/license.md", "/", "/robots.txt", "/sitemap.xml", "/.well-k
 [observability]
 enabled = true
 
+# 自動トレーシング。各 invocation を OpenTelemetry 準拠の span（waterfall）で可視化する。
+# early beta 中は observability.enabled だけでは自動有効化されないため明示指定が必要。
+# head_sampling_rate は 0〜1（取得割合）。低トラフィックなので 1.0（全件取得）にする。
+[observability.traces]
+enabled = true
+head_sampling_rate = 1.0
+
 # カスタムドメイン cospl.org。デプロイ時に Cloudflare がゾーン/証明書を割り当てる。
 # （ダッシュボードで設定する場合はこのブロックを削除してよい）
 [[routes]]

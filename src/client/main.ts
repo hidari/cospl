@@ -15,7 +15,7 @@ import {
   serializeHash,
   siteShareMessage,
   siteSharePayload,
-  siteXIntentUrl,
+  siteXSchemeUrl,
   type Tag,
   tagsFrom,
   type View,
@@ -341,11 +341,11 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
   });
 }
 
-// サイト共有。共有の直接導線（X アプリ内ブラウザ → X 投稿コンポーザ / それ以外で Web Share
-// 対応 → ネイティブ共有シート）が使えるときは summary クリックを横取りして直接起動し、
-// 使えない／失敗時はコピー用ポップアップにフォールバックする。トグル・展開状態の公開・
-// キーボード操作はネイティブ <details> が担うため、<details> が持たない「Escape / 外側
-// クリックでの閉じ」だけをここで補う（フォールバック時に効く）。
+// サイト共有を環境別に振り分ける。X アプリ内ブラウザは <details> のコピーを開きつつ X の URL
+// スキームで投稿コンポーザ起動を試す。非 X でタッチ主体かつ Web Share 対応ならネイティブ共有
+// シートを直接起動する。デスクトップ・非対応はネイティブ <details> のコピーに任せる。トグル・
+// 展開状態の公開・キーボード操作はネイティブ <details> が担うため、<details> が持たない
+// 「Escape / 外側クリックでの閉じ」だけをここで補う。
 function bindShareDisclosure(): void {
   ifSome(byId("share"), (el) => {
     if (!(el instanceof HTMLDetailsElement)) {
@@ -366,36 +366,36 @@ function bindShareDisclosure(): void {
         ifSome(summary, (s) => s.focus());
       }
     });
-    // X アプリ内ブラウザは Web Share 非対応のため X 投稿コンポーザを直接開く。それ以外で
-    // Web Share 対応ならネイティブ共有シートを開く。どちらかが使えるときは summary クリックを
-    // 横取りして <details> の開閉を抑止する（キーボードの Enter/Space も click を発火するため同経路）。
-    // この時 summary は開示トグルではなく「共有する」ボタンとして働くため role を button に
-    // 上書きしてスクリーンリーダーの誤読（"折りたたみ"）を防ぎ、起動に失敗したときだけ role を
-    // 戻して disclosure に復帰し、コピー用ポップアップを開く。
-    const xInApp = isXInAppUserAgent(navigator.userAgent);
-    const webShare = typeof navigator.share === "function";
-    if (!xInApp && !webShare) {
-      return;
-    }
     ifSome(summary, (s) => {
+      // X アプリ内ブラウザは Web Share も web intent(https) も使えない（intent は webview の
+      // ログイン壁に阻まれる）。<details> はそのまま開いて確実なコピー手段を見せつつ、X の URL
+      // スキームで native コンポーザ起動を試みる（未対応なら何も起きず、コピーが残る）。disclosure
+      // を活かすので preventDefault も role 上書きも不要。
+      if (isXInAppUserAgent(navigator.userAgent)) {
+        s.addEventListener("click", () => {
+          window.open(siteXSchemeUrl(), "_blank");
+        });
+        return;
+      }
+      // 非 X で Web Share 対応、かつタッチ主体デバイス (pointer: coarse) のときだけネイティブ共有
+      // シートを直接開く。デスクトップ（マウス）を除くのは OS 共有シートの表示位置がブラウザ依存で
+      // Chrome では大きくズレるため。デスクトップ・非対応はネイティブ <details> のコピーに任せる。
+      const shouldUseNativeShare =
+        typeof navigator.share === "function" && window.matchMedia("(pointer: coarse)").matches;
+      if (!shouldUseNativeShare) {
+        return;
+      }
+      // summary クリックを横取りして <details> の開閉を抑止しネイティブ共有を直接起動する
+      // （キーボードの Enter/Space も click を発火するため同経路）。この時 summary は開示トグル
+      // ではなく「共有する」ボタンとして働くため role を button に上書きしてスクリーンリーダーの
+      // 誤読（"折りたたみ"）を防ぎ、起動に失敗したときだけ role を戻してコピー用ポップアップを開く。
       s.setAttribute("role", "button");
-      const fallbackToCopy = (): void => {
-        s.removeAttribute("role");
-        el.open = true;
-      };
       s.addEventListener("click", (event) => {
         event.preventDefault();
-        // 信頼できる x.com を開くため noopener は付けず、open 失敗（null）を検知して
-        // コピーへ退避できるようにする（X 内ブラウザで open がブロックされても無反応にしない）。
-        if (xInApp) {
-          if (window.open(siteXIntentUrl(), "_blank") === null) {
-            fallbackToCopy();
-          }
-          return;
-        }
         shareSiteFailed().then((failed) => {
           if (failed) {
-            fallbackToCopy();
+            s.removeAttribute("role");
+            el.open = true;
           }
         });
       });

@@ -21,7 +21,7 @@ import {
   serializeHash,
   siteShareMessage,
   siteSharePayload,
-  siteXIntentUrl,
+  siteXSchemeUrl,
   tagsFrom,
 } from "../src/core";
 import golden from "./__fixtures__/golden.json";
@@ -365,11 +365,12 @@ describe("サイト共有", () => {
     expect(`${p.title}\n${p.text}\n${p.url}`).toBe(siteShareMessage());
   });
 
-  test("siteXIntentUrl は X 投稿コンポーザの intent URL（text=タグライン, url=SITE_URL）", () => {
-    const u = new URL(siteXIntentUrl());
-    expect(u.origin + u.pathname).toBe("https://x.com/intent/post");
-    expect(u.searchParams.get("text")).toBe(siteSharePayload().text);
-    expect(u.searchParams.get("url")).toBe(SITE_URL);
+  test("siteXSchemeUrl は X の URL スキーム（twitter://post, message にタグライン+URL）", () => {
+    const url = siteXSchemeUrl();
+    const prefix = "twitter://post?";
+    expect(url.startsWith(prefix)).toBe(true);
+    const params = new URLSearchParams(url.slice(prefix.length));
+    expect(params.get("message")).toBe(`${siteSharePayload().text}\n${SITE_URL}`);
   });
 });
 

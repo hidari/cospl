@@ -132,11 +132,13 @@ export function siteSharePayload(): SharePayload {
   return { title: SHARE_TITLE, text: SHARE_TAGLINE, url: SITE_URL };
 }
 
-// X（Twitter）の投稿コンポーザを開く Web Intent URL。Web Share 非対応の X アプリ内ブラウザ
-// 向けの直接投稿導線。text はタグライン、url は SITE_URL（投稿に URL が付きカードが描画される）。
-export function siteXIntentUrl(): string {
-  const params = new URLSearchParams({ text: SHARE_TAGLINE, url: SITE_URL });
-  return `https://x.com/intent/post?${params.toString()}`;
+// X の native 投稿コンポーザを開く URL スキーム。X アプリ内ブラウザは Web Share も web intent
+// (https) も使えない（intent は webview のログイン壁に阻まれる）ため、ログインページを介さない
+// スキームで native コンポーザ起動を試みる。スキームは url を個別に取らないため message に
+// タグライン + URL をまとめる。未対応環境では何も起きないので、呼び出し側でコピーを併せて残す。
+export function siteXSchemeUrl(): string {
+  const params = new URLSearchParams({ message: `${SHARE_TAGLINE}\n${SITE_URL}` });
+  return `twitter://post?${params.toString()}`;
 }
 
 // X アプリ内ブラウザの UA 判定。iOS は "Twitter for iPhone/iPad"、Android は "TwitterAndroid" と

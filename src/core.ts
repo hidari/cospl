@@ -115,10 +115,21 @@ export const EMPTY_FIELDS: Fields = { date: "", photographer: "", contact: "" };
 // サイトのトップ URL（設定を含まない素の共有先）。og:url とも一致させる。
 export const SITE_URL = "https://cospl.org/";
 
+// 共有文面の構成要素。コピー文面（siteShareMessage）とネイティブ共有（siteSharePayload）の
+// 単一ソース。ヒーロー・OGP の文言と整合させ、文面変更は単体テストで検知する。
+const SHARE_TITLE = "CosPL — Cosplay Public License";
+const SHARE_TAGLINE = "撮った写真の ”使っていい範囲” を言葉にする";
+
 // SNS 等へそのまま貼り付ける共有メッセージ（タイトル / タグライン / URL の3行）。
-// ヒーロー・OGP の文言と整合させ、文面変更は単体テストで検知する。
 export function siteShareMessage(): string {
-  return `CosPL — Cosplay Public License\n撮った写真の ”使っていい範囲” を言葉にする\n${SITE_URL}`;
+  return `${SHARE_TITLE}\n${SHARE_TAGLINE}\n${SITE_URL}`;
+}
+
+// ネイティブ共有（Web Share API）用ペイロード。url を独立フィールドにして共有先が
+// URL を正しく扱えるようにする（X はカードが描画され、他アプリは url を個別に受け取る）。
+export type SharePayload = { title: string; text: string; url: string };
+export function siteSharePayload(): SharePayload {
+  return { title: SHARE_TITLE, text: SHARE_TAGLINE, url: SITE_URL };
 }
 
 // 除去対象コードポイントの判定。C0/C1 制御文字（改行・タブ含む）と双方向テキスト制御文字

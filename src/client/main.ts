@@ -13,6 +13,7 @@ import {
   sanitizeFields,
   serializeHash,
   siteShareMessage,
+  siteSharePayload,
   type Tag,
   tagsFrom,
   type View,
@@ -103,6 +104,22 @@ async function copyText(text: string): Promise<Result<void, string>> {
     }
   }
   return copyViaExecCommand(text);
+}
+
+// 共有シートのキャンセルは DOMException("AbortError")。環境により DOMException が Error を
+// 継承しないため instanceof に頼らず name で判定する。
+function isAbortError(err: unknown): boolean {
+  return typeof err === "object" && err !== null && "name" in err && err.name === "AbortError";
+}
+
+// Web Share API を呼び、コピーへのフォールバックが必要なとき（実失敗時）だけ true を返す。
+// try-catch を使わず Promise の then/catch で合成する。ユーザーキャンセル（AbortError）は
+// 失敗扱いせず余計なフォールバックを抑止する。navigator.share の存在は呼び出し側が確認する前提。
+function shareSiteFailed(): Promise<boolean> {
+  return navigator
+    .share(siteSharePayload())
+    .then(() => false)
+    .catch((err: unknown) => !isAbortError(err));
 }
 
 // テキストをファイルとして保存する。Blob を一時 anchor 経由でダウンロードさせる。
@@ -322,13 +339,16 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
   });
 }
 
-// サイト共有ディスクロージャ。トグル・展開状態の公開・キーボード操作はネイティブ <details> が
-// 担うため、<details> が持たない「Escape / 外側クリックでの閉じ」だけをここで補う。
+// サイト共有。Web Share API があれば summary クリックでネイティブ共有シートを直接開き
+// （ポップアップは開かない）、無い／失敗時はコピー用ポップアップにフォールバックする。
+// トグル・展開状態の公開・キーボード操作はネイティブ <details> が担うため、<details> が
+// 持たない「Escape / 外側クリックでの閉じ」だけをここで補う（フォールバック時に効く）。
 function bindShareDisclosure(): void {
   ifSome(byId("share"), (el) => {
     if (!(el instanceof HTMLDetailsElement)) {
       return;
     }
+    const summary = fromNullable(el.querySelector<HTMLElement>("summary"));
     // 外側クリックで閉じる（開いている間のみ）。summary・ポップ内ボタンは details 内なので除外される。
     document.addEventListener("click", (event) => {
       const target = event.target;
@@ -340,10 +360,28 @@ function bindShareDisclosure(): void {
     document.addEventListener("keydown", (event) => {
       if (el.open && event.key === "Escape") {
         el.open = false;
-        ifSome(fromNullable(el.querySelector<HTMLElement>("summary")), (summary) =>
-          summary.focus(),
-        );
+        ifSome(summary, (s) => s.focus());
       }
+    });
+    // Web Share 対応時のみ summary クリックを横取りし、<details> の開閉を抑止して
+    // ネイティブ共有を直接起動する（キーボードの Enter/Space も click を発火するため同経路）。
+    // この時 summary は開示トグルではなく「共有する」ボタンとして働くため role を button に
+    // 上書きし、スクリーンリーダーの誤読（"折りたたみ"）を防ぐ。共有が失敗したときだけ
+    // role を戻して disclosure に復帰し、コピー用ポップアップを開く。
+    if (typeof navigator.share !== "function") {
+      return;
+    }
+    ifSome(summary, (s) => {
+      s.setAttribute("role", "button");
+      s.addEventListener("click", (event) => {
+        event.preventDefault();
+        shareSiteFailed().then((failed) => {
+          if (failed) {
+            s.removeAttribute("role");
+            el.open = true;
+          }
+        });
+      });
     });
   });
 }

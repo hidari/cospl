@@ -366,6 +366,9 @@
 }
 :global(.fill-grid input) {
   width: 100%;
+  /* grid item は既定で min-width: auto となり中身の最小幅以下に縮まないため、
+     intrinsic 幅の大きい入力（type="date" 等）が列を押し広げて溢れるのを防ぐ。 */
+  min-width: 0;
   font-family: var(--sans), sans-serif;
   font-size: 0.92rem;
   color: var(--ink);
@@ -377,6 +380,18 @@
 :global(.fill-grid input:focus-visible) {
   border-color: var(--accent);
   outline: none;
+}
+/* iOS WebKit（X アプリ内ブラウザ等）の type="date" は UA appearance により
+   width: 100% を無視してコンテナをはみ出すことがあるため appearance をリセットする
+   （grid 列のはみ出し自体は上の min-width: 0 が解消する）。 */
+:global(.fill-grid input[type="date"]) {
+  -webkit-appearance: none;
+  appearance: none;
+}
+/* iOS WebKit は値テキストを中央寄せで描画する。input 本体への text-align は
+   iOS 15+ で効かないため、値を描画する擬似要素を直接指定して左寄せに揃える。 */
+:global(.fill-grid input[type="date"]::-webkit-date-and-time-value) {
+  text-align: left;
 }
 /* 入力欄のクリアボタン（名前入り URL の誤共有を防ぐ）。グリッド下に右寄せで控えめに置く。 */
 :global(.fill-actions) {

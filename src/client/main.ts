@@ -6,7 +6,6 @@ import {
   EMPTY_FIELDS,
   type Fields,
   humanMD,
-  isXInAppUserAgent,
   parseHash,
   parseTag,
   SITE_URL,
@@ -15,7 +14,6 @@ import {
   serializeHash,
   siteShareMessage,
   siteSharePayload,
-  siteXSchemeUrl,
   type Tag,
   tagsFrom,
   type View,
@@ -341,11 +339,11 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
   });
 }
 
-// サイト共有を環境別に振り分ける。X アプリ内ブラウザは <details> のコピーを開きつつ X の URL
-// スキームで投稿コンポーザ起動を試す。非 X でタッチ主体かつ Web Share 対応ならネイティブ共有
-// シートを直接起動する。デスクトップ・非対応はネイティブ <details> のコピーに任せる。トグル・
-// 展開状態の公開・キーボード操作はネイティブ <details> が担うため、<details> が持たない
-// 「Escape / 外側クリックでの閉じ」だけをここで補う。
+// サイト共有。タッチ主体デバイス (pointer: coarse) で Web Share 対応のときだけ summary クリックで
+// ネイティブ共有シートを直接開く。デスクトップ（マウス）は OS 共有シートの位置がブラウザ依存で
+// ズレるため、また Web Share 非対応環境（X アプリ内ブラウザ等）も、ネイティブ <details> のコピー
+// 用ポップアップに任せる。トグル・展開状態の公開・キーボード操作はネイティブ <details> が担う
+// ため、<details> が持たない「Escape / 外側クリックでの閉じ」だけをここで補う。
 function bindShareDisclosure(): void {
   ifSome(byId("share"), (el) => {
     if (!(el instanceof HTMLDetailsElement)) {
@@ -367,19 +365,9 @@ function bindShareDisclosure(): void {
       }
     });
     ifSome(summary, (s) => {
-      // X アプリ内ブラウザは Web Share も web intent(https) も使えない（intent は webview の
-      // ログイン壁に阻まれる）。<details> はそのまま開いて確実なコピー手段を見せつつ、X の URL
-      // スキームで native コンポーザ起動を試みる（未対応なら何も起きず、コピーが残る）。disclosure
-      // を活かすので preventDefault も role 上書きも不要。
-      if (isXInAppUserAgent(navigator.userAgent)) {
-        s.addEventListener("click", () => {
-          window.open(siteXSchemeUrl(), "_blank");
-        });
-        return;
-      }
-      // 非 X で Web Share 対応、かつタッチ主体デバイス (pointer: coarse) のときだけネイティブ共有
-      // シートを直接開く。デスクトップ（マウス）を除くのは OS 共有シートの表示位置がブラウザ依存で
-      // Chrome では大きくズレるため。デスクトップ・非対応はネイティブ <details> のコピーに任せる。
+      // タッチ主体デバイス (pointer: coarse) で Web Share 対応のときだけネイティブ共有シートを
+      // 直接開く。デスクトップ（マウス）の OS 共有シートは位置がブラウザ依存でズレるため、また
+      // X アプリ内ブラウザ等の非対応環境も、ネイティブ <details> のコピーに任せる。
       const shouldUseNativeShare =
         typeof navigator.share === "function" && window.matchMedia("(pointer: coarse)").matches;
       if (!shouldUseNativeShare) {

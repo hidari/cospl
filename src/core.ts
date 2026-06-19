@@ -132,22 +132,6 @@ export function siteSharePayload(): SharePayload {
   return { title: SHARE_TITLE, text: SHARE_TAGLINE, url: SITE_URL };
 }
 
-// X の native 投稿コンポーザを開く URL スキーム。X アプリ内ブラウザは Web Share も web intent
-// (https) も使えない（intent は webview のログイン壁に阻まれる）ため、ログインページを介さない
-// スキームで native コンポーザ起動を試みる。スキームは url を個別に取らないため message に
-// タグライン + URL をまとめる。未対応環境では何も起きないので、呼び出し側でコピーを併せて残す。
-export function siteXSchemeUrl(): string {
-  const params = new URLSearchParams({ message: `${SHARE_TAGLINE}\n${SITE_URL}` });
-  return `twitter://post?${params.toString()}`;
-}
-
-// X アプリ内ブラウザの UA 判定。iOS は "Twitter for iPhone/iPad"、Android は "TwitterAndroid" と
-// いずれも "Twitter" トークンを含むため両対応できる。UA heuristic のため脆く、検出漏れ時は通常の
-// 共有導線（Web Share / コピー）へ degrade する。
-export function isXInAppUserAgent(ua: string): boolean {
-  return /Twitter/i.test(ua);
-}
-
 // 除去対象コードポイントの判定。C0/C1 制御文字（改行・タブ含む）と双方向テキスト制御文字
 // （Trojan Source 型の視覚的文言偽装に使われる）を弾く。正規表現を避けてコードポイントで判定し、
 // Biome の noControlCharactersInRegex を踏まず、かつサロゲートペアを安全に扱う。

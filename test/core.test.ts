@@ -9,6 +9,7 @@ import {
   humanMD,
   humanText,
   ident,
+  isXInAppUserAgent,
   parseFormat,
   parseHash,
   parseTag,
@@ -20,6 +21,7 @@ import {
   serializeHash,
   siteShareMessage,
   siteSharePayload,
+  siteXIntentUrl,
   tagsFrom,
 } from "../src/core";
 import golden from "./__fixtures__/golden.json";
@@ -361,6 +363,39 @@ describe("サイト共有", () => {
   test("siteSharePayload を結合するとコピー用 siteShareMessage と一致する（文面の単一ソース）", () => {
     const p = siteSharePayload();
     expect(`${p.title}\n${p.text}\n${p.url}`).toBe(siteShareMessage());
+  });
+
+  test("siteXIntentUrl は X 投稿コンポーザの intent URL（text=タグライン, url=SITE_URL）", () => {
+    const u = new URL(siteXIntentUrl());
+    expect(u.origin + u.pathname).toBe("https://x.com/intent/post");
+    expect(u.searchParams.get("text")).toBe(siteSharePayload().text);
+    expect(u.searchParams.get("url")).toBe(SITE_URL);
+  });
+});
+
+describe("X アプリ内ブラウザ判定", () => {
+  test("X iOS アプリ内ブラウザ（Twitter for iPhone）を検出する", () => {
+    const ua =
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Twitter for iPhone";
+    expect(isXInAppUserAgent(ua)).toBe(true);
+  });
+
+  test("X Android アプリ内ブラウザ（TwitterAndroid）を検出する", () => {
+    const ua =
+      "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.0.0 Mobile Safari/537.36 TwitterAndroid";
+    expect(isXInAppUserAgent(ua)).toBe(true);
+  });
+
+  test("通常の iOS Safari は検出しない", () => {
+    const ua =
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
+    expect(isXInAppUserAgent(ua)).toBe(false);
+  });
+
+  test("Android Chrome は検出しない", () => {
+    const ua =
+      "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36";
+    expect(isXInAppUserAgent(ua)).toBe(false);
   });
 });
 

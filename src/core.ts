@@ -132,6 +132,20 @@ export function siteSharePayload(): SharePayload {
   return { title: SHARE_TITLE, text: SHARE_TAGLINE, url: SITE_URL };
 }
 
+// X（Twitter）の投稿コンポーザを開く Web Intent URL。Web Share 非対応の X アプリ内ブラウザ
+// 向けの直接投稿導線。text はタグライン、url は SITE_URL（投稿に URL が付きカードが描画される）。
+export function siteXIntentUrl(): string {
+  const params = new URLSearchParams({ text: SHARE_TAGLINE, url: SITE_URL });
+  return `https://x.com/intent/post?${params.toString()}`;
+}
+
+// X アプリ内ブラウザの UA 判定。iOS は "Twitter for iPhone/iPad"、Android は "TwitterAndroid" と
+// いずれも "Twitter" トークンを含むため両対応できる。UA heuristic のため脆く、検出漏れ時は通常の
+// 共有導線（Web Share / コピー）へ degrade する。
+export function isXInAppUserAgent(ua: string): boolean {
+  return /Twitter/i.test(ua);
+}
+
 // 除去対象コードポイントの判定。C0/C1 制御文字（改行・タブ含む）と双方向テキスト制御文字
 // （Trojan Source 型の視覚的文言偽装に使われる）を弾く。正規表現を避けてコードポイントで判定し、
 // Biome の noControlCharactersInRegex を踏まず、かつサロゲートペアを安全に扱う。

@@ -101,6 +101,12 @@
 }
 :global(.hero .hero-body) {
   position: relative;
+  /* 共有ボタン（.hero-share）はヒーロー下端から bottom: 16px に絶対配置される。
+     本文下に余白を足すとヒーローが伸びてボタンも同じだけ下がるため、余白から
+     16px を引いた値（32 - 16 = 16px）が lead テキスト末尾とボタンの間隔になり、
+     画面幅・折返し行数によらず一定に保たれる。デスクトップは lead が横方向に
+     分離して重ならないため min-width: 640px で解除する。 */
+  padding-bottom: 32px;
 }
 :global(.bobbles) {
   position: absolute;
@@ -747,6 +753,11 @@
   :global(.hero) {
     padding: 48px 44px 52px;
     margin-top: 32px;
+  }
+  /* 広い hero では lead（max-width: 50ch）が右端の共有ボタンと横方向に分離するため、
+     モバイル用に確保した本文下の余白は不要。 */
+  :global(.hero .hero-body) {
+    padding-bottom: 0;
   }
   :global(.chip) {
     padding: 14px 18px;

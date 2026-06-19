@@ -6,6 +6,7 @@ import {
   EMPTY_FIELDS,
   type Fields,
   humanMD,
+  isXInAppUserAgent,
   parseHash,
   parseTag,
   SITE_URL,
@@ -14,6 +15,7 @@ import {
   serializeHash,
   siteShareMessage,
   siteSharePayload,
+  siteXIntentUrl,
   type Tag,
   tagsFrom,
   type View,
@@ -339,10 +341,11 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
   });
 }
 
-// サイト共有。Web Share API があれば summary クリックでネイティブ共有シートを直接開き
-// （ポップアップは開かない）、無い／失敗時はコピー用ポップアップにフォールバックする。
-// トグル・展開状態の公開・キーボード操作はネイティブ <details> が担うため、<details> が
-// 持たない「Escape / 外側クリックでの閉じ」だけをここで補う（フォールバック時に効く）。
+// サイト共有。共有の直接導線（X アプリ内ブラウザ → X 投稿コンポーザ / それ以外で Web Share
+// 対応 → ネイティブ共有シート）が使えるときは summary クリックを横取りして直接起動し、
+// 使えない／失敗時はコピー用ポップアップにフォールバックする。トグル・展開状態の公開・
+// キーボード操作はネイティブ <details> が担うため、<details> が持たない「Escape / 外側
+// クリックでの閉じ」だけをここで補う（フォールバック時に効く）。
 function bindShareDisclosure(): void {
   ifSome(byId("share"), (el) => {
     if (!(el instanceof HTMLDetailsElement)) {
@@ -363,22 +366,36 @@ function bindShareDisclosure(): void {
         ifSome(summary, (s) => s.focus());
       }
     });
-    // Web Share 対応時のみ summary クリックを横取りし、<details> の開閉を抑止して
-    // ネイティブ共有を直接起動する（キーボードの Enter/Space も click を発火するため同経路）。
+    // X アプリ内ブラウザは Web Share 非対応のため X 投稿コンポーザを直接開く。それ以外で
+    // Web Share 対応ならネイティブ共有シートを開く。どちらかが使えるときは summary クリックを
+    // 横取りして <details> の開閉を抑止する（キーボードの Enter/Space も click を発火するため同経路）。
     // この時 summary は開示トグルではなく「共有する」ボタンとして働くため role を button に
-    // 上書きし、スクリーンリーダーの誤読（"折りたたみ"）を防ぐ。共有が失敗したときだけ
-    // role を戻して disclosure に復帰し、コピー用ポップアップを開く。
-    if (typeof navigator.share !== "function") {
+    // 上書きしてスクリーンリーダーの誤読（"折りたたみ"）を防ぎ、起動に失敗したときだけ role を
+    // 戻して disclosure に復帰し、コピー用ポップアップを開く。
+    const xInApp = isXInAppUserAgent(navigator.userAgent);
+    const webShare = typeof navigator.share === "function";
+    if (!xInApp && !webShare) {
       return;
     }
     ifSome(summary, (s) => {
       s.setAttribute("role", "button");
+      const fallbackToCopy = (): void => {
+        s.removeAttribute("role");
+        el.open = true;
+      };
       s.addEventListener("click", (event) => {
         event.preventDefault();
+        // 信頼できる x.com を開くため noopener は付けず、open 失敗（null）を検知して
+        // コピーへ退避できるようにする（X 内ブラウザで open がブロックされても無反応にしない）。
+        if (xInApp) {
+          if (window.open(siteXIntentUrl(), "_blank") === null) {
+            fallbackToCopy();
+          }
+          return;
+        }
         shareSiteFailed().then((failed) => {
           if (failed) {
-            s.removeAttribute("role");
-            el.open = true;
+            fallbackToCopy();
           }
         });
       });

@@ -201,12 +201,8 @@ describe("GET /llms.txt", () => {
     expect(await res.text()).toBe(llmsBody);
   });
 
-  test("セキュリティヘッダを付与する", async () => {
-    const res = await call("/llms.txt");
-    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
-    expect(res.headers.get("strict-transport-security")).toContain("max-age=");
-  });
-
+  // セキュリティヘッダは fetch 境界の withSecurityHeaders が全応答へ一律付与するため、
+  // ルート別の重複検証はしない（専用 describe「セキュリティヘッダ」が finalizer の普遍性を網羅済み）。
   test("HEAD /llms.txt は同じヘッダを返し本文は空", async () => {
     const res = await call("/llms.txt", { method: "HEAD" });
     expect(res.status).toBe(200);

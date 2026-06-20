@@ -63,6 +63,7 @@ jobs:
           check_200 "https://cospl.org/sitemap.xml" || { echo "::error::health check failed: /sitemap.xml did not return 200"; exit 1; }
           check_200 "https://cospl.org/.well-known/api-catalog" || { echo "::error::health check failed: /.well-known/api-catalog did not return 200"; exit 1; }
           check_200 "https://cospl.org/openapi.json" || { echo "::error::health check failed: /openapi.json did not return 200"; exit 1; }
+          check_200 "https://cospl.org/llms.txt" || { echo "::error::health check failed: /llms.txt did not return 200"; exit 1; }
 
           # robots.txt に Content Signals が宣言されていることを確認する。
           robots=$(curl -fsSL "https://cospl.org/robots.txt" || true)
@@ -91,4 +92,20 @@ jobs:
             return 1
           }
           check_markdown || { echo "::error::health check failed: Accept: text/markdown が Markdown を返さない"; exit 1; }
+
+          # /llms.txt が Worker 経由で text/markdown + CORS を返すことの検証（run_worker_first から
+          # /llms.txt が漏れる回帰の防止）。静的アセットが直接配信されると text/plain・CORS 無しになり、
+          # api-catalog の広告（service-doc: text/markdown）と乖離する。これは統合テストでは検出できない。
+          check_llms() {
+            for i in $(seq 1 5); do
+              headers=$(curl -fsSL -D - -o /dev/null "https://cospl.org/llms.txt" || true)
+              ctype=$(echo "${headers}" | grep -i "^content-type:" || true)
+              acao=$(echo "${headers}" | grep -i "^access-control-allow-origin:" || true)
+              echo "  /llms.txt attempt ${i}: ${ctype} ${acao}"
+              echo "${ctype}" | grep -qi "text/markdown" && echo "${acao}" | grep -q '\*' && return 0
+              sleep 10
+            done
+            return 1
+          }
+          check_llms || { echo "::error::health check failed: /llms.txt が text/markdown + CORS を返さない（run_worker_first に /llms.txt があるか確認）"; exit 1; }
           echo "healthy"

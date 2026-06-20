@@ -7,6 +7,7 @@
 //   /openapi.json                             -> application/json（OpenAPI 定義）
 //   / [Accept: text/markdown]                 -> /llms.txt を Markdown として配信
 //   / [通常]                                  -> HTML + Link ヘッダ付与
+//   /llms.txt                                 -> text/markdown + CORS（/ の Accept 交渉と同一本文）
 //   /license.md?tags=BY-NC-NAI-TD             -> README（Markdown）
 //   /license.md?tags=BY-NC-NAI-TD&format=text -> README（プレーンテキスト）
 //   /license.md?tags=BY-NC-NAI-TD&view=ai     -> AI向け宣言
@@ -166,9 +167,10 @@ function methodNotAllowedResponse(): Response {
   });
 }
 
-// Accept: text/markdown のとき /llms.txt を Markdown として返す。
+// /llms.txt の内容を Markdown（text/markdown + CORS）として返す。ASSETS から実体を読み、
+// / の Accept: text/markdown ネゴシエーションと /llms.txt 直アクセスの両方で共有する（単一ソース）。
 // ASSETS が ok でなければその応答をそのまま返し、嘘の Content-Type を付けない。
-async function markdownHomeResponse(request: Request, env: Env): Promise<Response> {
+async function llmsMarkdownResponse(request: Request, env: Env): Promise<Response> {
   const llmsUrl = new URL(LLMS_PATH, request.url);
   const res = await env.ASSETS.fetch(new Request(llmsUrl.toString(), { method: "GET" }));
   if (!res.ok) {
@@ -220,9 +222,14 @@ async function resolve(request: Request, env: Env, method: string): Promise<Resp
     if (route) {
       return cachedResponse(route.generate(url.origin), route.contentType);
     }
+    // /llms.txt は実体アセットだが、Worker 経由で text/markdown + CORS に統一して
+    // api-catalog の広告（service-doc: text/markdown）と一致させる（run_worker_first 登録が前提）。
+    if (url.pathname === LLMS_PATH) {
+      return llmsMarkdownResponse(request, env);
+    }
     if (url.pathname === HOME_PATH) {
       return prefersMarkdown(request.headers.get("accept"))
-        ? markdownHomeResponse(request, env)
+        ? llmsMarkdownResponse(request, env)
         : htmlHomeResponse(request, env);
     }
   }

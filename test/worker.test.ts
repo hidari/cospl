@@ -31,6 +31,17 @@ const env = {
 const call = (path: string, init?: RequestInit): Response | Promise<Response> =>
   worker.fetch(new Request(`https://cospl.org${path}`, init), env);
 
+// run_worker_first の登録パスを wrangler.toml から取り出す（クォートを剥がした厳密一致用）。
+// 配列本体を取り出して各要素を比較する（substring 照合だと "/api" が "/api-catalog" に
+// 誤マッチしうるため）。複数テストで共有するためモジュール関数に切り出す。
+function registeredWorkerFirstPaths(): string[] {
+  const arrayBody = wranglerToml.match(/run_worker_first\s*=\s*\[(.*?)\]/s)?.[1] ?? "";
+  return arrayBody
+    .split(",")
+    .map((entry) => entry.trim().replace(/^"|"$/g, ""))
+    .filter((entry) => entry.length > 0);
+}
+
 describe("GET /license.md", () => {
   test("tags 省略時は既定 BY-NC-NAI-TD の人間向けを 200 で返す", async () => {
     const res = await call("/license.md");
@@ -176,6 +187,31 @@ describe("GET / の Accept ネゴシエーション", () => {
   });
 });
 
+describe("GET /llms.txt", () => {
+  // api-catalog は /llms.txt を service-doc（type: text/markdown）として広告し、Worker 系の
+  // 発見性エンドポイントは全て CORS 全許可。/llms.txt も Worker 経由で同じ契約（text/markdown +
+  // CORS + セキュリティヘッダ）にし、/ の Accept: text/markdown と同一の本文を返す（単一ソース）。
+  test("text/markdown + CORS で llms.txt を返す（api-catalog の広告と一致）", async () => {
+    const res = await call("/llms.txt");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("text/markdown; charset=utf-8");
+    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+    expect(res.headers.get("cache-control")).toBe("public, max-age=300");
+    // / の Accept: text/markdown と同じ本文（同一の llms.txt アセットを配信する）
+    expect(await res.text()).toBe(llmsBody);
+  });
+
+  // セキュリティヘッダは fetch 境界の withSecurityHeaders が全応答へ一律付与するため、
+  // ルート別の重複検証はしない（専用 describe「セキュリティヘッダ」が finalizer の普遍性を網羅済み）。
+  test("HEAD /llms.txt は同じヘッダを返し本文は空", async () => {
+    const res = await call("/llms.txt", { method: "HEAD" });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("text/markdown; charset=utf-8");
+    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+    expect(await res.text()).toBe("");
+  });
+});
+
 describe("GET /.well-known/api-catalog", () => {
   test("application/linkset+json で API カタログを返す", async () => {
     const res = await call("/.well-known/api-catalog");
@@ -204,14 +240,19 @@ describe("DISCOVERY_ROUTES と wrangler.toml の整合", () => {
   // 統合テストは worker.fetch を直接呼ぶため Cloudflare のアセットルーティング層を通らず、
   // この登録漏れを検出できない（CLAUDE.md MUST）。ここで表と設定の一致を静的に保証する。
   test("全 discovery ルートが run_worker_first に登録されている", () => {
-    // 配列本体を取り出し、各要素を完全一致比較する（substring 照合だと "/api" が
-    // "/api-catalog" に誤マッチしうるため、クォートを剥がした厳密一致にする）。
-    const arrayBody = wranglerToml.match(/run_worker_first\s*=\s*\[(.*?)\]/s)?.[1] ?? "";
-    const registered = arrayBody
-      .split(",")
-      .map((entry) => entry.trim().replace(/^"|"$/g, ""))
-      .filter((entry) => entry.length > 0);
+    const registered = registeredWorkerFirstPaths();
     for (const path of Object.keys(DISCOVERY_ROUTES)) {
+      expect(registered).toContain(path);
+    }
+  });
+
+  test("実体アセットを持つ Worker ルート（/ と /llms.txt）も run_worker_first に登録されている", () => {
+    // / (index.html) と /llms.txt は実体の静的アセットを持つため、run_worker_first に登録しないと
+    // CF がアセットを直接配信し Worker を経由しない（content-type / CORS 上書きが本番でのみ無効化）。
+    // 実挙動は deploy health check が本番で検証するが、登録漏れ自体はここで静的に弾く。
+    // DISCOVERY_ROUTES（実体なし・asset-miss で Worker に届く）とは要件が異なるため別に検証する。
+    const registered = registeredWorkerFirstPaths();
+    for (const path of ["/", "/llms.txt"]) {
       expect(registered).toContain(path);
     }
   });

@@ -45,22 +45,44 @@ jobs:
       - name: wrangler デプロイ設定の検証（dry-run・認証不要）
         run: pnpm exec wrangler deploy --dry-run
 
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            pnpm-workspace.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps
+      - run: pnpm e2e
+
   gate:
     name: Merge Gate Result
-    needs: [full]
+    needs: [full, e2e]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
       - name: 集約結果の判定（fail-closed）
         env:
-          RESULT: ${{ needs.full.result }}
+          FULL: ${{ needs.full.result }}
+          E2E: ${{ needs.e2e.result }}
         run: |
-          # full は意図的に if: 条件を持たず skip 不可。skipped を許容するのは
-          # 将来ジョブを増やした際に required が pending デッドロックしないため。
-          # full に if: を足す場合はこの許容を必ず見直すこと。
-          echo "full job result: ${RESULT}"
-          case "${RESULT}" in
-            success|skipped) echo "merge gate passed" ;;
-            *) echo "::error::full ジョブの結果 '${RESULT}' は許容されない"; exit 1 ;;
-          esac
+          # full / e2e はいずれも skip 不可。skipped 許容は将来ジョブ追加時の
+          # required pending デッドロック回避のためで、両者の success を要求する。
+          echo "full job result: ${FULL}"
+          echo "e2e job result: ${E2E}"
+          for result in "${FULL}" "${E2E}"; do
+            case "${result}" in
+              success|skipped) ;;
+              *) echo "::error::ジョブ結果 '${result}' は許容されない"; exit 1 ;;
+            esac
+          done
+          echo "merge gate passed"

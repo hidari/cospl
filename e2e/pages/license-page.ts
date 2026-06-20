@@ -51,4 +51,13 @@ export class LicensePage {
   async selectAiView(): Promise<void> {
     await this.aiTab.click();
   }
+
+  // 入力フォーム（撮影者名・連絡先など）を含む details 要素を開く。
+  async openFillSection(): Promise<void> {
+    const details = this.page.locator("details.fill");
+    const isOpen = await details.evaluate((el) => (el as HTMLDetailsElement).open);
+    if (!isOpen) {
+      await details.locator("summary").click();
+    }
+  }
 }

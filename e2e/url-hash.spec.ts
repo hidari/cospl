@@ -13,3 +13,22 @@ test("hash 付きでロードするとタグ状態が復元される", async ({ 
   // 識別子も復元値に一致。
   await expect(licensePage.ident).toContainText("BY-NC");
 });
+
+test("撮影者名を入力→blur で URL に載り、クリアで欄も URL も PII が消える", async ({
+  licensePage,
+  page,
+}) => {
+  await licensePage.goto();
+  await licensePage.openFillSection();
+
+  // 入力→blur（change）で URL hash に photographer が載る（入力中は載らない設計）。
+  await licensePage.photographer.fill("テスト太郎");
+  await licensePage.photographer.blur();
+  await expect(page).toHaveURL(/photographer=/);
+
+  // クリアで欄が空になり、URL hash から PII が消え、フラッシュが出る。
+  await licensePage.clearButton.click();
+  await expect(licensePage.photographer).toHaveValue("");
+  await expect(page).not.toHaveURL(/photographer=/);
+  await expect(licensePage.flashStatus).toHaveText("クリアしました");
+});

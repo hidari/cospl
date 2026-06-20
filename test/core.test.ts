@@ -349,18 +349,22 @@ describe("サイト共有", () => {
   test("siteSharePayload はネイティブ共有用に title / text / url を分離する", () => {
     expect(siteSharePayload()).toEqual({
       title: "CosPL — Cosplay Public License",
-      text: "撮った写真の ”使っていい範囲” を言葉にする",
+      text: "CosPL — Cosplay Public License\n撮った写真の ”使っていい範囲” を言葉にする",
       url: "https://cospl.org/",
     });
+  });
+
+  test("siteSharePayload.text はタイトル行で始まる（title を無視するアプリでも本文にタイトルが残る）", () => {
+    expect(siteSharePayload().text.startsWith("CosPL — Cosplay Public License\n")).toBe(true);
   });
 
   test("siteSharePayload.url は SITE_URL と一致する", () => {
     expect(siteSharePayload().url).toBe(SITE_URL);
   });
 
-  test("siteSharePayload を結合するとコピー用 siteShareMessage と一致する（文面の単一ソース）", () => {
+  test("siteSharePayload の text+url はコピー用 siteShareMessage と一致する（文面の単一ソース）", () => {
     const p = siteSharePayload();
-    expect(`${p.title}\n${p.text}\n${p.url}`).toBe(siteShareMessage());
+    expect(`${p.text}\n${p.url}`).toBe(siteShareMessage());
   });
 });
 

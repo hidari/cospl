@@ -127,9 +127,11 @@ export function siteShareMessage(): string {
 
 // ネイティブ共有（Web Share API）用ペイロード。url を独立フィールドにして共有先が
 // URL を正しく扱えるようにする（X はカードが描画され、他アプリは url を個別に受け取る）。
+// text にはタイトルも含める：title フィールドを無視する共有先が多く、本文へ埋めないと
+// 共有結果からタイトルが落ちるため。結果 text+url はコピー用 siteShareMessage と一致する。
 export type SharePayload = { title: string; text: string; url: string };
 export function siteSharePayload(): SharePayload {
-  return { title: SHARE_TITLE, text: SHARE_TAGLINE, url: SITE_URL };
+  return { title: SHARE_TITLE, text: `${SHARE_TITLE}\n${SHARE_TAGLINE}`, url: SITE_URL };
 }
 
 // 除去対象コードポイントの判定。C0/C1 制御文字（改行・タブ含む）と双方向テキスト制御文字

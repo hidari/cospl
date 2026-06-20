@@ -108,4 +108,17 @@ jobs:
             return 1
           }
           check_llms || { echo "::error::health check failed: /llms.txt が text/markdown + CORS を返さない（run_worker_first に /llms.txt があるか確認）"; exit 1; }
+
+          # 本番 / の CSP に厳格ディレクティブ（upgrade-insecure-requests）が載ることを検証する。
+          # CSP は worker(htmlHomeResponse) が付与する worker-routed 挙動で、統合テストでは検出できない。
+          check_csp() {
+            for i in $(seq 1 5); do
+              csp=$(curl -fsSL -D - -o /dev/null "https://cospl.org/" | grep -i "^content-security-policy:" || true)
+              echo "  / csp attempt ${i}: ${csp}"
+              echo "${csp}" | grep -qi "upgrade-insecure-requests" && echo "${csp}" | grep -qi "default-src 'self'" && return 0
+              sleep 10
+            done
+            return 1
+          }
+          check_csp || { echo "::error::health check failed: / の CSP に upgrade-insecure-requests / default-src 'self' が無い"; exit 1; }
           echo "healthy"

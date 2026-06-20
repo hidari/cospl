@@ -78,9 +78,13 @@ const SECURITY_HEADERS: Record<string, string> = {
 // dev だけは例外で、Vite が HMR 用に注入するインライン <style> を通すため style-src にのみ
 // 'unsafe-inline' を許可する（他ディレクティブは厳格に保つ）。isDev は呼び出し側で
 // import.meta.env.DEV を渡す。本番ビルドでは false に静的置換され、緩い枝は dead-code 除去される。
-export function buildCsp(isDev: boolean): string {
+// upgrade-insecure-requests は HTTPS 文書の subresource を https へ昇格させる本番向け指示で、
+// HTTP 文書（ローカル preview / E2E）に付くと WebKit が localhost の http subresource まで https
+// へ昇格させ TLS 失敗でバンドルが読めなくなる。本番は常に HTTPS なので isSecure=true で従来同等、
+// プレーン HTTP の preview だけ除外する（production の CSP はバイト単位で不変）。
+export function buildCsp(isDev: boolean, isSecure: boolean): string {
   const styleSrc = isDev ? "style-src 'self' 'unsafe-inline'" : "style-src 'self'";
-  return [
+  const directives = [
     "default-src 'self'",
     "img-src 'self' data:",
     styleSrc,
@@ -91,12 +95,12 @@ export function buildCsp(isDev: boolean): string {
     "form-action 'none'",
     "frame-ancestors 'none'",
     "object-src 'none'",
-    "upgrade-insecure-requests",
-  ].join("; ");
+  ];
+  if (isSecure) {
+    directives.push("upgrade-insecure-requests");
+  }
+  return directives.join("; ");
 }
-
-// HTML ホーム応答に付与する CSP を起動時に一度だけ構築する（純粋関数はテストで両分岐を検証）。
-const CONTENT_SECURITY_POLICY = buildCsp(import.meta.env.DEV);
 
 // 動的生成レスポンス共通のヘッダ（CORS 全許可・5分キャッシュ）を付けて 200 を返す。
 // セキュリティヘッダは fetch 境界の withSecurityHeaders でまとめて付与する。
@@ -186,7 +190,9 @@ async function htmlHomeResponse(request: Request, env: Env): Promise<Response> {
   const headers = new Headers(res.headers);
   headers.set("link", LINK_HEADER);
   headers.set(CORS_ORIGIN, "*");
-  headers.set("content-security-policy", CONTENT_SECURITY_POLICY);
+  // upgrade-insecure-requests は HTTPS 文書でのみ意味を持つため、リクエストのスキームで切り替える。
+  const isSecure = new URL(request.url).protocol === "https:";
+  headers.set("content-security-policy", buildCsp(import.meta.env.DEV, isSecure));
   return new Response(res.body, { status: res.status, headers });
 }
 

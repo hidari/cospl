@@ -76,4 +76,11 @@ local images = new Task {
   }
 }
 
-tasks { dev; build; typecheck; lint; test; check; images }
+local e2e = new Task {
+  name = "e2e"
+  description = "Playwright E2E（ローカル preview）"
+  cmd = "pnpm e2e"
+  cache = false
+}
+
+tasks { dev; build; typecheck; lint; test; check; images; e2e }

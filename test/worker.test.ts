@@ -282,7 +282,17 @@ describe("セキュリティヘッダ", () => {
     expect(csp).toContain("default-src 'self'");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("object-src 'none'");
+    // HTTPS 文書（本番）では subresource を https へ昇格させる。
+    expect(csp).toContain("upgrade-insecure-requests");
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+  });
+  test("HTTP の HTML ホームは upgrade-insecure-requests を外す（ローカル preview の http subresource 昇格による TLS 失敗を避ける）", async () => {
+    const res = await worker.fetch(new Request("http://localhost:4173/"), env);
+    const csp = res.headers.get("content-security-policy");
+    expect(csp).not.toContain("upgrade-insecure-requests");
+    // 昇格指示以外は厳格なまま。
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("object-src 'none'");
   });
   test("Worker フォールスルー応答（未知パス）にもセキュリティヘッダを付与する", async () => {
     // 各ビルダーへの分散付与では塞げない経路（asset-miss / markdown ホームのエラー経路）を
@@ -299,7 +309,7 @@ describe("buildCsp（環境別 CSP 生成）", () => {
   // 本番ビルドでは import.meta.env.DEV が false に静的置換され緩いブランチは除去されるが、
   // それを ambient 環境に依存せず保証するため、生成を純粋関数に切り出して両分岐を直接検証する。
   test("本番（isDev=false）は style-src を 'self' のみに保ち 'unsafe-inline' を一切含まない", () => {
-    const csp = buildCsp(false);
+    const csp = buildCsp(false, true);
     // 末尾のセミコロンまで含めて照合し、'self' の後に 'unsafe-inline' が続く緩い形を弾く
     // （"style-src 'self'" だけだと緩い値の部分文字列にもマッチしてしまう）。
     expect(csp).toContain("style-src 'self';");
@@ -307,14 +317,26 @@ describe("buildCsp（環境別 CSP 生成）", () => {
   });
 
   test("dev（isDev=true）は style-src に 'unsafe-inline' を許可する（Vite が注入する HMR 用インライン style 向け）", () => {
-    const csp = buildCsp(true);
+    const csp = buildCsp(true, true);
     expect(csp).toContain("style-src 'self' 'unsafe-inline'");
   });
 
   test("dev でも style-src 以外は緩めない（script-src は 'self' のまま）", () => {
-    const csp = buildCsp(true);
+    const csp = buildCsp(true, true);
     expect(csp).toContain("script-src 'self'");
     expect(csp).not.toContain("script-src 'self' 'unsafe-inline'");
+  });
+
+  test("HTTPS 文書（isSecure=true）は upgrade-insecure-requests を含む（本番向け）", () => {
+    expect(buildCsp(false, true)).toContain("upgrade-insecure-requests");
+  });
+
+  test("HTTP 文書（isSecure=false）は upgrade-insecure-requests を含まない（ローカル preview/E2E で http subresource の https 昇格による TLS 失敗を避ける）", () => {
+    const csp = buildCsp(false, false);
+    expect(csp).not.toContain("upgrade-insecure-requests");
+    // 他のディレクティブは厳格なまま維持される（昇格指示だけを外す）。
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("object-src 'none'");
   });
 });
 

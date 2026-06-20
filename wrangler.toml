@@ -3,13 +3,14 @@ main = "./src/worker.ts"
 compatibility_date = "2026-06-15"
 
 # 静的アセット。directory は @cloudflare/vite-plugin が Vite ビルド出力から自動設定するため指定しない。
-# run_worker_first で Worker 処理ルートを強制ルーティングする。特に / は実体の index.html が
-# あるため、明示しないと Worker を経由せず直接配信され、Link ヘッダ付与と Markdown ネゴシエーションが効かない。
+# run_worker_first で Worker 処理ルートを強制ルーティングする。特に / と /llms.txt は実体
+# （index.html / llms.txt）があるため、明示しないと Worker を経由せず直接配信され、Link ヘッダ付与・
+# Markdown ネゴシエーション・CORS 付与が効かない。
 # robots.txt / sitemap.xml は実体が無く、列挙しなくてもアセットミスで Worker に届く。
 # ここでの列挙は挙動を変えず、Worker 処理ルートであることを示すドキュメント目的。
 [assets]
 binding = "ASSETS"
-run_worker_first = ["/license.md", "/", "/robots.txt", "/sitemap.xml", "/.well-known/api-catalog", "/openapi.json"]
+run_worker_first = ["/license.md", "/", "/llms.txt", "/robots.txt", "/sitemap.xml", "/.well-known/api-catalog", "/openapi.json"]
 
 [observability]
 enabled = true

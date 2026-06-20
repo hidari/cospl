@@ -16,12 +16,16 @@
     "test:watch": "vitest",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "regen:golden": "node scripts/regen-golden.mjs"
+    "regen:golden": "node scripts/regen-golden.mjs",
+    "e2e": "playwright test",
+    "typecheck:e2e": "tsc -p tsconfig.e2e.json"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.0",
     "@cloudflare/vite-plugin": "^1.40.2",
     "@cloudflare/vitest-pool-workers": "^0.16.15",
+    "@playwright/test": "^1.61.0",
+    "@types/node": "^26.0.0",
     "esbuild": "^0.27.3",
     "playwright-core": "^1.61.0",
     "typescript": "^6.0.3",

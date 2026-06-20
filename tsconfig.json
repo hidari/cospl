@@ -14,5 +14,6 @@
     "isolatedModules": true,
     "moduleDetection": "force"
   },
-  "include": ["src", "test", "*.config.ts", "worker-configuration.d.ts"]
+  "include": ["src", "test", "*.config.ts", "worker-configuration.d.ts"],
+  "exclude": ["e2e", "playwright.config.ts"]
 }

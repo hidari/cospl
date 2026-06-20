@@ -52,7 +52,9 @@ export class LicensePage {
     await this.aiTab.click();
   }
 
-  // 入力フォーム（撮影者名・連絡先など）を含む details 要素を開く。
+  // 入力フォーム（撮影者名・連絡先など）を含む details.fill を開く。
+  // index.html の markup（details.fill > summary、初期は閉じた状態）に依存する。
+  // 開いている details の summary を click すると閉じてしまうため、open 判定で冪等にする。
   async openFillSection(): Promise<void> {
     const details = this.page.locator("details.fill");
     const isOpen = await details.evaluate((el) => (el as HTMLDetailsElement).open);

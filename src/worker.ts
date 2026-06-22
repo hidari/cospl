@@ -91,6 +91,8 @@ export function buildCsp(isDev: boolean, isSecure: boolean): string {
     "script-src 'self'",
     "font-src 'self'",
     "connect-src 'self'",
+    "worker-src 'self'",
+    "manifest-src 'self'",
     "base-uri 'none'",
     "form-action 'none'",
     "frame-ancestors 'none'",

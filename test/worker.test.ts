@@ -338,6 +338,12 @@ describe("buildCsp（環境別 CSP 生成）", () => {
     expect(csp).toContain("default-src 'self'");
     expect(csp).toContain("object-src 'none'");
   });
+
+  test("PWA: worker-src と manifest-src を 'self' に固定する（SW 登録と manifest 取得を許可しつつ多層防御）", () => {
+    const csp = buildCsp(false, true);
+    expect(csp).toContain("worker-src 'self'");
+    expect(csp).toContain("manifest-src 'self'");
+  });
 });
 
 describe("HEAD リクエスト", () => {

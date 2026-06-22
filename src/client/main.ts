@@ -21,6 +21,7 @@ import {
 import { fromNullable, ifSome, type Option } from "../types/option";
 import { fail, type Result, success } from "../types/result";
 import styles from "./styles.module.css";
+import { registerServiceWorker } from "./sw-register";
 
 // アプリ状態（タグ集合 + 出力ビュー + フィールド生入力）。不変に扱う。
 type AppState = { tags: State; view: View; draft: Fields };
@@ -427,6 +428,15 @@ function main(): void {
   // 初期ロードで URL を正規化（裸タグ→新形式）。date は当日を初期値とするため URL に含まれる。
   // PII の photographer / contact は空なので含まれない。
   syncUrl(state);
+
+  // 本番ビルドでのみ SW を登録する（dev は /sw.js を emit しないため）。import.meta.env は DEV のみ
+  // 宣言されているため !DEV を本番判定に使う。登録は load 後に行い初回描画と帯域を奪わない。
+  // 失敗しても致命でないため Result は捨てる（配線は E2E で検証する）。
+  if (!import.meta.env.DEV && "serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      void registerServiceWorker("/sw.js", navigator.serviceWorker);
+    });
+  }
 }
 
 main();

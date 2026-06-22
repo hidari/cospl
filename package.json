@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "deploy": "vite build && wrangler deploy",
     "cf-typegen": "wrangler types",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.sw.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "biome check .",

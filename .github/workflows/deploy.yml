@@ -64,6 +64,8 @@ jobs:
           check_200 "https://cospl.org/.well-known/api-catalog" || { echo "::error::health check failed: /.well-known/api-catalog did not return 200"; exit 1; }
           check_200 "https://cospl.org/openapi.json" || { echo "::error::health check failed: /openapi.json did not return 200"; exit 1; }
           check_200 "https://cospl.org/llms.txt" || { echo "::error::health check failed: /llms.txt did not return 200"; exit 1; }
+          check_200 "https://cospl.org/manifest.webmanifest" || { echo "::error::health check failed: /manifest.webmanifest did not return 200"; exit 1; }
+          check_200 "https://cospl.org/sw.js" || { echo "::error::health check failed: /sw.js did not return 200"; exit 1; }
 
           # robots.txt に Content Signals が宣言されていることを確認する。
           robots=$(curl -fsSL "https://cospl.org/robots.txt" || true)
@@ -109,16 +111,41 @@ jobs:
           }
           check_llms || { echo "::error::health check failed: /llms.txt が text/markdown + CORS を返さない（run_worker_first に /llms.txt があるか確認）"; exit 1; }
 
+          # manifest が application/manifest+json で配信されることを確認する。
+          check_manifest() {
+            for i in $(seq 1 5); do
+              ctype=$(curl -fsSL -o /dev/null -w "%{content_type}" "https://cospl.org/manifest.webmanifest" || true)
+              echo "  /manifest.webmanifest attempt ${i}: ${ctype}"
+              echo "${ctype}" | grep -qi "application/manifest+json" && return 0
+              sleep 10
+            done
+            return 1
+          }
+          check_manifest || { echo "::error::health check failed: /manifest.webmanifest が application/manifest+json を返さない"; exit 1; }
+
+          # sw.js が JavaScript の Content-Type で配信されることを確認する。
+          # Service Worker は MIME タイプが JavaScript 以外だと登録が静かに失敗するため検証する。
+          check_sw_ctype() {
+            for i in $(seq 1 5); do
+              ctype=$(curl -fsSL -o /dev/null -w "%{content_type}" "https://cospl.org/sw.js" || true)
+              echo "  /sw.js attempt ${i}: ${ctype}"
+              echo "${ctype}" | grep -qi "javascript" && return 0
+              sleep 10
+            done
+            return 1
+          }
+          check_sw_ctype || { echo "::error::health check failed: /sw.js が JavaScript の Content-Type を返さない（Service Worker 登録が失敗する）"; exit 1; }
+
           # 本番 / の CSP に厳格ディレクティブ（upgrade-insecure-requests）が載ることを検証する。
           # CSP は worker(htmlHomeResponse) が付与する worker-routed 挙動で、統合テストでは検出できない。
           check_csp() {
             for i in $(seq 1 5); do
               csp=$(curl -fsSL -D - -o /dev/null "https://cospl.org/" | grep -i "^content-security-policy:" || true)
               echo "  / csp attempt ${i}: ${csp}"
-              echo "${csp}" | grep -qi "upgrade-insecure-requests" && echo "${csp}" | grep -qi "default-src 'self'" && return 0
+              echo "${csp}" | grep -qi "upgrade-insecure-requests" && echo "${csp}" | grep -qi "default-src 'self'" && echo "${csp}" | grep -qi "worker-src 'self'" && echo "${csp}" | grep -qi "manifest-src 'self'" && return 0
               sleep 10
             done
             return 1
           }
-          check_csp || { echo "::error::health check failed: / の CSP に upgrade-insecure-requests / default-src 'self' が無い"; exit 1; }
+          check_csp || { echo "::error::health check failed: / の CSP に upgrade-insecure-requests / default-src / worker-src / manifest-src が無い"; exit 1; }
           echo "healthy"

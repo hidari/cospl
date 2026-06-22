@@ -6,3 +6,11 @@
 # 注: /ogp/* や /fonts/* はファイル名が固定で差し替えが起きうるため immutable にしない。
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Service Worker は常に再検証し更新を即時反映する（古い SW が旧版を配り続けるのを防ぐ）。
+/sw.js
+  Cache-Control: no-cache
+
+# manifest の Content-Type を明示する。
+/manifest.webmanifest
+  Content-Type: application/manifest+json

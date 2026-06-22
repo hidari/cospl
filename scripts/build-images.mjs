@@ -87,6 +87,24 @@ async function main() {
     });
     console.log("favicon: favicon.ico (16/32/48) + apple-touch-icon.png (180)");
 
+    // --- PWA アイコン（manifest 用。any は丸角透過、maskable は全面ベタ塗り）---
+    await renderSvg(browser, faces, favSvg, 192, 192, join(pub, "icons", "icon-192.png"), {
+      transparent: true,
+    });
+    await renderSvg(browser, faces, favSvg, 512, 512, join(pub, "icons", "icon-512.png"), {
+      transparent: true,
+    });
+    await renderSvg(
+      browser,
+      faces,
+      join(pub, "icons", "maskable.svg"),
+      512,
+      512,
+      join(pub, "icons", "icon-512-maskable.png"),
+      { transparent: false },
+    );
+    console.log("pwa icons: icon-192 / icon-512 / icon-512-maskable");
+
     // --- OGP（白地・PNG マスター → WebP + JPEG）---
     const ogps = [
       { name: "ogp-landscape", w: 1200, h: 630 },

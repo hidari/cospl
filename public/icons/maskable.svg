@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="CosPL">
+  <!-- maskable: OS が外周を削るため全面ベタ塗り。マークは安全領域内へ縮小配置する。 -->
+  <rect width="100" height="100" fill="#1c1430"/>
+  <g transform="translate(10 10) scale(0.8)" fill="none" stroke="#ffffff" stroke-width="9">
+    <circle cx="38" cy="50" r="22"/>
+    <circle cx="62" cy="50" r="22"/>
+  </g>
+</svg>

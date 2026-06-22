@@ -67,6 +67,9 @@ local images = new Task {
   outputs {
     "public/favicon.ico"
     "public/apple-touch-icon.png"
+    "public/icons/icon-192.png"
+    "public/icons/icon-512.png"
+    "public/icons/icon-512-maskable.png"
     "public/ogp/ogp-landscape.png"
     "public/ogp/ogp-landscape.webp"
     "public/ogp/ogp-landscape.jpg"

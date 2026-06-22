@@ -17,15 +17,16 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  // 旧バージョンのキャッシュを破棄し、開いている全クライアントの制御を奪う。
+  // 旧バージョンのキャッシュを破棄してから現在のクライアントの制御を奪う。claim を waitUntil 内に
+  // 連結し、activate のライフタイムが claim 完了まで延びるようにする（即時制御を確実にする）。
   event.waitUntil(
     caches
       .keys()
       .then((keys) =>
         Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))),
-      ),
+      )
+      .then(() => self.clients.claim()),
   );
-  self.clients.claim();
 });
 
 self.addEventListener("fetch", (event) => {

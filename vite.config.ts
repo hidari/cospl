@@ -28,23 +28,21 @@ function serviceWorkerPlugin(): Plugin {
     name: "cospl-service-worker",
     apply: "build",
     async generateBundle(_options, bundle) {
-      // クライアントビルド（index.html / CSS を含む）でのみ生成。CF プラグインの worker ビルドでは生成しない。
-      const isClient =
-        "index.html" in bundle || Object.keys(bundle).some((name) => name.endsWith(".css"));
-      if (!isClient) {
+      // クライアントビルドは CSS アセットを bundle に含む（CF worker ビルドは含まない）ので、
+      // これを client/worker ビルドのロバストな判別子にする。
+      if (!Object.keys(bundle).some((name) => name.endsWith(".css"))) {
         return;
       }
       const hashed = Object.keys(bundle)
         .filter((name) => name.endsWith(".js") || name.endsWith(".css"))
         .map((name) => `/${name}`);
-      // キャッシュ版数はエントリ JS のハッシュ名から導出（内容が変われば名前が変わる）。
-      let version = "dev";
-      for (const chunk of Object.values(bundle)) {
-        if (chunk.type === "chunk" && chunk.isEntry) {
-          version = chunk.fileName.replace(/[^a-z0-9]/gi, "");
-          break;
-        }
-      }
+      // キャッシュ版数は precache 対象のハッシュ付きアセット名全体から決定的に導出する。全件を
+      // ソートして連結するため、エントリ数や Object.values の列挙順に依存せず、内容が変われば必ず変わる。
+      const version =
+        hashed
+          .map((name) => name.replace(/[^a-z0-9]/gi, ""))
+          .sort()
+          .join("") || "dev";
       const precache = ["/", ...hashed, ...STABLE_PRECACHE];
       const result = await esbuild({
         entryPoints: ["src/client/sw.ts"],

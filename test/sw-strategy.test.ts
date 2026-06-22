@@ -54,4 +54,8 @@ describe("chooseStrategy（キャッシュ戦略の判定）", () => {
       chooseStrategy({ ...base, sameOrigin: false, pathname: "/assets/index-abc123.js" }),
     ).toBe("passthrough");
   });
+
+  test("SW ファイル自体はキャッシュしない（passthrough）", () => {
+    expect(chooseStrategy({ ...base, pathname: "/sw.js" })).toBe("passthrough");
+  });
 });

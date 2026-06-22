@@ -108,7 +108,9 @@ SW を実行するのは人間ブラウザだけで、クローラの OGP/発見
 - インストール促進 UI（カスタム install ボタン、beforeinstallprompt の握り込み）。
 - スクリーンショット付き manifest（リッチインストール UI）。
 - manifest に `id` フィールド（例 `"id": "/"`）を追加して URL 変更に強い安定したアプリ識別子を持たせる（W3C 推奨。現状は start_url=/ にフォールバックするため非必須）。
-- キャッシュ版数 `__CACHE_VERSION__` をエントリ JS ハッシュ単独ではなく precache 集合全体のハッシュから導出し、同名 cache-first アセット（例: 同ファイル名のフォント差し替え）のみを変える deploy でも版数が上がるようにする（現状は実質エントリハッシュが同時に変わるため理論上のギャップ）。
+- キャッシュ版数 `__CACHE_VERSION__` は現状 precache 対象のハッシュ付き JS/CSS 全体から決定的に導出する（それらの内容変化では必ず更新される）。ただし STABLE_PRECACHE の安定名アセット（フォント・アイコン・manifest）は同名で差し替えても版数に影響しないため、それらも版数に織り込むか検討する（理論上のギャップ）。
+- STABLE_PRECACHE（vite.config.ts）を手書きリストではなく public/icons などの disk glob から導出し、新規アイコン追加時の precache 反映漏れを構造的に防ぐ（現状は手書き + deploy health check が部分的バックストップ）。
+- SW プラグインの client/worker ビルド判別を CSS アセット存在チェックから Vite 6+ の environment API（`this.environment?.name === "client"`）へ移行できるか検討する（より構造的。CSS 存在依存は CF worker が将来 CSS を emit すると誤判定しうる。現行 pin バージョンで generateBundle 内の this.environment が安定提供されるか要検証）。
 
 ## 検証方針
 

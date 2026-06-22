@@ -56,7 +56,10 @@ function handle(strategy: Exclude<Strategy, "passthrough">, request: Request): P
 
 // 不変アセット: キャッシュ優先。未取得時のみネットワークから取得しキャッシュへ格納する。
 async function cacheFirst(request: Request): Promise<Response> {
-  const cached = await caches.match(request);
+  // Vite は <script type="module" crossorigin> を生成するため、ブラウザは cors モードでリクエストする。
+  // caches.match はデフォルトで Vary/モードを考慮するため、同一 URL でもキャッシュ miss が起きる。
+  // コンテンツハッシュ済みアセットは URL が同じなら内容も同じなので ignoreVary で URL ベース照合にする。
+  const cached = await caches.match(request, { ignoreVary: true });
   if (cached) {
     return cached;
   }
@@ -79,14 +82,14 @@ async function networkFirst(request: Request): Promise<Response> {
     await cache.put(request, fromNetwork.clone());
     return fromNetwork;
   }
-  const cached = await caches.match(request);
+  const cached = await caches.match(request, { ignoreVary: true });
   if (cached) {
     return cached;
   }
   if (fromNetwork) {
     return fromNetwork;
   }
-  const shell = await caches.match("/");
+  const shell = await caches.match("/", { ignoreVary: true });
   if (shell) {
     return shell;
   }
@@ -95,7 +98,7 @@ async function networkFirst(request: Request): Promise<Response> {
 
 // シェル資産: キャッシュ即返し + 背景で再検証（失敗は握りつぶす）。
 async function staleWhileRevalidate(request: Request): Promise<Response> {
-  const cached = await caches.match(request);
+  const cached = await caches.match(request, { ignoreVary: true });
   const network = fetch(request).then(async (response) => {
     if (response.ok) {
       const cache = await caches.open(CACHE);

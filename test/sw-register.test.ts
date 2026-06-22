@@ -5,9 +5,10 @@ describe("registerServiceWorker（SW 登録アダプタ）", () => {
   test("container が無ければ未対応として fail を返す（例外を投げない）", async () => {
     const result = await registerServiceWorker("/sw.js", undefined);
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toBe("service worker unsupported");
+    if (result.success) {
+      throw new Error("expected fail but got success");
     }
+    expect(result.error).toBe("service worker unsupported");
   });
 
   test("register が解決すれば success を返し、渡した URL で登録する", async () => {
@@ -20,6 +21,10 @@ describe("registerServiceWorker（SW 登録アダプタ）", () => {
     };
     const result = await registerServiceWorker("/sw.js", container);
     expect(result.success).toBe(true);
+    if (!result.success) {
+      throw new Error("expected success but got fail");
+    }
+    expect(result.data).toBeUndefined();
     expect(calls).toEqual(["/sw.js"]);
   });
 
@@ -27,8 +32,9 @@ describe("registerServiceWorker（SW 登録アダプタ）", () => {
     const container = { register: () => Promise.reject(new Error("boom")) };
     const result = await registerServiceWorker("/sw.js", container);
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toBe("service worker registration failed");
+    if (result.success) {
+      throw new Error("expected fail but got success");
     }
+    expect(result.error).toBe("service worker registration failed");
   });
 });

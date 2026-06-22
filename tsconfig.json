@@ -15,5 +15,5 @@
     "moduleDetection": "force"
   },
   "include": ["src", "test", "*.config.ts", "worker-configuration.d.ts"],
-  "exclude": ["e2e", "playwright.config.ts"]
+  "exclude": ["e2e", "playwright.config.ts", "src/client/sw.ts"]
 }

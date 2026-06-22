@@ -14,4 +14,3 @@
 # manifest の Content-Type を明示する。
 /manifest.webmanifest
   Content-Type: application/manifest+json
-

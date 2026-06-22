@@ -16,7 +16,6 @@ const STABLE_PRECACHE: readonly string[] = [
   "/icons/nai.svg",
   "/icons/td.svg",
   "/icons/mr.svg",
-  "/icons/mark.svg",
   "/fonts/SpaceGrotesk-latin.woff2",
   "/fonts/SpaceMono-400-latin.woff2",
   "/fonts/SpaceMono-700-latin.woff2",

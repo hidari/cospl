@@ -107,6 +107,8 @@ SW を実行するのは人間ブラウザだけで、クローラの OGP/発見
 - push 通知 / background sync / 共有ターゲット（share_target）。
 - インストール促進 UI（カスタム install ボタン、beforeinstallprompt の握り込み）。
 - スクリーンショット付き manifest（リッチインストール UI）。
+- manifest に `id` フィールド（例 `"id": "/"`）を追加して URL 変更に強い安定したアプリ識別子を持たせる（W3C 推奨。現状は start_url=/ にフォールバックするため非必須）。
+- キャッシュ版数 `__CACHE_VERSION__` をエントリ JS ハッシュ単独ではなく precache 集合全体のハッシュから導出し、同名 cache-first アセット（例: 同ファイル名のフォント差し替え）のみを変える deploy でも版数が上がるようにする（現状は実質エントリハッシュが同時に変わるため理論上のギャップ）。
 
 ## 検証方針
 

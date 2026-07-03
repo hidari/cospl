@@ -21,16 +21,16 @@
     "typecheck:e2e": "tsc -p tsconfig.e2e.json"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.0",
-    "@cloudflare/vite-plugin": "^1.40.2",
-    "@cloudflare/vitest-pool-workers": "^0.16.15",
-    "@playwright/test": "^1.61.0",
-    "@types/node": "^26.0.0",
-    "esbuild": "^0.27.3",
-    "playwright-core": "^1.61.0",
+    "@biomejs/biome": "^2.5.1",
+    "@cloudflare/vite-plugin": "^1.42.3",
+    "@cloudflare/vitest-pool-workers": "^0.16.20",
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^26.0.1",
+    "esbuild": "^0.28.1",
+    "playwright-core": "^1.61.1",
     "typescript": "^6.0.3",
-    "vite": "^8.0.16",
+    "vite": "^8.1.0",
     "vitest": "^4.1.9",
-    "wrangler": "^4.100.0"
+    "wrangler": "^4.105.0"
   }
 }

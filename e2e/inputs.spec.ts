@@ -1,10 +1,20 @@
 import { MAX_EXTENSIONS } from "../src/core";
 import { expect, test } from "./fixtures";
 
+test("入力欄は既定で閉じていて、見出しを押すと開く", async ({ licensePage }) => {
+  await licensePage.goto();
+  await expect(licensePage.photographer).toBeHidden();
+
+  await licensePage.inputsSummary.click();
+
+  await expect(licensePage.photographer).toBeVisible();
+});
+
 test("ひな形「加工」で拡張が足され、出力と識別子に出て、削除で両方消える", async ({
   licensePage,
 }) => {
   await licensePage.goto();
+  await licensePage.openInputs();
   await expect(licensePage.ident).not.toContainText("+");
 
   await licensePage.preset("editing").click();
@@ -24,6 +34,7 @@ test("「＋ 項目を追加」で白紙の拡張が足され、見出し欄に�
   licensePage,
 }) => {
   await licensePage.goto();
+  await licensePage.openInputs();
 
   await licensePage.extensionAdd.click();
   await expect(licensePage.extensionHeading(1)).toBeFocused();
@@ -36,6 +47,7 @@ test("「＋ 項目を追加」で白紙の拡張が足され、見出し欄に�
 
 test("入力中の欄は他の欄の入力で作り直されずフォーカスを保つ", async ({ licensePage }) => {
   await licensePage.goto();
+  await licensePage.openInputs();
   await licensePage.extensionAdd.click();
 
   await licensePage.extensionHeading(1).pressSequentially("その他");
@@ -46,6 +58,7 @@ test("入力中の欄は他の欄の入力で作り直されずフォーカス�
 
 test("削除ボタンの名前は入力した見出しに追従する", async ({ licensePage }) => {
   await licensePage.goto();
+  await licensePage.openInputs();
   await licensePage.extensionAdd.click();
   await licensePage.extensionHeading(1).fill("その他");
 
@@ -54,6 +67,7 @@ test("削除ボタンの名前は入力した見出しに追従する", async ({
 
 test("上限の件数に達すると追加ボタンが無効になる", async ({ licensePage }) => {
   await licensePage.goto();
+  await licensePage.openInputs();
   for (let i = 0; i < MAX_EXTENSIONS; i++) {
     await licensePage.extensionAdd.click();
   }
@@ -64,6 +78,7 @@ test("上限の件数に達すると追加ボタンが無効になる", async ({
 
 test("「＋ 連絡先を追加」で 2 件入れると連絡先の章に 2 行出る", async ({ licensePage }) => {
   await licensePage.goto();
+  await licensePage.openInputs();
 
   await licensePage.contactInput(1).fill("@example_a");
   await licensePage.contactAdd.click();
@@ -75,6 +90,7 @@ test("「＋ 連絡先を追加」で 2 件入れると連絡先の章に 2 行�
 
 test("連絡先を削除すると出力から消える。残り 1 行のときは削除できない", async ({ licensePage }) => {
   await licensePage.goto();
+  await licensePage.openInputs();
   await licensePage.contactInput(1).fill("@example_a");
   await licensePage.contactAdd.click();
   await licensePage.contactInput(2).fill("@example_b");
@@ -91,6 +107,7 @@ test("データバックを ON にすると詳細欄が現れ、入力が出力�
   licensePage,
 }) => {
   await licensePage.goto();
+  await licensePage.openInputs();
   await expect(licensePage.sendBack).toBeHidden();
 
   await licensePage.toggleTag("SB");
@@ -110,6 +127,7 @@ test("データバックを ON にすると詳細欄が現れ、入力が出力�
 
 test("AI 宣言のタブでも入力欄は見え、識別子の印が出る", async ({ licensePage }) => {
   await licensePage.goto();
+  await licensePage.openInputs();
   await licensePage.selectAiView();
 
   await expect(licensePage.photographer).toBeVisible();
@@ -119,10 +137,10 @@ test("AI 宣言のタブでも入力欄は見え、識別子の印が出る", as
 
 test("どの入力をしても URL はタグとクレジット以外を含まない", async ({ licensePage, page }) => {
   await licensePage.goto();
+  await licensePage.openInputs();
   await licensePage.toggleTag("SB");
 
   await licensePage.photographer.fill("テスト太郎");
-  await licensePage.date.fill("2026-01-02");
   await licensePage.contactInput(1).fill("@example_a");
   await licensePage.contactAdd.click();
   await licensePage.preset("editing").click();
@@ -136,6 +154,7 @@ test("どの入力をしても URL はタグとクレジット以外を含まな
 
 test("クリアで連絡先と拡張の追加欄も消え、各欄が状態から戻る", async ({ licensePage }) => {
   await licensePage.goto();
+  await licensePage.openInputs();
   await licensePage.photographer.fill("テスト太郎");
   await licensePage.contactInput(1).fill("@example_a");
   await licensePage.contactAdd.click();

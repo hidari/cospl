@@ -20,6 +20,7 @@ test("撮影者名を入力→blur しても URL に載らず、クリアで欄�
 }) => {
   await licensePage.goto();
 
+  await licensePage.openInputs();
   // 入力→blur（change）しても URL hash に個人情報は載らない。
   await licensePage.photographer.fill("テスト太郎");
   await licensePage.photographer.blur();
@@ -32,13 +33,17 @@ test("撮影者名を入力→blur しても URL に載らず、クリアで欄�
   await expect(licensePage.flashStatus).toHaveText("クリアしました");
 });
 
-test("クリア後の日付欄は出力の最終更新日と一致する", async ({ licensePage }) => {
+test("クリア後は撮影者名の欄が空に戻り、出力はプレースホルダに戻る", async ({ licensePage }) => {
   await licensePage.goto();
+  await licensePage.openInputs();
+  await licensePage.photographer.fill("テスト太郎");
+  await expect(licensePage.output).toContainText("文責: テスト太郎");
 
   await licensePage.clearButton.click();
-  const date = await licensePage.date.inputValue();
-  expect(date).not.toBe("");
-  await expect(licensePage.output).toContainText(`最終更新: ${date}`);
+
+  await expect(licensePage.photographer).toHaveValue("");
+  await expect(licensePage.output).toContainText("文責: [撮影者名]");
+  await expect(licensePage.output).not.toContainText("テスト太郎");
 });
 
 test("個人情報入りの古い URL を開くと欄に入らず URL からも消える", async ({

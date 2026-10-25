@@ -15,7 +15,6 @@ describe("toDoc", () => {
 
   test("EMPTY_DRAFT は全欄が空", () => {
     expect(EMPTY_DRAFT).toEqual({
-      date: "",
       photographer: "",
       contacts: [],
       sendBack: "",
@@ -25,7 +24,6 @@ describe("toDoc", () => {
 
   test("DEFAULT_DOC は既定プレースホルダと空の拡張", () => {
     expect(DEFAULT_DOC).toEqual({
-      date: "[YYYY-MM-DD]",
       photographer: "[撮影者名]",
       contacts: ["[連絡先をここに記入]"],
       sendBackItems: [],
@@ -66,26 +64,6 @@ describe("toDoc", () => {
     const cut = toDoc({ ...empty, photographer: emoji }).photographer;
     expect([...cut].length).toBe(50);
     expect(cut).toBe("😀".repeat(50));
-  });
-
-  test("形式不正・非実在日はプレースホルダに畳まれる", () => {
-    for (const bad of [
-      "2026-13-40",
-      "2026-02-30",
-      "2026/06/17",
-      "20260617",
-      "abc",
-      "0000-01-01", // year < 1000 は弾く（JS Date の 0-99 解釈ずれ回避）
-      "0099-02-29",
-    ]) {
-      expect(toDoc({ ...empty, date: bad }).date).toBe(DEFAULT_DOC.date);
-    }
-  });
-
-  test("実在する暦日は保持する（閏日含む）", () => {
-    for (const ok of ["2026-06-17", "2026-02-28", "2024-02-29"]) {
-      expect(toDoc({ ...empty, date: ok }).date).toBe(ok);
-    }
   });
 
   test("連絡先は空行を捨てて詰める", () => {

@@ -199,23 +199,21 @@ describe("humanText", () => {
 describe("humanMD のフィールド反映", () => {
   const filled: Doc = {
     ...DEFAULT_DOC,
-    date: "2026-06-17",
     photographer: "Hidari",
     contacts: ["mail@example.com"],
   };
 
   test("引数なしは従来どおりプレースホルダを残す（既定出力の不変）", () => {
     const md = humanMD(unwrapState("BY-NC-NAI-TD"));
-    expect(md).toContain("最終更新: [YYYY-MM-DD]");
+    expect(md).not.toContain("最終更新");
     expect(md).toContain("Photo. [撮影者名] / Model. [モデル名]");
     expect(md).toContain("著作権は撮影者（[撮影者名]）");
     expect(md).toContain("文責: [撮影者名]");
     expect(md).toContain("- [連絡先をここに記入]");
   });
 
-  test("doc 指定で日付・撮影者名（3 箇所）・連絡先が置換される", () => {
+  test("doc 指定で撮影者名（3 箇所）・連絡先が置換される", () => {
     const md = humanMD(unwrapState("BY-NC-NAI-TD"), DEFAULT_OPTIONS, filled);
-    expect(md).toContain("最終更新: 2026-06-17");
     expect(md).toContain("Photo. Hidari / Model. [モデル名]");
     expect(md).toContain("著作権は撮影者（Hidari）");
     expect(md).toContain("文責: Hidari");
@@ -258,6 +256,16 @@ describe("拡張", () => {
     expect(ident(unwrapState("BY"), true)).toBe("CosPL 2.0 / BY +");
     expect(ident(unwrapState("none"), true)).toBe("CosPL 2.0 +");
     expect(ident(unwrapState("BY"))).toBe("CosPL 2.0 / BY");
+  });
+
+  test("冒頭は見出しと挨拶で、適用の記載は末尾の 1 回だけ（文末は句点）", () => {
+    const md = humanMD(unwrapState("BY-NC-NAI-TD"));
+    expect(
+      md.startsWith(
+        "# 撮影データの取り扱いについて\n\nこの度は撮影にご協力いただき、ありがとうございました。\n",
+      ),
+    ).toBe(true);
+    expect(md.match(/適用:/g)).toHaveLength(1);
   });
 
   test("拡張は「追加事項」の章にまとまり、連絡先の章の直前に、優先順位の注記に続けて出る", () => {

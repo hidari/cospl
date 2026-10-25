@@ -4,7 +4,7 @@ import { EXTENSION_PRESETS, type ExtensionPresetId } from "./presets";
 import { type Draft, type Extension, MAX_CONTACTS, MAX_EXTENSIONS } from "./sanitize";
 
 // 単一行（または単一の自由記述）で持つ欄。連絡先と拡張は件数を持つので別の操作にする。
-export type TextField = "photographer" | "date" | "sendBack";
+export type TextField = "photographer" | "sendBack";
 
 export function setTextField(draft: Draft, field: TextField, value: string): Draft {
   return { ...draft, [field]: value };

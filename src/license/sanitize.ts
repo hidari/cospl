@@ -1,10 +1,9 @@
-// 利用者の入力（撮影者名・日付・連絡先・SB の自由記述・拡張）の型と、外部入力のサニタイズ。
+// 利用者の入力（撮影者名・連絡先・SB の自由記述・拡張）の型と、外部入力のサニタイズ。
 
 export type Extension = Readonly<{ heading: string; body: string }>;
 
 // UI の生入力。
 export type Draft = Readonly<{
-  date: string;
   photographer: string;
   contacts: readonly string[];
   sendBack: string;
@@ -13,7 +12,6 @@ export type Draft = Readonly<{
 
 // サニタイズ済み・プレースホルダ適用済みの文書入力。
 export type Doc = Readonly<{
-  date: string;
   photographer: string;
   contacts: readonly string[];
   sendBackItems: readonly string[];
@@ -22,7 +20,6 @@ export type Doc = Readonly<{
 
 // 全欄空の初期値（入力欄の初期化とクリアの単一ソース）。
 export const EMPTY_DRAFT: Draft = {
-  date: "",
   photographer: "",
   contacts: [],
   sendBack: "",
@@ -31,7 +28,6 @@ export const EMPTY_DRAFT: Draft = {
 
 // 未入力時に文書へ残すプレースホルダ（現行テンプレートのリテラルと一致させる単一ソース）。
 export const DEFAULT_DOC: Doc = {
-  date: "[YYYY-MM-DD]",
   photographer: "[撮影者名]",
   contacts: ["[連絡先をここに記入]"],
   sendBackItems: [],
@@ -80,26 +76,6 @@ export function cleanText(raw: string, maxCodePoints: number): string {
   return [...trimmed].slice(0, maxCodePoints).join("");
 }
 
-// YYYY-MM-DD 形式かつ実在する暦日かを判定する。正規表現一致だけでは 2026-13-40 等を通すため、
-// 月末日数（閏年含む）まで検証する。
-function isValidDate(raw: string): boolean {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
-  if (!match) {
-    return false;
-  }
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  // year < 1000 を弾く。0000-0099 は new Date(year, ...) が 1900 年代に解釈され閏判定が狂う
-  // JS の既知挙動を避けつつ、撮影日として無意味な極端な年を排除する。
-  if (year < 1000 || month < 1 || month > 12) {
-    return false;
-  }
-  // new Date(year, month, 0) は「month の前月の最終日」= 当月（1-based month）の日数。
-  const daysInMonth = new Date(year, month, 0).getDate();
-  return day >= 1 && day <= daysInMonth;
-}
-
 // 拡張が 1 つ以上あるか。識別子の印と AI 宣言の追加事項行の単一ソース。
 export function hasExtensions(doc: Doc): boolean {
   return doc.extensions.length > 0;
@@ -116,7 +92,6 @@ function cleanLines(raw: string, maxCodePoints: number, maxLines: number): strin
 
 // 生入力から文書生成用の Doc を作る。サニタイズし、空欄は既定プレースホルダへ畳む。
 export function toDoc(draft: Draft): Doc {
-  const date = draft.date.trim();
   const contacts = draft.contacts
     .map((contact) => cleanText(contact, MAX_CONTACT))
     .filter((contact) => contact !== "")
@@ -129,7 +104,6 @@ export function toDoc(draft: Draft): Doc {
     .filter((ext) => ext.heading !== "" && ext.items.length > 0)
     .slice(0, MAX_EXTENSIONS);
   return {
-    date: isValidDate(date) ? date : DEFAULT_DOC.date,
     photographer: cleanText(draft.photographer, MAX_PHOTOGRAPHER) || DEFAULT_DOC.photographer,
     contacts: contacts.length > 0 ? contacts : DEFAULT_DOC.contacts,
     sendBackItems: cleanLines(draft.sendBack, MAX_ITEM, MAX_SEND_BACK_ITEMS),

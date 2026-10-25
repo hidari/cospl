@@ -15,8 +15,7 @@ export function humanMD(
   const id = ident(state, hasExtensions(doc));
   const L: string[] = [];
   L.push("# 撮影データの取り扱いについて", "");
-  L.push(`適用: ${id} ／ 最終更新: ${doc.date}`, "");
-  L.push("この度は撮影にご協力いただき、ありがとうございました！");
+  L.push("この度は撮影にご協力いただき、ありがとうございました。");
   L.push("お渡しした写真データの取り扱いについて、以下の点をご確認いただければ幸いです。", "");
   if (state.BY) {
     L.push("## SNS・Web掲載とクレジットについて");

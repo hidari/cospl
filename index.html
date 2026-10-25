@@ -115,13 +115,12 @@
   <section>
     <p class="step"><span class="step-no">STEP 2</span>決めた内容を書き出す</p>
     <p class="hint">任意で入力すると、納品データ同梱用 README と AI 向けの宣言に反映されます。</p>
-    <div class="inputs">
+    <details class="inputs" id="inputs">
+      <summary>任意：名前や連絡先、追加事項を入れる</summary>
       <p class="hint">空欄なら文書にはプレースホルダ（[撮影者名] 等）が残ります。入力内容は URL にも共有リンクにも含まれず、ページを閉じると消えます。実名や連絡先を載せたくない場合は空のままにしてください。</p>
       <div class="fill-grid">
         <label for="f-photographer">撮影者名</label>
         <input id="f-photographer" type="text" autocomplete="off" inputmode="text" placeholder="[撮影者名]">
-        <label for="f-date">最終更新日</label>
-        <input id="f-date" type="date" autocomplete="off">
       </div>
       <fieldset class="field-group">
         <legend>連絡先</legend>
@@ -142,7 +141,7 @@
       <div class="fill-actions">
         <button class="ghost" id="clear-fields" type="button">入力をクリア</button>
       </div>
-    </div>
+    </details>
     <div class="tabs" role="tablist" aria-label="出力フォーマット">
       <button class="tab" id="tab-h" role="tab" aria-selected="true" aria-controls="panel-out" aria-label="README用">README用<span class="tab-q" aria-hidden="true">?</span><span class="tab-tip" aria-hidden="true">撮影データと一緒に納品フォルダへ同梱する、人が読むテキスト形式。</span></button>
       <button class="tab" id="tab-a" role="tab" aria-selected="false" aria-controls="panel-out" tabindex="-1" aria-label="AI向け宣言">AI向け宣言<span class="tab-q" aria-hidden="true">?</span><span class="tab-tip" aria-hidden="true">クローラや AI エージェントに読ませる、機械向けの宣言。</span></button>

@@ -64,11 +64,6 @@ type Action =
   | { type: "removeExtension"; index: number }
   | { type: "clearDraft" };
 
-// 日付だけ当日を初期表示する入力の初期値。
-function initialDraft(): Draft {
-  return { ...EMPTY_DRAFT, date: todayISO() };
-}
-
 // 純粋な状態遷移
 function update(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -96,7 +91,7 @@ function update(state: AppState, action: Action): AppState {
     case "removeExtension":
       return { ...state, draft: removeExtension(state.draft, action.index) };
     case "clearDraft":
-      return { ...state, draft: initialDraft() };
+      return { ...state, draft: EMPTY_DRAFT };
   }
 }
 
@@ -327,18 +322,9 @@ function syncUrl(state: AppState): void {
 
 // 初期化 --------------------------------------------------------------------
 
-// 当日を YYYY-MM-DD で返す（DOM 境界で現在日時を読み、core は純粋に保つ）。
-function todayISO(): string {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}-${month}-${day}`;
-}
-
 // 単一欄の DOM id と draft のキーの対応（初期化・クリアで共有する単一ソース）。
 const TEXT_FIELDS: ReadonlyArray<readonly [string, TextField]> = [
   ["f-photographer", "photographer"],
-  ["f-date", "date"],
   ["f-send-back", "sendBack"],
 ];
 
@@ -368,9 +354,6 @@ function bindTextFields(getState: () => AppState, dispatch: (action: Action) => 
         }
         el.value = getState().draft[field];
         el.addEventListener("input", () => dispatch({ type: "setField", field, value: el.value }));
-        // 一部ブラウザは date ピッカー選択時に input を発火しないため、change でも draft と
-        // プレビューを最新化する。
-        el.addEventListener("change", () => dispatch({ type: "setField", field, value: el.value }));
       }
     });
   }
@@ -437,24 +420,23 @@ function extensionRow(
   index: number,
   dispatch: (action: Action) => void,
 ): HTMLElement {
-  const group = document.createElement("fieldset");
-  group.className = "ext";
-  const legend = document.createElement("legend");
-  legend.textContent = `追加事項 ${index + 1}`;
-
+  const n = index + 1;
   const headingId = extensionHeadingId(index);
   const heading = document.createElement("input");
   heading.id = headingId;
   heading.type = "text";
   heading.maxLength = MAX_HEADING;
   heading.autocomplete = "off";
+  // 見える label は短く、複数カードでも一意な名前は aria-label で与える。
+  heading.setAttribute("aria-label", `追加事項 ${n} の見出し`);
   heading.value = ext.heading;
 
   const bodyId = `ext-body-${index}`;
   const body = document.createElement("textarea");
   body.id = bodyId;
-  body.rows = 3;
+  body.rows = 5;
   body.autocomplete = "off";
+  body.setAttribute("aria-label", `追加事項 ${n} の本文`);
   body.placeholder = "1行が1項目になります";
   body.value = ext.body;
 
@@ -470,14 +452,20 @@ function extensionRow(
     dispatch({ type: "setExtension", index, field: "body", value: body.value }),
   );
 
-  return withChildren(
-    group,
-    legend,
-    labelFor(headingId, `追加事項 ${index + 1} の見出し`),
+  const card = document.createElement("div");
+  card.className = "ext";
+  const head = document.createElement("div");
+  head.className = "ext-head";
+  const headingField = withChildren(
+    document.createElement("div"),
+    labelFor(headingId, "見出し"),
     heading,
-    labelFor(bodyId, `追加事項 ${index + 1} の本文（1行が1項目）`),
+  );
+  return withChildren(
+    card,
+    withChildren(head, headingField, remove),
+    labelFor(bodyId, "本文（1行が1項目）"),
     body,
-    remove,
   );
 }
 
@@ -617,7 +605,7 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
   bindTextFields(getState, dispatch);
   bindExtensionButtons(dispatch);
 
-  // 入力欄のクリア。draft を初期値（日付は当日）へ戻す。追加した連絡先・拡張の行は dispatch が
+  // 入力欄のクリア。draft を初期値へ戻す。追加した連絡先・拡張の行は dispatch が
   // 状態から組み直し、単一欄の値はここで状態から書き戻す。
   ifSome(byId("clear-fields"), (btn) => {
     btn.addEventListener("click", () => {
@@ -703,12 +691,12 @@ function main(): void {
   // CSS Module のローカルクラスを body に適用（スタイルの起点）
   ifSome(fromNullable(styles.app), (cls) => document.body.classList.add(cls));
   const { tags, options } = parseHash(location.hash);
-  // 入力欄は URL から復元しない。日付は当日を初期表示し、名前・連絡先は空のまま（プレースホルダ表示）。
+  // 入力欄は URL から復元しない。名前・連絡先は空のまま（プレースホルダ表示）。
   let state: AppState = {
     tags,
     options,
     view: "human",
-    draft: initialDraft(),
+    draft: EMPTY_DRAFT,
   };
   const dispatch = (action: Action): void => {
     state = update(state, action);

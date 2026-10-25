@@ -14,7 +14,7 @@ export class LicensePage {
   readonly linkButton: Locator;
   readonly clearButton: Locator;
   readonly photographer: Locator;
-  readonly date: Locator;
+  readonly inputsSummary: Locator;
   readonly contactAdd: Locator;
   readonly sendBack: Locator;
   readonly extensionAdd: Locator;
@@ -33,7 +33,7 @@ export class LicensePage {
     this.linkButton = page.locator("#link");
     this.clearButton = page.locator("#clear-fields");
     this.photographer = page.locator("#f-photographer");
-    this.date = page.locator("#f-date");
+    this.inputsSummary = page.locator("#inputs > summary");
     this.contactAdd = page.getByRole("button", { name: "＋ 連絡先を追加" });
     this.sendBack = page.getByLabel("データバックの詳細");
     this.extensionAdd = page.getByRole("button", { name: "＋ 項目を追加" });
@@ -48,6 +48,13 @@ export class LicensePage {
   // hash は "#tags=BY-NC" の形（先頭 # 含む）。未指定は素のトップ。
   async goto(hash = ""): Promise<void> {
     await this.page.goto(`/${hash}`);
+  }
+
+  // 任意入力欄は既定で閉じている。入力する前に開く（開いていれば何もしない）。
+  async openInputs(): Promise<void> {
+    if ((await this.page.locator("#inputs[open]").count()) === 0) {
+      await this.inputsSummary.click();
+    }
   }
 
   // タグ chip は data-tag 属性で一意に引く（アクセシブル名は複数 span 連結で不安定なため）。

@@ -36,6 +36,7 @@ export {
   DEFAULT_TAGS,
   EXTENSION_MARK,
   emptyState,
+  ident,
   identParts,
   ORDER,
   parseTag,

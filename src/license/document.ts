@@ -112,9 +112,9 @@ export function humanText(
 export function aiMD(
   state: State,
   options: Options = DEFAULT_OPTIONS,
-  hasExtensions = false,
+  doc: Doc = DEFAULT_DOC,
 ): string {
-  const id = ident(state, hasExtensions);
+  const id = ident(state, hasExtensions(doc));
   const L: string[] = [];
   L.push("# CosPL License Declaration", "");
   L.push(`identifier: ${id}`);
@@ -138,7 +138,7 @@ export function aiMD(
   L.push(`- photo_send_back_requested: ${state.SB ? "yes" : "no"}   # SB`);
   if (state.MR) L.push("- model_self_paid_distribution: allowed   # MR");
   L.push("- third_party_redistribution: prohibited (ask first)");
-  if (hasExtensions) {
+  if (hasExtensions(doc)) {
     L.push(
       "- additional_terms: present (see the human-readable README; the conditions above take precedence)",
     );

@@ -433,8 +433,7 @@
 :global(.inputs textarea:focus-visible) {
   border-color: var(--accent);
 }
-/* 連絡先・データバック・追加事項のまとまり。罫線は引かず、見出し文字と余白で区切る。 */
-/* グループ同士は見出しの上の余白で区切る（罫線は引かない）。 */
+/* 入力欄のグループ（内容物・連絡先・データバック・追加事項）。罫線は引かず、見出しの上の余白で区切る。 */
 :global(.field-group) {
   display: grid;
   gap: 8px;
@@ -477,15 +476,6 @@
 }
 :global(.rows:empty) {
   display: none;
-}
-:global(.row) {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 4px 8px;
-  align-items: end;
-}
-:global(.row > label) {
-  grid-column: 1 / -1;
 }
 /* 追加事項 1 件分のカード。背景だけで区切り、内側に罫線は引かない。 */
 :global(.ext) {

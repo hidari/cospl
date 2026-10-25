@@ -46,8 +46,8 @@ export const invalidFormatError = (input: string): ParseError => ({
   input,
 });
 
-export const invalidCreditError = (input: string): ParseError => ({
+export const invalidCreditError = (input: string, allowed: readonly string[]): ParseError => ({
   kind: "invalid_credit",
-  message: `Invalid credit: "${input}". Allowed credits are sns, any.`,
+  message: `Invalid credit: "${input}". Allowed credits are ${allowed.join(", ")}.`,
   input,
 });

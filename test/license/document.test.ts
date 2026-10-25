@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { aiMD, humanMD, humanText } from "../../src/license/document";
 import { DEFAULT_OPTIONS } from "../../src/license/options";
-import { DEFAULT_DOC, type Doc, hasExtensions } from "../../src/license/sanitize";
+import { DEFAULT_DOC, type Doc } from "../../src/license/sanitize";
 import { ident, tagsFrom } from "../../src/license/tags";
 import { TERMS_URL } from "../../src/license/version";
 import golden from "../__fixtures__/golden.json";
@@ -144,7 +144,7 @@ describe("本体の章（2.0）", () => {
     const md = humanMD(state, DEFAULT_OPTIONS, doc);
     expect(md).toContain(`適用: ${ident(state)} ／`);
     expect(md).not.toContain("追加事項");
-    expect(aiMD(state, DEFAULT_OPTIONS, hasExtensions(doc))).not.toContain("additional_terms");
+    expect(aiMD(state, DEFAULT_OPTIONS, doc)).not.toContain("additional_terms");
   });
 
   test("SB が ON ならデータバックの章を TD の章の直後に置く", () => {
@@ -340,8 +340,9 @@ describe("拡張", () => {
   test("aiMD は拡張ありのときだけ追加事項の 1 行を足す", () => {
     const line =
       "- additional_terms: present (see the human-readable README; the conditions above take precedence)";
-    expect(aiMD(unwrapState("BY"), DEFAULT_OPTIONS, true)).toContain(line);
-    expect(aiMD(unwrapState("BY"), DEFAULT_OPTIONS, false)).not.toContain("additional_terms");
+    const withExtDoc: Doc = { ...DEFAULT_DOC, extensions: [{ heading: "h", items: ["b"] }] };
+    expect(aiMD(unwrapState("BY"), DEFAULT_OPTIONS, withExtDoc)).toContain(line);
+    expect(aiMD(unwrapState("BY"), DEFAULT_OPTIONS, DEFAULT_DOC)).not.toContain("additional_terms");
     expect(aiMD(unwrapState("BY"))).not.toContain("additional_terms");
   });
 });

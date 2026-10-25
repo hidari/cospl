@@ -10,10 +10,14 @@ import esbuild from "esbuild";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const corePath = resolve(here, "../src/core.ts");
+const tagsPath = resolve(here, "../src/license/tags.ts");
 const goldenPath = resolve(here, "../test/__fixtures__/golden.json");
 
 const built = await esbuild.build({
-  entryPoints: [corePath],
+  stdin: {
+    contents: `export * from ${JSON.stringify(corePath)}; export { ident } from ${JSON.stringify(tagsPath)};`,
+    resolveDir: here,
+  },
   bundle: true,
   format: "esm",
   platform: "node",

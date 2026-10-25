@@ -1,7 +1,7 @@
 // AI エージェント・クローラ向けの発見性リソースを生成・判定する純粋関数群。
 // 副作用は持たず入出力は文字列/boolean のみ。ルーティングと I/O は src/worker.ts が担う。
 
-import { DEFAULT_TAGS, ORDER } from "./core";
+import { CREDITS, DEFAULT_TAGS, ORDER } from "./core";
 
 // 明示ブロックを置く主要 AI クローラ。CC0 サイトなので全て Allow: / にする。
 const AI_CRAWLERS = [
@@ -140,7 +140,7 @@ export function openApiJson(origin: string): string {
               required: false,
               description:
                 "How credit is requested when the BY tag is on: sns (mention or tag via the SNS feature) or any (any method). Ignored without BY.",
-              schema: { type: "string", enum: ["sns", "any"], default: "sns" },
+              schema: { type: "string", enum: [...CREDITS], default: "sns" },
             },
           ],
           responses: {

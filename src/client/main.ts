@@ -6,7 +6,6 @@ import {
   aiMD,
   type CreditMethod,
   canAddExtension,
-  creditParam,
   type Doc,
   type Draft,
   EMPTY_DRAFT,
@@ -17,6 +16,7 @@ import {
   hasExtensions,
   humanMD,
   identParts,
+  licenseQuery,
   MAX_HEADING,
   MAX_PHOTOGRAPHER,
   type Options,
@@ -33,7 +33,6 @@ import {
   siteSharePayload,
   type Tag,
   type TextField,
-  tagsFrom,
   toDoc,
   type View,
 } from "../core";
@@ -117,7 +116,7 @@ function extensionDeleteLabel(heading: string, index: number): string {
 
 function markdownFor(state: AppState, doc: Doc): string {
   return state.view === "ai"
-    ? aiMD(state.tags, state.options, hasExtensions(doc))
+    ? aiMD(state.tags, state.options, doc)
     : humanMD(state.tags, state.options, doc);
 }
 
@@ -137,10 +136,7 @@ function identHTML(state: AppState, doc: Doc): string {
 }
 
 function endpoint(state: AppState): string {
-  const tags = tagsFrom(state.tags);
-  const param = creditParam(state.tags.BY, state.options);
-  const credit = param === null ? "" : `&credit=${param}`;
-  const query = `tags=${tags.length ? tags.join("-") : "none"}${credit}${state.view === "ai" ? "&view=ai" : ""}`;
+  const query = `${licenseQuery(state.tags, state.options)}${state.view === "ai" ? "&view=ai" : ""}`;
   return `${SITE_URL}license.md?${query}`;
 }
 

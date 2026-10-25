@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { parseHash, serializeHash } from "../../src/license/hash";
+import { licenseQuery, parseHash, serializeHash } from "../../src/license/hash";
 import { DEFAULT_OPTIONS } from "../../src/license/options";
 import { tagsFrom } from "../../src/license/tags";
 import { unwrapState } from "./helpers";
@@ -60,5 +60,30 @@ describe("credit オプションの hash", () => {
     expect(parseHash("#tags=BY").options).toEqual(DEFAULT_OPTIONS);
     expect(parseHash("#BY-NC").options).toEqual(DEFAULT_OPTIONS);
     expect(parseHash("").options).toEqual(DEFAULT_OPTIONS);
+  });
+});
+
+describe("licenseQuery", () => {
+  test("BY + credit=any は credit を付ける", () => {
+    expect(licenseQuery(unwrapState("BY-NC"), { credit: "any" })).toBe("tags=BY-NC&credit=any");
+  });
+
+  test("BY で credit が既定なら付けない", () => {
+    expect(licenseQuery(unwrapState("BY"), DEFAULT_OPTIONS)).toBe("tags=BY");
+  });
+
+  test("BY が OFF なら credit=any でも付けない", () => {
+    expect(licenseQuery(unwrapState("NC"), { credit: "any" })).toBe("tags=NC");
+  });
+
+  test("タグが空なら none", () => {
+    expect(licenseQuery(unwrapState("none"), DEFAULT_OPTIONS)).toBe("tags=none");
+  });
+
+  test("serializeHash は先頭に # を付けただけ", () => {
+    const state = unwrapState("BY");
+    expect(serializeHash(state, { credit: "any" })).toBe(
+      `#${licenseQuery(state, { credit: "any" })}`,
+    );
   });
 });

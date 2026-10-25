@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { DEFAULT_OPTIONS, parseCredit } from "../../src/license/options";
+import { CREDITS, DEFAULT_OPTIONS, parseCredit } from "../../src/license/options";
 
 describe("parseCredit", () => {
   test("省略（null）は既定の sns", () => {
@@ -15,7 +15,13 @@ describe("parseCredit", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.kind).toBe("invalid_credit");
+      expect(result.error.message).toBe('Invalid credit: "x". Allowed credits are sns, any.');
     }
+  });
+
+  test("CREDITS は許容値の一覧で、既定はその先頭", () => {
+    expect(CREDITS).toEqual(["sns", "any"]);
+    expect(DEFAULT_OPTIONS.credit).toBe(CREDITS[0]);
   });
 
   test("既定は sns", () => {

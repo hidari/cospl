@@ -39,8 +39,8 @@ export const DEFAULT_DOC: Doc = {
 };
 
 export const MAX_PHOTOGRAPHER = 50;
-export const MAX_CONTACT = 100;
-export const MAX_CONTACTS = 5;
+const MAX_CONTACT = 100;
+const MAX_CONTACTS = 5;
 export const MAX_HEADING = 40;
 const MAX_ITEM = 200;
 const MAX_ITEMS_PER_EXTENSION = 20;

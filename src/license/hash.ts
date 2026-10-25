@@ -24,11 +24,16 @@ export function parseHash(hash: string): { tags: State; options: Options } {
   };
 }
 
-// 状態を hash 文字列（先頭 # 付き）へ直列化する。タグが空なら "none"。
+// 状態をクエリ文字列（先頭の ? や # は付けない）へ直列化する。タグが空なら "none"。
 // credit は BY が ON で既定以外のときだけ付ける（効かないオプションを URL に残さない）。
-export function serializeHash(state: State, options: Options): string {
+export function licenseQuery(state: State, options: Options): string {
   const tags = tagsFrom(state);
   const param = creditParam(state.BY, options);
   const credit = param === null ? "" : `&credit=${param}`;
-  return `#tags=${tags.length ? tags.join("-") : "none"}${credit}`;
+  return `tags=${tags.length ? tags.join("-") : "none"}${credit}`;
+}
+
+// 状態を hash 文字列（先頭 # 付き）へ直列化する。
+export function serializeHash(state: State, options: Options): string {
+  return `#${licenseQuery(state, options)}`;
 }

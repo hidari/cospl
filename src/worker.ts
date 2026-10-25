@@ -11,6 +11,7 @@
 //   /license.md?tags=BY-NC-NAI-TD             -> README（Markdown）
 //   /license.md?tags=BY-NC-NAI-TD&format=text -> README（プレーンテキスト）
 //   /license.md?tags=BY-NC-NAI-TD&view=ai     -> AI向け宣言
+//   /license.md?tags=BY&credit=any            -> BY の文面を「方法は問わない」に（BY が OFF なら無視）
 //   /license.md?tags=ZZZ                       -> 400（未知タグ）
 //
 // 上記以外（非 GET 含む）は静的アセット（ASSETS）へ委譲する。
@@ -22,6 +23,8 @@ import {
   type Format,
   humanMD,
   humanText,
+  type Options,
+  parseCredit,
   parseFormat,
   parseTags,
   parseView,
@@ -116,28 +119,37 @@ function cachedResponse(body: BodyInit | null, contentType: string): Response {
   });
 }
 
-// パース済みリクエスト（tags・view・format の組）
-type LicenseRequest = { state: State; view: View; format: Format };
+// パース済みリクエスト（tags・view・format・options の組）
+type LicenseRequest = { state: State; view: View; format: Format; options: Options };
 
-// tags（省略時は BY-NC-NAI-TD）・view・format を合成して LicenseRequest にする
+// tags（省略時は BY-NC-NAI-TD）・view・format・credit を合成して LicenseRequest にする
 function parseLicenseRequest(url: URL): Result<LicenseRequest, ParseError> {
   const rawTags = url.searchParams.get("tags");
   const rawView = url.searchParams.get("view");
   const rawFormat = url.searchParams.get("format");
+  const rawCredit = url.searchParams.get("credit");
   const tags = parseTags(rawTags === null ? DEFAULT_TAGS : rawTags);
   return flatMapResult(tags, (state) =>
     flatMapResult(parseView(rawView), (view) =>
-      flatMapResult(parseFormat(rawFormat), (format) => success({ state, view, format })),
+      flatMapResult(parseFormat(rawFormat), (format) =>
+        flatMapResult(parseCredit(rawCredit), (credit) =>
+          success({ state, view, format, options: { credit } }),
+        ),
+      ),
     ),
   );
 }
 
 // 成功時のレスポンス（200）。README は format=text でプレーンテキスト。
 // AI 宣言は機械向けで常に Markdown なので format は無視する（body と content-type を一致させる）。
-function licenseResponse({ state, view, format }: LicenseRequest): Response {
+function licenseResponse({ state, view, format, options }: LicenseRequest): Response {
   const isAi = view === "ai";
   const asText = !isAi && format === "text";
-  const body = isAi ? aiMD(state) : asText ? humanText(state) : humanMD(state);
+  const body = isAi
+    ? aiMD(state, options)
+    : asText
+      ? humanText(state, options)
+      : humanMD(state, options);
   const contentType = asText ? "text/plain; charset=utf-8" : "text/markdown; charset=utf-8";
   return cachedResponse(body, contentType);
 }

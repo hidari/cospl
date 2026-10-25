@@ -3,6 +3,12 @@
 
 export { aiMD, humanMD, humanText } from "./license/document";
 export { parseHash, serializeHash } from "./license/hash";
+export {
+  type CreditMethod,
+  DEFAULT_OPTIONS,
+  type Options,
+  parseCredit,
+} from "./license/options";
 export { type Format, parseFormat, parseView, type View } from "./license/query";
 export {
   cleanFields,

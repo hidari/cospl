@@ -105,6 +105,34 @@ describe("GET /license.md", () => {
     expect(body).toContain("撮影データの取り扱いについて");
   });
 
+  test("credit=any は方法を問わない文面を返す", async () => {
+    const res = await call("/license.md?tags=BY&credit=any");
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain("- クレジットの方法は問いません");
+  });
+
+  test("credit 省略は SNS の機能によるクレジットを依頼する", async () => {
+    const res = await call("/license.md?tags=BY");
+    expect(await res.text()).toContain("SNSの機能による本文内でのメンションやタグでのクレジット");
+  });
+
+  test("view=ai でも credit が attribution_method に反映される", async () => {
+    const res = await call("/license.md?tags=BY&credit=any&view=ai");
+    expect(await res.text()).toContain("- attribution_method: any   # BY");
+  });
+
+  test("不正な credit は 400 を返す", async () => {
+    const res = await call("/license.md?credit=xyz");
+    expect(res.status).toBe(400);
+    expect(await res.text()).toContain("error: invalid_credit");
+  });
+
+  test("BY が OFF のときの credit は無視する", async () => {
+    const res = await call("/license.md?tags=NC&credit=any");
+    expect(res.status).toBe(200);
+    expect(await res.text()).not.toContain("クレジットの方法は問いません");
+  });
+
   test("不正な format は 400 を返す", async () => {
     const res = await call("/license.md?format=pdf");
     expect(res.status).toBe(400);

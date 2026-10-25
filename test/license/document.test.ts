@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { aiMD, humanMD, humanText } from "../../src/license/document";
+import { DEFAULT_OPTIONS } from "../../src/license/options";
 import type { Fields } from "../../src/license/sanitize";
 import { ident, tagsFrom } from "../../src/license/tags";
 import { TERMS_URL } from "../../src/license/version";
@@ -27,6 +28,56 @@ describe("MR の免責文", () => {
 
   test("MR が OFF なら免責文は現れない", () => {
     expect(humanMD(unwrapState("NC"))).not.toContain(mrSentence);
+  });
+});
+
+describe("クレジット依頼の方法（BY）", () => {
+  const sns =
+    "- SNSへ投稿される際は、SNSの機能による本文内でのメンションやタグでのクレジットをお願いします";
+  const any = "- クレジットの方法は問いません";
+  const template = "  - クレジット表記のテンプレートをお持ちの場合はそちらでも構いません";
+
+  test("既定（sns）は SNS の機能によるメンションやタグを依頼する", () => {
+    const md = humanMD(unwrapState("BY"), DEFAULT_OPTIONS);
+    expect(md).toContain(sns);
+    expect(md).toContain(template);
+    expect(md).not.toContain("タグではなく本文内でのメンション");
+    expect(md).not.toContain(any);
+  });
+
+  test("any は方法を問わない", () => {
+    const md = humanMD(unwrapState("BY"), { credit: "any" });
+    expect(md).toContain(any);
+    expect(md).toContain(template);
+    expect(md).not.toContain(sns);
+  });
+
+  test("テンプレートの行は方法の行の直下に入れ子で置く", () => {
+    const md = humanMD(unwrapState("BY"), DEFAULT_OPTIONS);
+    expect(md).toContain(`${sns}\n${template}\n- 可能であれば画像内`);
+  });
+
+  test("BY が OFF なら方法は出ない", () => {
+    const md = humanMD(unwrapState("NC"), { credit: "any" });
+    expect(md).not.toContain(any);
+    expect(md).not.toContain(sns);
+  });
+
+  test("humanText にも反映される", () => {
+    expect(humanText(unwrapState("BY"), { credit: "any" })).toContain(any);
+  });
+
+  test("aiMD は attribution_method を宣言する", () => {
+    expect(aiMD(unwrapState("BY"), { credit: "any" })).toContain(
+      "- attribution_method: any   # BY",
+    );
+    expect(aiMD(unwrapState("BY"), DEFAULT_OPTIONS)).toContain(
+      "- attribution_method: sns_mention_or_tag   # BY",
+    );
+  });
+
+  test("aiMD は BY が OFF なら attribution_method の行を出さない", () => {
+    expect(aiMD(unwrapState("NC"), { credit: "any" })).not.toContain("attribution_method");
   });
 });
 
@@ -153,7 +204,7 @@ describe("humanMD のフィールド反映", () => {
   });
 
   test("fields 指定で日付・撮影者名（3 箇所）・連絡先が置換される", () => {
-    const md = humanMD(unwrapState("BY-NC-NAI-TD"), filled);
+    const md = humanMD(unwrapState("BY-NC-NAI-TD"), DEFAULT_OPTIONS, filled);
     expect(md).toContain("最終更新: 2026-06-17");
     expect(md).toContain("Photo. Hidari / Model. [モデル名]");
     expect(md).toContain("著作権は撮影者（Hidari）");
@@ -163,7 +214,7 @@ describe("humanMD のフィールド反映", () => {
   });
 
   test("humanText でも置換され見出し記号だけ外れる", () => {
-    const text = humanText(unwrapState("BY-NC-NAI-TD"), filled);
+    const text = humanText(unwrapState("BY-NC-NAI-TD"), DEFAULT_OPTIONS, filled);
     expect(text).toContain("文責: Hidari");
     expect(text).not.toMatch(/^#/m);
   });

@@ -98,7 +98,7 @@ export function apiCatalogJson(origin: string): string {
 }
 
 // /openapi.json（OpenAPI 3.1）。GET /license.md の機械可読仕様。
-// パラメータ仕様は src/core.ts の parseTags / parseView / parseFormat と一致させる。
+// パラメータ仕様は src/core.ts の parseTags / parseView / parseFormat / parseCredit と一致させる。
 export function openApiJson(origin: string): string {
   const spec = {
     openapi: "3.1.0",
@@ -134,6 +134,14 @@ export function openApiJson(origin: string): string {
               description: "markdown or text. Ignored when view=ai.",
               schema: { type: "string", enum: ["markdown", "text"], default: "markdown" },
             },
+            {
+              name: "credit",
+              in: "query",
+              required: false,
+              description:
+                "How credit is requested when the BY tag is on: sns (mention or tag via the SNS feature) or any (any method). Ignored without BY.",
+              schema: { type: "string", enum: ["sns", "any"], default: "sns" },
+            },
           ],
           responses: {
             "200": {
@@ -144,7 +152,7 @@ export function openApiJson(origin: string): string {
               },
             },
             "400": {
-              description: "Unknown tag, or invalid view/format.",
+              description: "Unknown tag, or invalid view/format/credit.",
               content: { "text/markdown": { schema: { type: "string" } } },
             },
           },

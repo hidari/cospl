@@ -3,10 +3,14 @@
 
 import {
   aiMD,
+  type CreditMethod,
+  DEFAULT_OPTIONS,
   EMPTY_FIELDS,
   type Fields,
   humanMD,
   identParts,
+  type Options,
+  parseCredit,
   parseHash,
   parseTag,
   SITE_URL,
@@ -24,11 +28,12 @@ import { fail, type Result, success } from "../types/result";
 import styles from "./styles.module.css";
 import { registerServiceWorker } from "./sw-register";
 
-// アプリ状態（タグ集合 + 出力ビュー + フィールド生入力）。不変に扱う。
-type AppState = { tags: State; view: View; draft: Fields };
+// アプリ状態（タグ集合 + 文面オプション + 出力ビュー + フィールド生入力）。不変に扱う。
+type AppState = { tags: State; options: Options; view: View; draft: Fields };
 
 type Action =
   | { type: "toggleTag"; tag: Tag }
+  | { type: "setCredit"; credit: CreditMethod }
   | { type: "setView"; view: View }
   | { type: "setField"; field: keyof Fields; value: string }
   | { type: "clearFields" };
@@ -38,6 +43,8 @@ function update(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "toggleTag":
       return { ...state, tags: { ...state.tags, [action.tag]: !state.tags[action.tag] } };
+    case "setCredit":
+      return { ...state, options: { ...state.options, credit: action.credit } };
     case "setView":
       return { ...state, view: action.view };
     case "setField":
@@ -50,7 +57,9 @@ function update(state: AppState, action: Action): AppState {
 // 状態から導出する純粋な値 ---------------------------------------------------
 
 function currentMarkdown(state: AppState): string {
-  return state.view === "ai" ? aiMD(state.tags) : humanMD(state.tags, sanitizeFields(state.draft));
+  return state.view === "ai"
+    ? aiMD(state.tags, state.options)
+    : humanMD(state.tags, state.options, sanitizeFields(state.draft));
 }
 
 // ダウンロードファイル名。中身は Markdown だが、まず開けることを優先して .txt で配る。
@@ -65,8 +74,12 @@ function identHTML(state: AppState): string {
 
 function endpoint(state: AppState): string {
   const tags = tagsFrom(state.tags);
-  const query = `tags=${tags.length ? tags.join("-") : "none"}${state.view === "ai" ? "&view=ai" : ""}`;
-  return `https://cospl.org/license.md?${query}`;
+  const credit =
+    state.tags.BY && state.options.credit !== DEFAULT_OPTIONS.credit
+      ? `&credit=${state.options.credit}`
+      : "";
+  const query = `tags=${tags.length ? tags.join("-") : "none"}${credit}${state.view === "ai" ? "&view=ai" : ""}`;
+  return `${SITE_URL}license.md?${query}`;
 }
 
 // DOM ヘルパー（欠落を Option で扱う） ---------------------------------------
@@ -187,6 +200,14 @@ function render(state: AppState): void {
     });
   }
 
+  // クレジットの選択肢は BY が ON のときだけ見せ、選択中の値をラジオへ同期する。
+  ifSome(byId("credit-options"), (el) => {
+    el.hidden = !state.tags.BY;
+  });
+  for (const radio of document.querySelectorAll<HTMLInputElement>('input[name="credit"]')) {
+    radio.checked = radio.value === state.options.credit;
+  }
+
   // tabs の aria-selected と roving tabindex を同期する。
   // 選択タブのみ tabindex=0（Tab で1つだけ到達、タブ間は矢印キーで移動）。
   const human = state.view === "human";
@@ -201,9 +222,9 @@ function render(state: AppState): void {
   ifSome(byId("panel-out"), (el) => el.setAttribute("aria-labelledby", tabId(state.view)));
 }
 
-// タグ状態を URL hash へ同期する（プレビュー更新とは分離）。フィールド（個人情報）は載せない。
+// タグ状態とオプションを URL hash へ同期する（プレビュー更新とは分離）。フィールド（個人情報）は載せない。
 function syncUrl(state: AppState): void {
-  history.replaceState(null, "", serializeHash(state.tags));
+  history.replaceState(null, "", serializeHash(state.tags, state.options));
 }
 
 // 初期化 --------------------------------------------------------------------
@@ -273,6 +294,20 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
           ifSome(parseTag(raw), (tag) => dispatch({ type: "toggleTag", tag }));
         });
       });
+    });
+  });
+
+  // クレジットの選択。ラジオの change を fieldset で受け、値は parseCredit で検証してから渡す。
+  ifSome(byId("credit-options"), (group) => {
+    group.addEventListener("change", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) {
+        return;
+      }
+      const credit = parseCredit(target.value);
+      if (credit.success) {
+        dispatch({ type: "setCredit", credit: credit.data });
+      }
     });
   });
 
@@ -399,10 +434,11 @@ function bindCopy(id: string, textOf: () => string): void {
 function main(): void {
   // CSS Module のローカルクラスを body に適用（スタイルの起点）
   ifSome(fromNullable(styles.app), (cls) => document.body.classList.add(cls));
-  const { tags } = parseHash(location.hash);
+  const { tags, options } = parseHash(location.hash);
   // フィールドは URL から復元しない。日付は当日を初期表示し、名前・連絡先は空のまま（プレースホルダ表示）。
   let state: AppState = {
     tags,
+    options,
     view: "human",
     draft: { ...EMPTY_FIELDS, date: todayISO() },
   };
@@ -411,7 +447,7 @@ function main(): void {
     render(state);
     // URL へ同期する action（URL に載る状態を変えるもの）をホワイトリストで明示する。
     // 新 action は既定で URL 非同期にする。
-    if (action.type === "toggleTag" || action.type === "setView") {
+    if (action.type === "toggleTag" || action.type === "setCredit" || action.type === "setView") {
       syncUrl(state);
     }
   };

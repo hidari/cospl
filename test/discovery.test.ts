@@ -55,7 +55,7 @@ describe("openApiJson", () => {
     expect(parsed.servers[0].url).toBe("https://cospl.org");
     const op = parsed.paths["/license.md"].get;
     const names = op.parameters.map((p: { name: string }) => p.name);
-    expect(names).toEqual(["tags", "view", "format"]);
+    expect(names).toEqual(["tags", "view", "format", "credit"]);
   });
 
   test("tags の説明に ORDER の全タグ（ND と SB を含む）を載せる", () => {

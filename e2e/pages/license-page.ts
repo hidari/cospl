@@ -17,6 +17,8 @@ export class LicensePage {
   readonly contact: Locator;
   readonly humanTab: Locator;
   readonly aiTab: Locator;
+  readonly creditGroup: Locator;
+  readonly creditAny: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -32,6 +34,9 @@ export class LicensePage {
     // タブは aria-label でアクセシブル名が安定するため role ベースで取得する。
     this.humanTab = page.getByRole("tab", { name: "README用" });
     this.aiTab = page.getByRole("tab", { name: "AI向け宣言" });
+    // クレジットの選択肢は fieldset + legend の radiogroup として取得する。
+    this.creditGroup = page.getByRole("group", { name: "クレジットのお願いの仕方" });
+    this.creditAny = page.getByRole("radio", { name: "方法は問わない" });
   }
 
   // hash は "#tags=BY-NC" の形（先頭 # 含む）。未指定は素のトップ。

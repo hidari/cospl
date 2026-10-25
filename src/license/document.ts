@@ -1,12 +1,17 @@
 // 生成文書（人間向け README・同梱テキスト・AI 向け宣言）。
 // 生成文書の文字列は golden（test/__fixtures__/golden.json）と byte 一致を保つ。文面変更時は just regen-golden で更新する。
 
+import { DEFAULT_OPTIONS, type Options } from "./options";
 import { DEFAULT_FIELDS, type Fields } from "./sanitize";
 import { ident, type State } from "./tags";
 import { TERMS_URL } from "./version";
 
 // 人間向け README を生成する
-export function humanMD(state: State, fields: Fields = DEFAULT_FIELDS): string {
+export function humanMD(
+  state: State,
+  options: Options = DEFAULT_OPTIONS,
+  fields: Fields = DEFAULT_FIELDS,
+): string {
   const id = ident(state);
   const L: string[] = [];
   L.push("# 撮影データの取り扱いについて", "");
@@ -15,7 +20,12 @@ export function humanMD(state: State, fields: Fields = DEFAULT_FIELDS): string {
   L.push("お渡しした写真データの取り扱いについて、以下の点をご確認いただければ幸いです。", "");
   if (state.BY) {
     L.push("## SNS・Web掲載とクレジットについて");
-    L.push("- SNSへ投稿される際はタグではなく本文内でのメンションをお願いします");
+    L.push(
+      options.credit === "any"
+        ? "- クレジットの方法は問いません"
+        : "- SNSへ投稿される際は、SNSの機能による本文内でのメンションやタグでのクレジットをお願いします",
+    );
+    L.push("  - クレジット表記のテンプレートをお持ちの場合はそちらでも構いません");
     L.push("- 可能であれば画像内にクレジット表記をお願いします");
     L.push(`  - 例） Photo. ${fields.photographer} / Model. [モデル名]`, "");
   }
@@ -65,15 +75,19 @@ export function humanMD(state: State, fields: Fields = DEFAULT_FIELDS): string {
 
 // 同梱用のプレーンテキスト版 README。文面は humanMD と同一で、非技術者に紛らわしい
 // Markdown 見出し記号（# / ##）だけを外す。リンク等の特殊記法は使っていないため変換は最小で済む。
-export function humanText(state: State, fields: Fields = DEFAULT_FIELDS): string {
-  return humanMD(state, fields)
+export function humanText(
+  state: State,
+  options: Options = DEFAULT_OPTIONS,
+  fields: Fields = DEFAULT_FIELDS,
+): string {
+  return humanMD(state, options, fields)
     .split("\n")
     .map((line) => line.replace(/^#{1,6}\s+/, ""))
     .join("\n");
 }
 
 // AI 向け宣言を生成する
-export function aiMD(state: State): string {
+export function aiMD(state: State, options: Options = DEFAULT_OPTIONS): string {
   const id = ident(state);
   const L: string[] = [];
   L.push("# CosPL License Declaration", "");
@@ -82,6 +96,11 @@ export function aiMD(state: State): string {
   L.push(`terms_url: ${TERMS_URL}`, "");
   L.push("## Conditions");
   L.push(`- attribution_required: ${state.BY ? "yes" : "no"}   # BY`);
+  if (state.BY) {
+    L.push(
+      `- attribution_method: ${options.credit === "any" ? "any" : "sns_mention_or_tag"}   # BY`,
+    );
+  }
   L.push(`- commercial_use: ${state.NC ? "prohibited (ask first)" : "not_restricted"}   # NC`);
   L.push(
     `- derivatives: ${state.ND ? "prohibited (cropping and resizing allowed)" : "allowed"}   # ND`,

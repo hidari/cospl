@@ -32,7 +32,9 @@ test("ND と SB を ON にすると定義順で識別子に並び、README に�
 
   await expect(licensePage.ident).toContainText("BY-NC-ND-NAI-TD-SB");
   await expect(licensePage.output).toContainText("CosPL 2.0 / BY-NC-ND-NAI-TD-SB");
-  await expect(licensePage.output).toContainText("写真の加工（トリミング・リサイズを除く）");
+  await expect(licensePage.output).toContainText(
+    "写真の加工（加工アプリ・フィルター・AI などの手段を問いません。トリミング・リサイズを除く）",
+  );
   await expect(licensePage.output).toContainText("## データバックについて");
   await expect(page).toHaveURL(/tags=BY-NC-ND-NAI-TD-SB/);
 });

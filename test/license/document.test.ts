@@ -94,7 +94,8 @@ describe("クレジット依頼の方法（BY）", () => {
 
 describe("本体の章（2.0）", () => {
   const free = "- 写真データは自由に加工していただいて構いません";
-  const noDerivatives = "- 写真の加工（トリミング・リサイズを除く）";
+  const noDerivatives =
+    "- 写真の加工（加工アプリ・フィルター・AI などの手段を問いません。トリミング・リサイズを除く）";
 
   test("ND が OFF なら加工の許可を権利関係の章の末尾に 1 行置く", () => {
     const md = humanMD(unwrapState("BY"));
@@ -144,6 +145,15 @@ describe("本体の章（2.0）", () => {
       "- 生成AIの学習用データとしての利用、およびこの写真を元にした別の画像・動画の生成（この写真を仕上げるための加工は本項の対象外です）",
     );
     expect(md).not.toContain("生成素材");
+  });
+
+  test("ND と NAI が両方 ON なら NAI の括弧書きは加工の扱いを ND の項に委ねる", () => {
+    const md = humanMD(unwrapState("ND-NAI"));
+    expect(md).toContain(
+      "- 生成AIの学習用データとしての利用、およびこの写真を元にした別の画像・動画の生成（加工の扱いは上の「写真の加工」の項に従います）",
+    );
+    expect(md).not.toContain("本項の対象外です");
+    expect(md.indexOf(noDerivatives)).toBeLessThan(md.indexOf("- 生成AIの学習用データ"));
   });
 });
 

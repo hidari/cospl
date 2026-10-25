@@ -17,8 +17,8 @@ cospl を cospl.org（Cloudflare Workers）へデプロイする。
 
 ## 前提（未充足なら先に案内する）
 
-- リポジトリ Secrets に `CLOUDFLARE_API_TOKEN`（Workers Scripts:Edit + Workers Routes/DNS 権限）と `CLOUDFLARE_ACCOUNT_ID` が登録済み。未登録だと deploy ジョブが失敗する。
-  - 確認: `gh secret list --repo hidari/cospl`
+- `production` environment の Secrets に `CLOUDFLARE_API_TOKEN`（Workers Scripts:Edit + Workers Routes/DNS 権限）と `CLOUDFLARE_ACCOUNT_ID` が登録済み。未登録だと deploy ジョブが失敗する。
+  - 確認: `gh secret list --repo hidari/cospl --env production`
 - cospl.org が対象 Cloudflare アカウントのゾーンに存在する（`wrangler.toml` の `custom_domain` route が紐付ける）。
 
 ## 手順
@@ -83,5 +83,6 @@ curl -fsS -o /dev/null -w "ai:    %{http_code}\n" "https://cospl.org/license.md?
 ## 落とし穴
 
 - ローカルで `wrangler deploy` を実行しない（必ず workflow 経由）。
+- `--ref` に main 以外を渡すと production environment のブランチポリシーで deploy ジョブが拒否される。
 - 待機コマンド（`gh run watch`）の exit を結論と取り違えない。結論は `gh run view --json conclusion` で確認する。
 - Secrets / ゾーン未設定のままデプロイしない（deploy ジョブが失敗する）。

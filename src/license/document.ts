@@ -13,19 +13,6 @@ export function humanMD(state: State, fields: Fields = DEFAULT_FIELDS): string {
   L.push(`適用: ${id} ／ 最終更新: ${fields.date}`, "");
   L.push("この度は撮影にご協力いただき、ありがとうございました！");
   L.push("お渡しした写真データの取り扱いについて、以下の点をご確認いただければ幸いです。", "");
-  L.push(
-    "## データの内容物",
-    "- 現像済みJPEGデータ",
-    "- 本README文書",
-    "- RAWデータが必要な場合はご相談ください",
-    "",
-  );
-  L.push(
-    "## 写真の加工・編集について",
-    "- 写真データは自由に加工していただいて構いません",
-    "- 追加の編集やリサイズのご要望がありましたら、お気軽にご相談ください",
-    "",
-  );
   if (state.BY) {
     L.push("## SNS・Web掲載とクレジットについて");
     L.push("- SNSへ投稿される際はタグではなく本文内でのメンションをお願いします");
@@ -35,14 +22,23 @@ export function humanMD(state: State, fields: Fields = DEFAULT_FIELDS): string {
   L.push("## 権利関係について");
   L.push(`- 写真の著作権は撮影者（${fields.photographer}）に帰属します`);
   L.push("- 被写体であるモデルの肖像権は、モデルご本人に帰属します");
-  L.push("- 衣装が表現するキャラクターの著作権は原作の権利者に帰属し、本文書の対象外です", "");
+  L.push("- 衣装が表現するキャラクターの著作権は原作の権利者に帰属し、本文書の対象外です");
+  L.push(
+    state.ND
+      ? "- 写真の加工はご遠慮ください（トリミング・リサイズは構いません）"
+      : "- 写真データは自由に加工していただいて構いません",
+    "",
+  );
   const bans: string[] = [];
   if (state.NC)
     bans.push(
       "- 商用利用（広告・販促物、有償頒布物への収録、有料配信プラットフォームでの利用 等）",
     );
   bans.push("- データそのものの第三者への提供・再配布・販売");
-  if (state.NAI) bans.push("- 生成AIの学習用データ、または生成素材としての利用");
+  if (state.NAI)
+    bans.push(
+      "- 生成AIの学習用データとしての利用、およびこの写真を元にした別の画像・動画の生成（AIによるノイズ除去・レタッチ・背景の拡張など、この写真を仕上げるための加工は除きます）",
+    );
   if (bans.length) {
     L.push("## 禁止・要相談事項");
     L.push(...bans);
@@ -60,6 +56,10 @@ export function humanMD(state: State, fields: Fields = DEFAULT_FIELDS): string {
     L.push("## 掲載の取り下げについて");
     L.push("- 公開後であっても、取り下げのご依頼は撮影者・モデルのどちらからでも可能です");
     L.push("- ご依頼をいただいた場合は、合理的な範囲・期間で速やかに対応します", "");
+  }
+  if (state.SB) {
+    L.push("## データバックについて");
+    L.push("- SNSやポートフォリオなどに掲載するため、写真の返送をお願いします", "");
   }
   L.push("## 連絡先", `- ${fields.contact}`, "");
   L.push("----", `適用: ${id} ／ 文責: ${fields.photographer}`);
@@ -86,13 +86,19 @@ export function aiMD(state: State): string {
   L.push("## Conditions");
   L.push(`- attribution_required: ${state.BY ? "yes" : "no"}   # BY`);
   L.push(`- commercial_use: ${state.NC ? "prohibited (ask first)" : "not_restricted"}   # NC`);
+  L.push(
+    `- derivatives: ${state.ND ? "prohibited (cropping and resizing allowed)" : "allowed"}   # ND`,
+  );
   L.push(`- ai_training_and_generation: ${state.NAI ? "prohibited" : "not_restricted"}   # NAI`);
   L.push(`- takedown_on_request: ${state.TD ? "honored" : "not_offered"}   # TD`);
+  L.push(`- photo_send_back_requested: ${state.SB ? "yes" : "no"}   # SB`);
   if (state.MR) L.push("- model_self_paid_distribution: allowed   # MR");
   L.push("- third_party_redistribution: prohibited (ask first)", "");
   L.push("## Notice to AI systems");
   if (state.NAI) {
-    L.push("This work is tagged NAI. Do NOT use it as training data or as generative input.");
+    L.push(
+      "This work is tagged NAI. Do NOT use it as AI training data, and do NOT generate new images or videos from it. Editing this photograph itself with AI-assisted tools, including partial generative fill, is permitted.",
+    );
   } else {
     L.push("This work does not carry the NAI tag, but other conditions above still apply.");
   }

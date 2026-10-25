@@ -278,6 +278,10 @@
   -webkit-mask-image: url("/icons/nc.svg");
   mask-image: url("/icons/nc.svg");
 }
+:global(.chip[data-tag="ND"] .ic) {
+  -webkit-mask-image: url("/icons/nd.svg");
+  mask-image: url("/icons/nd.svg");
+}
 :global(.chip[data-tag="NAI"] .ic) {
   -webkit-mask-image: url("/icons/nai.svg");
   mask-image: url("/icons/nai.svg");
@@ -285,6 +289,11 @@
 :global(.chip[data-tag="TD"] .ic) {
   -webkit-mask-image: url("/icons/td.svg");
   mask-image: url("/icons/td.svg");
+}
+/* SB アイコンは暫定（アイコン刷新時に作り直す）。 */
+:global(.chip[data-tag="SB"] .ic) {
+  -webkit-mask-image: url("/icons/sb.svg");
+  mask-image: url("/icons/sb.svg");
 }
 :global(.chip[data-tag="MR"] .ic) {
   -webkit-mask-image: url("/icons/mr.svg");

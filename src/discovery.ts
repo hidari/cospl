@@ -1,7 +1,7 @@
 // AI エージェント・クローラ向けの発見性リソースを生成・判定する純粋関数群。
 // 副作用は持たず入出力は文字列/boolean のみ。ルーティングと I/O は src/worker.ts が担う。
 
-import { DEFAULT_TAGS } from "./core";
+import { DEFAULT_TAGS, ORDER } from "./core";
 
 // 明示ブロックを置く主要 AI クローラ。CC0 サイトなので全て Allow: / にする。
 const AI_CRAWLERS = [
@@ -117,7 +117,7 @@ export function openApiJson(origin: string): string {
               name: "tags",
               in: "query",
               required: false,
-              description: "Hyphen-joined tag identifier. Use 'none' for an empty tag set.",
+              description: `Hyphen-joined tag identifier of ${ORDER.join(", ")}. Tags are a set; order is not significant. Use 'none' for an empty tag set.`,
               schema: { type: "string", default: DEFAULT_TAGS },
             },
             {

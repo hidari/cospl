@@ -6,7 +6,7 @@ import { fail, getOrElse, type Result, success } from "../types/result";
 import { VERSION } from "./version";
 
 // タグの定義順（単一ソース）。union 型と検証用 Set をここから起こす。
-export const ORDER = ["BY", "NC", "NAI", "TD", "MR"] as const;
+export const ORDER = ["BY", "NC", "ND", "NAI", "TD", "SB", "MR"] as const;
 export type Tag = (typeof ORDER)[number];
 const TAGS: ReadonlySet<string> = new Set<Tag>(ORDER);
 
@@ -20,8 +20,10 @@ export const DEFAULT_TAGS = "BY-NC-NAI-TD";
 export const emptyState = (): State => ({
   BY: false,
   NC: false,
+  ND: false,
   NAI: false,
   TD: false,
+  SB: false,
   MR: false,
 });
 

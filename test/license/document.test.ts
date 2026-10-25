@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import { aiMD, humanMD, humanText } from "../../src/license/document";
 import type { Fields } from "../../src/license/sanitize";
 import { ident, tagsFrom } from "../../src/license/tags";
+import { TERMS_URL } from "../../src/license/version";
 import golden from "../__fixtures__/golden.json";
 import { unwrapState } from "./helpers";
 
@@ -29,6 +30,83 @@ describe("MR の免責文", () => {
   });
 });
 
+describe("本体の章（2.0）", () => {
+  const free = "- 写真データは自由に加工していただいて構いません";
+  const noDerivatives = "- 写真の加工はご遠慮ください（トリミング・リサイズは構いません）";
+
+  test("ND が OFF なら加工の許可を権利関係の章の末尾に 1 行置く", () => {
+    const md = humanMD(unwrapState("BY"));
+    expect(md).toContain(free);
+    expect(md).not.toContain(noDerivatives);
+    const rights = md.slice(md.indexOf("## 権利関係について"));
+    expect(rights.indexOf(free)).toBeGreaterThan(rights.indexOf("対象外です"));
+    expect(rights.indexOf(free)).toBeLessThan(rights.indexOf("\n## ", 5));
+  });
+
+  test("ND が ON なら加工の許可の代わりに加工のご遠慮を置く", () => {
+    const md = humanMD(unwrapState("ND"));
+    expect(md).toContain(noDerivatives);
+    expect(md).not.toContain(free);
+  });
+
+  test("内容物と加工の章は本体に無い", () => {
+    const md = humanMD(unwrapState("BY-NC-NAI-TD"));
+    expect(md).not.toContain("## データの内容物");
+    expect(md).not.toContain("## 写真の加工・編集について");
+  });
+
+  test("SB が ON ならデータバックの章を TD の章の直後に置く", () => {
+    const md = humanMD(unwrapState("TD-SB"));
+    expect(md).toContain("## データバックについて");
+    expect(md).toContain("- SNSやポートフォリオなどに掲載するため、写真の返送をお願いします");
+    expect(md.indexOf("## データバックについて")).toBeGreaterThan(
+      md.indexOf("## 掲載の取り下げについて"),
+    );
+    expect(md.indexOf("## データバックについて")).toBeLessThan(md.indexOf("## 連絡先"));
+  });
+
+  test("SB が OFF ならデータバックの章は無い", () => {
+    const md = humanMD(unwrapState("BY-NC-NAI-TD"));
+    expect(md).not.toContain("## データバックについて");
+    expect(md).not.toContain("写真の返送をお願いします");
+  });
+
+  test("NAI の禁止行は加工のための AI 利用を除外する", () => {
+    const md = humanMD(unwrapState("NAI"));
+    expect(md).toContain(
+      "- 生成AIの学習用データとしての利用、およびこの写真を元にした別の画像・動画の生成（AIによるノイズ除去・レタッチ・背景の拡張など、この写真を仕上げるための加工は除きます）",
+    );
+    expect(md).not.toContain("生成素材");
+  });
+});
+
+describe("aiMD（2.0）", () => {
+  test("ND は加工の可否を宣言する", () => {
+    expect(aiMD(unwrapState("ND"))).toContain(
+      "- derivatives: prohibited (cropping and resizing allowed)   # ND",
+    );
+    expect(aiMD(unwrapState("BY"))).toContain("- derivatives: allowed   # ND");
+  });
+
+  test("SB はデータバックの依頼を宣言する", () => {
+    expect(aiMD(unwrapState("SB"))).toContain("- photo_send_back_requested: yes   # SB");
+    expect(aiMD(unwrapState("BY"))).toContain("- photo_send_back_requested: no   # SB");
+  });
+
+  test("NAI の Notice は学習と派生生成を禁じ、写真自体の加工は許可する", () => {
+    const ai = aiMD(unwrapState("NAI"));
+    expect(ai).toContain(
+      "This work is tagged NAI. Do NOT use it as AI training data, and do NOT generate new images or videos from it. Editing this photograph itself with AI-assisted tools, including partial generative fill, is permitted.",
+    );
+    expect(ai).not.toContain("generative input");
+  });
+
+  test("terms_url は TERMS_URL を指す", () => {
+    expect(aiMD(unwrapState("BY"))).toContain(`terms_url: ${TERMS_URL}`);
+    expect(TERMS_URL).toBe("https://github.com/hidari/cospl/blob/main/v2.0/CosPL-2.0.md");
+  });
+});
+
 describe("humanText", () => {
   test("文面は humanMD と同一で、見出し記号(# / ##)だけを外す", () => {
     const state = unwrapState("BY-NC-NAI-TD");
@@ -39,7 +117,7 @@ describe("humanText", () => {
 
   test("箇条書きや区切り線はそのまま残す", () => {
     const text = humanText(unwrapState("none"));
-    expect(text).toContain("- 現像済みJPEGデータ");
+    expect(text).toContain("- 写真の著作権は撮影者");
     expect(text).toContain("----");
   });
 });

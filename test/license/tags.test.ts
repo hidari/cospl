@@ -35,6 +35,10 @@ describe("parseTags", () => {
     expect(tagsFrom(unwrapState("TD-BY-NC"))).toEqual(["BY", "NC", "TD"]);
   });
 
+  test("タグは集合で、入力順に依らず定義順（BY NC ND NAI TD SB MR）に並ぶ", () => {
+    expect(tagsFrom(unwrapState("MR-SB-ND-BY"))).toEqual(["BY", "ND", "SB", "MR"]);
+  });
+
   test("未知タグが1つでもあれば unknown_tag で失敗する", () => {
     const result = parseTags("BY-ZZZ");
     expect(result.success).toBe(false);
@@ -59,7 +63,11 @@ describe("parseTags", () => {
 
 describe("ident", () => {
   test("タグありはハイフン連結、タグなしはバージョンのみ", () => {
-    expect(ident(unwrapState("BY-NC-NAI-TD"))).toBe("CosPL 1.0 / BY-NC-NAI-TD");
-    expect(ident(unwrapState("none"))).toBe("CosPL 1.0");
+    expect(ident(unwrapState("BY-NC-NAI-TD"))).toBe("CosPL 2.0 / BY-NC-NAI-TD");
+    expect(ident(unwrapState("none"))).toBe("CosPL 2.0");
+  });
+
+  test("全タグ ON は定義順 BY-NC-ND-NAI-TD-SB-MR になる", () => {
+    expect(ident(unwrapState("MR-SB-TD-NAI-ND-NC-BY"))).toBe("CosPL 2.0 / BY-NC-ND-NAI-TD-SB-MR");
   });
 });

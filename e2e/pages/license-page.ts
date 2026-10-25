@@ -1,7 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 // index.html の data-tag と一致するタグ集合。
-export type Tag = "BY" | "NC" | "NAI" | "TD" | "MR";
+export type Tag = "BY" | "NC" | "ND" | "NAI" | "TD" | "SB" | "MR";
 
 // CosPL 生成画面の Page Object。セレクタと操作をここに集約し、spec を生セレクタから分離する。
 export class LicensePage {

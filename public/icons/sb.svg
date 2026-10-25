@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56" fill="none" stroke="currentColor" role="img" aria-label="SB">
+  <!-- SB: 戻る矢印つきの封筒（撮影者への写真の返送。暫定） -->
+  <rect x="6" y="24" width="44" height="26" rx="5" stroke-width="4.2"/>
+  <path d="M8 28 L28 42 L48 28" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M40 13 H20 M26 7 L20 13 L26 19" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

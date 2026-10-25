@@ -24,7 +24,7 @@ export type ParseError = {
 // エラー構築ヘルパー
 export const unknownTagError = (input: string): ParseError => ({
   kind: "unknown_tag",
-  message: `Unknown tag: "${input}". Allowed tags are BY, NC, NAI, TD, MR.`,
+  message: `Unknown tag: "${input}". Allowed tags are BY, NC, ND, NAI, TD, SB, MR.`,
   input,
 });
 

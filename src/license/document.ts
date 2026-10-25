@@ -2,7 +2,7 @@
 // 生成文書の文字列は golden（test/__fixtures__/golden.json）と byte 一致を保つ。文面変更時は just regen-golden で更新する。
 
 import { DEFAULT_OPTIONS, type Options } from "./options";
-import { DEFAULT_DOC, type Doc } from "./sanitize";
+import { DEFAULT_DOC, type Doc, hasExtensions } from "./sanitize";
 import { ident, type State } from "./tags";
 import { TERMS_URL } from "./version";
 
@@ -12,7 +12,7 @@ export function humanMD(
   options: Options = DEFAULT_OPTIONS,
   doc: Doc = DEFAULT_DOC,
 ): string {
-  const id = ident(state, doc.extensions.length > 0);
+  const id = ident(state, hasExtensions(doc));
   const L: string[] = [];
   L.push("# 撮影データの取り扱いについて", "");
   L.push(`適用: ${id} ／ 最終更新: ${doc.date}`, "");
@@ -69,7 +69,7 @@ export function humanMD(
     L.push("- SNSやポートフォリオなどに掲載するため、写真の返送をお願いします");
     L.push(...doc.sendBackItems.map((item) => `- ${item}`), "");
   }
-  if (doc.extensions.length > 0) {
+  if (hasExtensions(doc)) {
     L.push(
       "以下は本文書への追加事項です。本文書の条件と矛盾する場合は本文書の条件が優先します。",
       "",

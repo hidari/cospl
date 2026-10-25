@@ -1,5 +1,14 @@
 import { describe, expect, test } from "vitest";
-import { DEFAULT_DOC, type Draft, EMPTY_DRAFT, toDoc } from "../../src/license/sanitize";
+import { humanMD } from "../../src/license/document";
+import { DEFAULT_OPTIONS } from "../../src/license/options";
+import {
+  DEFAULT_DOC,
+  type Draft,
+  EMPTY_DRAFT,
+  hasExtensions,
+  toDoc,
+} from "../../src/license/sanitize";
+import { unwrapState } from "./helpers";
 
 describe("toDoc", () => {
   const empty: Draft = EMPTY_DRAFT;
@@ -126,5 +135,31 @@ describe("toDoc", () => {
     expect(toDoc({ ...empty, sendBack: "a\n\n b \n" }).sendBackItems).toEqual(["a", "b"]);
     const lines = Array.from({ length: 11 }, (_, i) => `l${i}`).join("\n");
     expect(toDoc({ ...empty, sendBack: lines }).sendBackItems).toHaveLength(10);
+  });
+
+  test("U+2028 / U+2029 を除去し、改行を使った見出し偽装を防ぐ", () => {
+    expect(toDoc({ ...empty, photographer: "a\u2028## 偽" }).photographer).toBe("a## 偽");
+    expect(toDoc({ ...empty, photographer: "a\u2029## 偽" }).photographer).toBe("a## 偽");
+  });
+
+  test("単一行の値に混ざった改行は潰れる（見出し・区切り線の偽装）", () => {
+    const doc = toDoc({
+      ...empty,
+      contacts: ["x\n----"],
+      extensions: [{ heading: "a\n## 偽", body: "x" }],
+    });
+    expect(doc.extensions[0]?.heading).toBe("a## 偽");
+    expect(doc.contacts).toEqual(["x----"]);
+  });
+
+  test("SB の自由記述は改行で項目に分かれ、見出し記法も項目のまま", () => {
+    const doc = toDoc({ ...empty, sendBack: "a\n## 偽" });
+    expect(doc.sendBackItems).toEqual(["a", "## 偽"]);
+    expect(humanMD(unwrapState("SB"), DEFAULT_OPTIONS, doc)).toContain("\n- ## 偽\n");
+  });
+
+  test("hasExtensions は拡張の有無を返す", () => {
+    expect(hasExtensions(DEFAULT_DOC)).toBe(false);
+    expect(hasExtensions(toDoc({ ...empty, extensions: [{ heading: "h", body: "" }] }))).toBe(true);
   });
 });

@@ -17,6 +17,7 @@ export {
   type Draft,
   EMPTY_DRAFT,
   type Extension,
+  hasExtensions,
   toDoc,
 } from "./license/sanitize";
 export { type SharePayload, SITE_URL, siteShareMessage, siteSharePayload } from "./license/share";

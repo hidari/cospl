@@ -5,9 +5,11 @@ import {
   aiMD,
   type CreditMethod,
   DEFAULT_OPTIONS,
+  type Doc,
   type Draft,
   EMPTY_DRAFT,
   EXTENSION_MARK,
+  hasExtensions,
   humanMD,
   identParts,
   type Options,
@@ -73,11 +75,14 @@ function update(state: AppState, action: Action): AppState {
 
 // 状態から導出する純粋な値 ---------------------------------------------------
 
-function currentMarkdown(state: AppState): string {
-  const doc = toDoc(state.draft);
+function markdownFor(state: AppState, doc: Doc): string {
   return state.view === "ai"
-    ? aiMD(state.tags, state.options, doc.extensions.length > 0)
+    ? aiMD(state.tags, state.options, hasExtensions(doc))
     : humanMD(state.tags, state.options, doc);
+}
+
+function currentMarkdown(state: AppState): string {
+  return markdownFor(state, toDoc(state.draft));
 }
 
 // ダウンロードファイル名。中身は Markdown だが、まず開けることを優先して .txt で配る。
@@ -85,9 +90,9 @@ function downloadName(state: AppState): string {
   return state.view === "ai" ? "cospl-ai.txt" : "README.txt";
 }
 
-function identHTML(state: AppState): string {
+function identHTML(state: AppState, doc: Doc): string {
   const { version, tags } = identParts(state.tags);
-  const mark = toDoc(state.draft).extensions.length > 0 ? EXTENSION_MARK : "";
+  const mark = hasExtensions(doc) ? EXTENSION_MARK : "";
   return `CosPL ${version}${tags.length ? ` / <b>${tags.join("-")}</b>` : ""}${mark}`;
 }
 
@@ -203,11 +208,12 @@ function flash(btn: HTMLElement, label: string): void {
 // 描画（状態から DOM へ反映する副作用） --------------------------------------
 
 function render(state: AppState): void {
+  const doc = toDoc(state.draft);
   // identHTML の埋め込み値は ORDER 由来のタグ定数のみで、ユーザー入力を含まないため innerHTML で安全。
   ifSome(byId("ident"), (el) => {
-    el.innerHTML = identHTML(state);
+    el.innerHTML = identHTML(state, doc);
   });
-  setText("out", currentMarkdown(state));
+  setText("out", markdownFor(state, doc));
   setText("ep", endpoint(state));
 
   // chips の aria-pressed を状態と同期
@@ -262,6 +268,18 @@ const FIELD_BINDINGS: ReadonlyArray<readonly [string, FieldKey]> = [
   ["f-date", "date"],
   ["f-contact", "contact"],
 ];
+
+// 入力欄の値を draft から書き戻す（状態を単一ソースにする）。
+// input への programmatic 代入は input イベントを発火しないため、プレビューとは二重にならない。
+function syncFields(draft: Draft): void {
+  for (const [id, field] of FIELD_BINDINGS) {
+    ifSome(byId(id), (el) => {
+      if (el instanceof HTMLInputElement) {
+        el.value = fieldValue(draft, field);
+      }
+    });
+  }
+}
 
 // 入力欄を draft で初期化し、input でプレビューを更新する。URL には反映しない。
 function bindFields(getState: () => AppState, dispatch: (action: Action) => void): void {
@@ -362,18 +380,11 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
 
   bindFields(getState, dispatch);
 
-  // 入力欄のクリア。draft を空にすると同時に、
-  // input への programmatic 代入は input イベントを発火しないため、DOM の値も明示的に空へ戻す。
+  // 入力欄のクリア。draft を初期値へ戻し、DOM の値も状態から書き戻す（日付は当日を再表示）。
   ifSome(byId("clear-fields"), (btn) => {
     btn.addEventListener("click", () => {
       dispatch({ type: "clearFields" });
-      for (const [id] of FIELD_BINDINGS) {
-        ifSome(byId(id), (el) => {
-          if (el instanceof HTMLInputElement) {
-            el.value = "";
-          }
-        });
-      }
+      syncFields(getState().draft);
       flash(btn, "クリアしました");
     });
   });

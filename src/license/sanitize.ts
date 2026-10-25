@@ -54,6 +54,8 @@ function isStrippableCodePoint(cp: number): boolean {
   return (
     cp <= 0x1f || // C0 制御文字
     (cp >= 0x7f && cp <= 0x9f) || // DEL + C1 制御文字
+    cp === 0x2028 || // 行区切り（Markdown の行頭を偽装できる）
+    cp === 0x2029 || // 段落区切り
     (cp >= 0x202a && cp <= 0x202e) || // 双方向埋め込み / 上書き
     (cp >= 0x2066 && cp <= 0x2069) // 双方向分離
   );
@@ -96,6 +98,11 @@ function isValidDate(raw: string): boolean {
   // new Date(year, month, 0) は「month の前月の最終日」= 当月（1-based month）の日数。
   const daysInMonth = new Date(year, month, 0).getDate();
   return day >= 1 && day <= daysInMonth;
+}
+
+// 拡張が 1 つ以上あるか。識別子の印と AI 宣言の追加事項行の単一ソース。
+export function hasExtensions(doc: Doc): boolean {
+  return doc.extensions.length > 0;
 }
 
 // 改行区切りの本文を、サニタイズ済みの空でない行に分けて上限まで取る。

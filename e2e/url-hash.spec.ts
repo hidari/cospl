@@ -33,6 +33,16 @@ test("撮影者名を入力→blur しても URL に載らず、クリアで欄�
   await expect(licensePage.flashStatus).toHaveText("クリアしました");
 });
 
+test("クリア後の日付欄は出力の最終更新日と一致する", async ({ licensePage, page }) => {
+  await licensePage.goto();
+  await licensePage.openFillSection();
+
+  await licensePage.clearButton.click();
+  const date = await page.locator("#f-date").inputValue();
+  expect(date).not.toBe("");
+  await expect(licensePage.output).toContainText(`最終更新: ${date}`);
+});
+
 test("個人情報入りの古い URL を開くと欄に入らず URL からも消える", async ({
   licensePage,
   page,

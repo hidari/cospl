@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { aiMD, humanMD, humanText } from "../../src/license/document";
 import { DEFAULT_OPTIONS } from "../../src/license/options";
-import type { Fields } from "../../src/license/sanitize";
+import { DEFAULT_DOC, type Doc } from "../../src/license/sanitize";
 import { ident, tagsFrom } from "../../src/license/tags";
 import { TERMS_URL } from "../../src/license/version";
 import golden from "../__fixtures__/golden.json";
@@ -188,10 +188,11 @@ describe("humanText", () => {
 });
 
 describe("humanMD のフィールド反映", () => {
-  const filled: Fields = {
+  const filled: Doc = {
+    ...DEFAULT_DOC,
     date: "2026-06-17",
     photographer: "Hidari",
-    contact: "mail@example.com",
+    contacts: ["mail@example.com"],
   };
 
   test("引数なしは従来どおりプレースホルダを残す（既定出力の不変）", () => {
@@ -203,7 +204,7 @@ describe("humanMD のフィールド反映", () => {
     expect(md).toContain("- [連絡先をここに記入]");
   });
 
-  test("fields 指定で日付・撮影者名（3 箇所）・連絡先が置換される", () => {
+  test("doc 指定で日付・撮影者名（3 箇所）・連絡先が置換される", () => {
     const md = humanMD(unwrapState("BY-NC-NAI-TD"), DEFAULT_OPTIONS, filled);
     expect(md).toContain("最終更新: 2026-06-17");
     expect(md).toContain("Photo. Hidari / Model. [モデル名]");
@@ -234,4 +235,83 @@ describe("生成文書は golden と byte 一致する（回帰）", () => {
       expect(aiMD(state)).toBe(expected.ai);
     });
   }
+});
+
+describe("拡張", () => {
+  const noticeLine =
+    "以下は本文書への追加事項です。本文書の条件と矛盾する場合は本文書の条件が優先します。";
+  const withExt: Doc = {
+    ...DEFAULT_DOC,
+    extensions: [{ heading: "加工", items: ["a", "bb"] }],
+  };
+
+  test("ident は拡張ありのとき末尾に ` +` を付ける", () => {
+    expect(ident(unwrapState("BY"), true)).toBe("CosPL 2.0 / BY +");
+    expect(ident(unwrapState("none"), true)).toBe("CosPL 2.0 +");
+    expect(ident(unwrapState("BY"))).toBe("CosPL 2.0 / BY");
+  });
+
+  test("拡張は連絡先の章の直前に、優先順位の注記に続けて出る", () => {
+    const md = humanMD(unwrapState("BY"), DEFAULT_OPTIONS, withExt);
+    expect(md).toContain(`${noticeLine}\n\n## 加工\n- a\n- bb\n\n## 連絡先`);
+    expect(md).toMatch(/適用: CosPL 2\.0 \/ BY \+ ／/);
+  });
+
+  test("拡張なしでは注記も ` +` も出ない", () => {
+    const md = humanMD(unwrapState("BY"));
+    expect(md).not.toContain(noticeLine);
+    expect(md).not.toContain(" +");
+  });
+
+  test("項目が見出し記法で始まっても箇条書きの項目のまま", () => {
+    const doc: Doc = { ...DEFAULT_DOC, extensions: [{ heading: "x", items: ["# 見出し風"] }] };
+    expect(humanMD(unwrapState("none"), DEFAULT_OPTIONS, doc)).toContain("\n- # 見出し風\n");
+    expect(humanText(unwrapState("none"), DEFAULT_OPTIONS, doc)).toContain("\n- # 見出し風\n");
+  });
+
+  test("humanText でも拡張の見出し記号だけが外れる", () => {
+    const text = humanText(unwrapState("none"), DEFAULT_OPTIONS, withExt);
+    expect(text).toContain("\n加工\n- a\n- bb\n");
+  });
+
+  test("aiMD は拡張ありのときだけ追加事項の 1 行を足す", () => {
+    const line =
+      "- additional_terms: present (see the human-readable README; the conditions above take precedence)";
+    expect(aiMD(unwrapState("BY"), DEFAULT_OPTIONS, true)).toContain(line);
+    expect(aiMD(unwrapState("BY"), DEFAULT_OPTIONS, false)).not.toContain("additional_terms");
+    expect(aiMD(unwrapState("BY"))).not.toContain("additional_terms");
+  });
+});
+
+describe("連絡先の複数化", () => {
+  test("2 件は連絡先の章の下に 2 行出る", () => {
+    const doc: Doc = { ...DEFAULT_DOC, contacts: ["X: @a", "B"] };
+    expect(humanMD(unwrapState("none"), DEFAULT_OPTIONS, doc)).toContain(
+      "## 連絡先\n- X: @a\n- B\n",
+    );
+  });
+
+  test("既定はプレースホルダ 1 行", () => {
+    expect(humanMD(unwrapState("none"))).toContain("## 連絡先\n- [連絡先をここに記入]\n");
+  });
+});
+
+describe("SB の自由記述", () => {
+  const fixed = "- SNSやポートフォリオなどに掲載するため、写真の返送をお願いします";
+
+  test("固定文の次行に項目が並ぶ", () => {
+    const doc: Doc = { ...DEFAULT_DOC, sendBackItems: ["お気に入り1枚でOK"] };
+    expect(humanMD(unwrapState("SB"), DEFAULT_OPTIONS, doc)).toContain(
+      `${fixed}\n- お気に入り1枚でOK\n`,
+    );
+  });
+
+  test("SB が OFF なら自由記述は出さない", () => {
+    const doc: Doc = { ...DEFAULT_DOC, sendBackItems: ["お気に入り1枚でOK"] };
+    expect(humanMD(unwrapState("none"), DEFAULT_OPTIONS, doc)).not.toContain("お気に入り");
+  });
+
+  test("自由記述が空なら固定文だけ", () => {
+    expect(humanMD(unwrapState("SB"))).toContain(`${fixed}\n\n## 連絡先`);
+  });
 });

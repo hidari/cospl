@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { parseHash, serializeHash } from "../../src/license/hash";
 import { DEFAULT_OPTIONS } from "../../src/license/options";
-import { EMPTY_FIELDS } from "../../src/license/sanitize";
 import { tagsFrom } from "../../src/license/tags";
 import { unwrapState } from "./helpers";
 
@@ -61,11 +60,5 @@ describe("credit オプションの hash", () => {
     expect(parseHash("#tags=BY").options).toEqual(DEFAULT_OPTIONS);
     expect(parseHash("#BY-NC").options).toEqual(DEFAULT_OPTIONS);
     expect(parseHash("").options).toEqual(DEFAULT_OPTIONS);
-  });
-});
-
-describe("EMPTY_FIELDS", () => {
-  test("全フィールドが空文字", () => {
-    expect(EMPTY_FIELDS).toEqual({ date: "", photographer: "", contact: "" });
   });
 });

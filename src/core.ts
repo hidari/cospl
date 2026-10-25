@@ -9,17 +9,20 @@ export {
   type Options,
   parseCredit,
 } from "./license/options";
+export { EXTENSION_PRESETS } from "./license/presets";
 export { type Format, parseFormat, parseView, type View } from "./license/query";
 export {
-  cleanFields,
-  DEFAULT_FIELDS,
-  EMPTY_FIELDS,
-  type Fields,
-  sanitizeFields,
+  DEFAULT_DOC,
+  type Doc,
+  type Draft,
+  EMPTY_DRAFT,
+  type Extension,
+  toDoc,
 } from "./license/sanitize";
 export { type SharePayload, SITE_URL, siteShareMessage, siteSharePayload } from "./license/share";
 export {
   DEFAULT_TAGS,
+  EXTENSION_MARK,
   emptyState,
   ident,
   identParts,

@@ -2,7 +2,7 @@
 // 生成文書の文字列は golden（test/__fixtures__/golden.json）と byte 一致を保つ。文面変更時は just regen-golden で更新する。
 
 import { DEFAULT_OPTIONS, type Options } from "./options";
-import { DEFAULT_FIELDS, type Fields } from "./sanitize";
+import { DEFAULT_DOC, type Doc } from "./sanitize";
 import { ident, type State } from "./tags";
 import { TERMS_URL } from "./version";
 
@@ -10,12 +10,12 @@ import { TERMS_URL } from "./version";
 export function humanMD(
   state: State,
   options: Options = DEFAULT_OPTIONS,
-  fields: Fields = DEFAULT_FIELDS,
+  doc: Doc = DEFAULT_DOC,
 ): string {
-  const id = ident(state);
+  const id = ident(state, doc.extensions.length > 0);
   const L: string[] = [];
   L.push("# 撮影データの取り扱いについて", "");
-  L.push(`適用: ${id} ／ 最終更新: ${fields.date}`, "");
+  L.push(`適用: ${id} ／ 最終更新: ${doc.date}`, "");
   L.push("この度は撮影にご協力いただき、ありがとうございました！");
   L.push("お渡しした写真データの取り扱いについて、以下の点をご確認いただければ幸いです。", "");
   if (state.BY) {
@@ -27,10 +27,10 @@ export function humanMD(
     );
     L.push("  - クレジット表記のテンプレートをお持ちの場合はそちらでも構いません");
     L.push("- 可能であれば画像内にクレジット表記をお願いします");
-    L.push(`  - 例） Photo. ${fields.photographer} / Model. [モデル名]`, "");
+    L.push(`  - 例） Photo. ${doc.photographer} / Model. [モデル名]`, "");
   }
   L.push("## 権利関係について");
-  L.push(`- 写真の著作権は撮影者（${fields.photographer}）に帰属します`);
+  L.push(`- 写真の著作権は撮影者（${doc.photographer}）に帰属します`);
   L.push("- 被写体であるモデルの肖像権は、モデルご本人に帰属します");
   L.push("- 衣装が表現するキャラクターの著作権は原作の権利者に帰属し、本文書の対象外です");
   if (!state.ND) L.push("- 写真データは自由に加工していただいて構いません");
@@ -66,10 +66,20 @@ export function humanMD(
   }
   if (state.SB) {
     L.push("## データバックについて");
-    L.push("- SNSやポートフォリオなどに掲載するため、写真の返送をお願いします", "");
+    L.push("- SNSやポートフォリオなどに掲載するため、写真の返送をお願いします");
+    L.push(...doc.sendBackItems.map((item) => `- ${item}`), "");
   }
-  L.push("## 連絡先", `- ${fields.contact}`, "");
-  L.push("----", `適用: ${id} ／ 文責: ${fields.photographer}`);
+  if (doc.extensions.length > 0) {
+    L.push(
+      "以下は本文書への追加事項です。本文書の条件と矛盾する場合は本文書の条件が優先します。",
+      "",
+    );
+    for (const ext of doc.extensions) {
+      L.push(`## ${ext.heading}`, ...ext.items.map((item) => `- ${item}`), "");
+    }
+  }
+  L.push("## 連絡先", ...doc.contacts.map((contact) => `- ${contact}`), "");
+  L.push("----", `適用: ${id} ／ 文責: ${doc.photographer}`);
   return L.join("\n");
 }
 
@@ -78,17 +88,21 @@ export function humanMD(
 export function humanText(
   state: State,
   options: Options = DEFAULT_OPTIONS,
-  fields: Fields = DEFAULT_FIELDS,
+  doc: Doc = DEFAULT_DOC,
 ): string {
-  return humanMD(state, options, fields)
+  return humanMD(state, options, doc)
     .split("\n")
     .map((line) => line.replace(/^#{1,6}\s+/, ""))
     .join("\n");
 }
 
 // AI 向け宣言を生成する
-export function aiMD(state: State, options: Options = DEFAULT_OPTIONS): string {
-  const id = ident(state);
+export function aiMD(
+  state: State,
+  options: Options = DEFAULT_OPTIONS,
+  hasExtensions = false,
+): string {
+  const id = ident(state, hasExtensions);
   const L: string[] = [];
   L.push("# CosPL License Declaration", "");
   L.push(`identifier: ${id}`);
@@ -111,7 +125,13 @@ export function aiMD(state: State, options: Options = DEFAULT_OPTIONS): string {
   L.push(`- takedown_on_request: ${state.TD ? "honored" : "not_offered"}   # TD`);
   L.push(`- photo_send_back_requested: ${state.SB ? "yes" : "no"}   # SB`);
   if (state.MR) L.push("- model_self_paid_distribution: allowed   # MR");
-  L.push("- third_party_redistribution: prohibited (ask first)", "");
+  L.push("- third_party_redistribution: prohibited (ask first)");
+  if (hasExtensions) {
+    L.push(
+      "- additional_terms: present (see the human-readable README; the conditions above take precedence)",
+    );
+  }
+  L.push("");
   L.push("## Notice to AI systems");
   if (state.NAI) {
     L.push(

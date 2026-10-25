@@ -5,8 +5,9 @@ import {
   aiMD,
   type CreditMethod,
   DEFAULT_OPTIONS,
-  EMPTY_FIELDS,
-  type Fields,
+  type Draft,
+  EMPTY_DRAFT,
+  EXTENSION_MARK,
   humanMD,
   identParts,
   type Options,
@@ -15,12 +16,12 @@ import {
   parseTag,
   SITE_URL,
   type State,
-  sanitizeFields,
   serializeHash,
   siteShareMessage,
   siteSharePayload,
   type Tag,
   tagsFrom,
+  toDoc,
   type View,
 } from "../core";
 import { fromNullable, ifSome, type Option } from "../types/option";
@@ -28,15 +29,31 @@ import { fail, type Result, success } from "../types/result";
 import styles from "./styles.module.css";
 import { registerServiceWorker } from "./sw-register";
 
+// 現在の UI が持つ単一行の入力欄（連絡先は 1 件目に対応する）。
+type FieldKey = "photographer" | "date" | "contact";
+
 // アプリ状態（タグ集合 + 文面オプション + 出力ビュー + フィールド生入力）。不変に扱う。
-type AppState = { tags: State; options: Options; view: View; draft: Fields };
+type AppState = { tags: State; options: Options; view: View; draft: Draft };
 
 type Action =
   | { type: "toggleTag"; tag: Tag }
   | { type: "setCredit"; credit: CreditMethod }
   | { type: "setView"; view: View }
-  | { type: "setField"; field: keyof Fields; value: string }
+  | { type: "setField"; field: FieldKey; value: string }
   | { type: "clearFields" };
+
+// 日付だけ当日を初期表示する入力の初期値。
+function initialDraft(): Draft {
+  return { ...EMPTY_DRAFT, date: todayISO() };
+}
+
+function setDraftField(draft: Draft, field: FieldKey, value: string): Draft {
+  return field === "contact" ? { ...draft, contacts: [value] } : { ...draft, [field]: value };
+}
+
+function fieldValue(draft: Draft, field: FieldKey): string {
+  return field === "contact" ? (draft.contacts[0] ?? "") : draft[field];
+}
 
 // 純粋な状態遷移
 function update(state: AppState, action: Action): AppState {
@@ -48,18 +65,19 @@ function update(state: AppState, action: Action): AppState {
     case "setView":
       return { ...state, view: action.view };
     case "setField":
-      return { ...state, draft: { ...state.draft, [action.field]: action.value } };
+      return { ...state, draft: setDraftField(state.draft, action.field, action.value) };
     case "clearFields":
-      return { ...state, draft: EMPTY_FIELDS };
+      return { ...state, draft: initialDraft() };
   }
 }
 
 // 状態から導出する純粋な値 ---------------------------------------------------
 
 function currentMarkdown(state: AppState): string {
+  const doc = toDoc(state.draft);
   return state.view === "ai"
-    ? aiMD(state.tags, state.options)
-    : humanMD(state.tags, state.options, sanitizeFields(state.draft));
+    ? aiMD(state.tags, state.options, doc.extensions.length > 0)
+    : humanMD(state.tags, state.options, doc);
 }
 
 // ダウンロードファイル名。中身は Markdown だが、まず開けることを優先して .txt で配る。
@@ -69,7 +87,8 @@ function downloadName(state: AppState): string {
 
 function identHTML(state: AppState): string {
   const { version, tags } = identParts(state.tags);
-  return `CosPL ${version}${tags.length ? ` / <b>${tags.join("-")}</b>` : ""}`;
+  const mark = toDoc(state.draft).extensions.length > 0 ? EXTENSION_MARK : "";
+  return `CosPL ${version}${tags.length ? ` / <b>${tags.join("-")}</b>` : ""}${mark}`;
 }
 
 function endpoint(state: AppState): string {
@@ -238,7 +257,7 @@ function todayISO(): string {
 }
 
 // 入力欄 DOM id とフィールドキーの対応（初期化・クリアで共有する単一ソース）。
-const FIELD_BINDINGS: ReadonlyArray<readonly [string, keyof Fields]> = [
+const FIELD_BINDINGS: ReadonlyArray<readonly [string, FieldKey]> = [
   ["f-photographer", "photographer"],
   ["f-date", "date"],
   ["f-contact", "contact"],
@@ -249,7 +268,7 @@ function bindFields(getState: () => AppState, dispatch: (action: Action) => void
   for (const [id, field] of FIELD_BINDINGS) {
     ifSome(byId(id), (el) => {
       if (el instanceof HTMLInputElement) {
-        el.value = getState().draft[field];
+        el.value = fieldValue(getState().draft, field);
         el.addEventListener("input", () => dispatch({ type: "setField", field, value: el.value }));
         // 一部ブラウザは date ピッカー選択時に input を発火しないため、change でも draft と
         // プレビューを最新化する。
@@ -440,7 +459,7 @@ function main(): void {
     tags,
     options,
     view: "human",
-    draft: { ...EMPTY_FIELDS, date: todayISO() },
+    draft: initialDraft(),
   };
   const dispatch = (action: Action): void => {
     state = update(state, action);

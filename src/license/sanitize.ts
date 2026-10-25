@@ -1,17 +1,51 @@
-// フィールド（撮影者名・日付・連絡先）の型と、外部入力のサニタイズ。
+// 利用者の入力（撮影者名・日付・連絡先・SB の自由記述・拡張）の型と、外部入力のサニタイズ。
 
-// 撮影者名・日付・連絡先のフィールド。未入力時は現行プレースホルダ文字列を既定にする。
-export type Fields = Readonly<{ date: string; photographer: string; contact: string }>;
+export type Extension = Readonly<{ heading: string; body: string }>;
 
-// 未入力時に文書へ残すプレースホルダ（現行テンプレートのリテラルと一致させる単一ソース）。
-export const DEFAULT_FIELDS: Fields = {
-  date: "[YYYY-MM-DD]",
-  photographer: "[撮影者名]",
-  contact: "[連絡先をここに記入]",
+// UI の生入力。
+export type Draft = Readonly<{
+  date: string;
+  photographer: string;
+  contacts: readonly string[];
+  sendBack: string;
+  extensions: readonly Extension[];
+}>;
+
+// サニタイズ済み・プレースホルダ適用済みの文書入力。
+export type Doc = Readonly<{
+  date: string;
+  photographer: string;
+  contacts: readonly string[];
+  sendBackItems: readonly string[];
+  extensions: readonly Readonly<{ heading: string; items: readonly string[] }>[];
+}>;
+
+// 全欄空の初期値（入力欄の初期化とクリアの単一ソース）。
+export const EMPTY_DRAFT: Draft = {
+  date: "",
+  photographer: "",
+  contacts: [],
+  sendBack: "",
+  extensions: [],
 };
 
-// 全フィールド空の初期値（入力欄の初期化とクリアの単一ソース）。
-export const EMPTY_FIELDS: Fields = { date: "", photographer: "", contact: "" };
+// 未入力時に文書へ残すプレースホルダ（現行テンプレートのリテラルと一致させる単一ソース）。
+export const DEFAULT_DOC: Doc = {
+  date: "[YYYY-MM-DD]",
+  photographer: "[撮影者名]",
+  contacts: ["[連絡先をここに記入]"],
+  sendBackItems: [],
+  extensions: [],
+};
+
+const MAX_PHOTOGRAPHER = 50;
+const MAX_CONTACT = 100;
+const MAX_CONTACTS = 5;
+const MAX_HEADING = 40;
+const MAX_ITEM = 200;
+const MAX_ITEMS_PER_EXTENSION = 20;
+const MAX_EXTENSIONS = 10;
+const MAX_SEND_BACK_ITEMS = 10;
 
 // 除去対象コードポイントの判定。C0/C1 制御文字（改行・タブ含む）と双方向テキスト制御文字
 // （Trojan Source 型の視覚的文言偽装に使われる）を弾く。正規表現を避けてコードポイントで判定し、
@@ -64,22 +98,34 @@ function isValidDate(raw: string): boolean {
   return day >= 1 && day <= daysInMonth;
 }
 
-// 生入力をクリーニングのみ行う（空・不正は空文字のまま）。hash 直列化と入力欄復元に使う。
-export function cleanFields(input: Fields): Fields {
-  const date = input.date.trim();
-  return {
-    date: isValidDate(date) ? date : "",
-    photographer: cleanText(input.photographer, 50),
-    contact: cleanText(input.contact, 100),
-  };
+// 改行区切りの本文を、サニタイズ済みの空でない行に分けて上限まで取る。
+function cleanLines(raw: string, maxCodePoints: number, maxLines: number): string[] {
+  return raw
+    .split("\n")
+    .map((line) => cleanText(line, maxCodePoints))
+    .filter((line) => line !== "")
+    .slice(0, maxLines);
 }
 
-// クリーニング後、空フィールドを既定プレースホルダへ畳んだ文書生成用 Fields。
-export function sanitizeFields(input: Fields): Fields {
-  const cleaned = cleanFields(input);
+// 生入力から文書生成用の Doc を作る。サニタイズし、空欄は既定プレースホルダへ畳む。
+export function toDoc(draft: Draft): Doc {
+  const date = draft.date.trim();
+  const contacts = draft.contacts
+    .map((contact) => cleanText(contact, MAX_CONTACT))
+    .filter((contact) => contact !== "")
+    .slice(0, MAX_CONTACTS);
+  const extensions = draft.extensions
+    .map((ext) => ({
+      heading: cleanText(ext.heading, MAX_HEADING),
+      items: cleanLines(ext.body, MAX_ITEM, MAX_ITEMS_PER_EXTENSION),
+    }))
+    .filter((ext) => ext.heading !== "")
+    .slice(0, MAX_EXTENSIONS);
   return {
-    date: cleaned.date || DEFAULT_FIELDS.date,
-    photographer: cleaned.photographer || DEFAULT_FIELDS.photographer,
-    contact: cleaned.contact || DEFAULT_FIELDS.contact,
+    date: isValidDate(date) ? date : DEFAULT_DOC.date,
+    photographer: cleanText(draft.photographer, MAX_PHOTOGRAPHER) || DEFAULT_DOC.photographer,
+    contacts: contacts.length > 0 ? contacts : DEFAULT_DOC.contacts,
+    sendBackItems: cleanLines(draft.sendBack, MAX_ITEM, MAX_SEND_BACK_ITEMS),
+    extensions,
   };
 }

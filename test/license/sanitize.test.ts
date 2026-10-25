@@ -1,52 +1,65 @@
 import { describe, expect, test } from "vitest";
-import {
-  cleanFields,
-  DEFAULT_FIELDS,
-  type Fields,
-  sanitizeFields,
-} from "../../src/license/sanitize";
+import { DEFAULT_DOC, type Draft, EMPTY_DRAFT, toDoc } from "../../src/license/sanitize";
 
-describe("cleanFields / sanitizeFields", () => {
-  const empty: Fields = { date: "", photographer: "", contact: "" };
+describe("toDoc", () => {
+  const empty: Draft = EMPTY_DRAFT;
 
-  test("空入力は sanitizeFields で既定プレースホルダに畳まれる", () => {
-    expect(sanitizeFields(empty)).toEqual(DEFAULT_FIELDS);
+  test("EMPTY_DRAFT は全欄が空", () => {
+    expect(EMPTY_DRAFT).toEqual({
+      date: "",
+      photographer: "",
+      contacts: [],
+      sendBack: "",
+      extensions: [],
+    });
   });
 
-  test("空入力は cleanFields では空のまま（プレースホルダにしない）", () => {
-    expect(cleanFields(empty)).toEqual(empty);
+  test("DEFAULT_DOC は既定プレースホルダと空の拡張", () => {
+    expect(DEFAULT_DOC).toEqual({
+      date: "[YYYY-MM-DD]",
+      photographer: "[撮影者名]",
+      contacts: ["[連絡先をここに記入]"],
+      sendBackItems: [],
+      extensions: [],
+    });
+  });
+
+  test("空入力は既定プレースホルダに畳まれる", () => {
+    expect(toDoc(empty)).toEqual(DEFAULT_DOC);
   });
 
   test("改行・C0 制御文字を除去する", () => {
-    expect(cleanFields({ ...empty, photographer: "Hi\n\tdari" }).photographer).toBe("Hidari");
+    expect(toDoc({ ...empty, photographer: "Hi\n\tdari" }).photographer).toBe("Hidari");
   });
 
   test("双方向テキスト制御文字（Trojan Source）を除去する", () => {
-    expect(cleanFields({ ...empty, photographer: "a\u202Eb\u2066c" }).photographer).toBe("abc");
+    expect(toDoc({ ...empty, photographer: "a‮b⁦c" }).photographer).toBe("abc");
   });
 
   test("山括弧を除去する（休眠 XSS の保険）", () => {
-    expect(cleanFields({ ...empty, contact: "<script>x</script>" }).contact).toBe("scriptx/script");
+    expect(toDoc({ ...empty, contacts: ["<script>x</script>"] }).contacts).toEqual([
+      "scriptx/script",
+    ]);
   });
 
   test("撮影者名はコードポイント 50 で切る", () => {
     const long = "あ".repeat(60);
-    expect([...cleanFields({ ...empty, photographer: long }).photographer].length).toBe(50);
+    expect([...toDoc({ ...empty, photographer: long }).photographer].length).toBe(50);
   });
 
-  test("連絡先はコードポイント 100 で切る", () => {
+  test("連絡先は 1 件あたりコードポイント 100 で切る", () => {
     const long = "x".repeat(120);
-    expect(cleanFields({ ...empty, contact: long }).contact.length).toBe(100);
+    expect(toDoc({ ...empty, contacts: [long] }).contacts[0]?.length).toBe(100);
   });
 
   test("サロゲートペア（絵文字）を途中で割らない", () => {
     const emoji = "😀".repeat(60);
-    const cut = cleanFields({ ...empty, photographer: emoji }).photographer;
+    const cut = toDoc({ ...empty, photographer: emoji }).photographer;
     expect([...cut].length).toBe(50);
     expect(cut).toBe("😀".repeat(50));
   });
 
-  test("形式不正・非実在日はフォールバック（cleanFields は空・sanitizeFields はプレースホルダ）", () => {
+  test("形式不正・非実在日はプレースホルダに畳まれる", () => {
     for (const bad of [
       "2026-13-40",
       "2026-02-30",
@@ -56,15 +69,62 @@ describe("cleanFields / sanitizeFields", () => {
       "0000-01-01", // year < 1000 は弾く（JS Date の 0-99 解釈ずれ回避）
       "0099-02-29",
     ]) {
-      expect(cleanFields({ ...empty, date: bad }).date).toBe("");
-      expect(sanitizeFields({ ...empty, date: bad }).date).toBe(DEFAULT_FIELDS.date);
+      expect(toDoc({ ...empty, date: bad }).date).toBe(DEFAULT_DOC.date);
     }
   });
 
   test("実在する暦日は保持する（閏日含む）", () => {
     for (const ok of ["2026-06-17", "2026-02-28", "2024-02-29"]) {
-      expect(cleanFields({ ...empty, date: ok }).date).toBe(ok);
-      expect(sanitizeFields({ ...empty, date: ok }).date).toBe(ok);
+      expect(toDoc({ ...empty, date: ok }).date).toBe(ok);
     }
+  });
+
+  test("連絡先は空行を捨てて詰める", () => {
+    expect(toDoc({ ...empty, contacts: ["X: @a", "  ", "B"] }).contacts).toEqual(["X: @a", "B"]);
+  });
+
+  test("連絡先がすべて空ならプレースホルダ 1 件", () => {
+    expect(toDoc({ ...empty, contacts: ["", " "] }).contacts).toEqual(["[連絡先をここに記入]"]);
+  });
+
+  test("連絡先は 5 件で切る", () => {
+    const contacts = ["1", "2", "3", "4", "5", "6"];
+    expect(toDoc({ ...empty, contacts }).contacts).toEqual(["1", "2", "3", "4", "5"]);
+  });
+
+  test("拡張は見出しが空のものを捨て、本文を 1 行 1 項目にして山括弧と空行を除く", () => {
+    const doc = toDoc({
+      ...empty,
+      extensions: [
+        { heading: "", body: "a" },
+        { heading: "加工", body: "a\n\n<b>b</b>\n" },
+      ],
+    });
+    // 山括弧だけを除くので </b> は "/b" が残る（cleanText と同じ挙動）。
+    expect(doc.extensions).toEqual([{ heading: "加工", items: ["a", "bb/b"] }]);
+  });
+
+  test("拡張は 10 個、1 つあたり 20 行で切る", () => {
+    const many = Array.from({ length: 11 }, (_, i) => ({ heading: `h${i}`, body: "x" }));
+    expect(toDoc({ ...empty, extensions: many }).extensions).toHaveLength(10);
+    const lines = Array.from({ length: 21 }, (_, i) => `l${i}`).join("\n");
+    const doc = toDoc({ ...empty, extensions: [{ heading: "h", body: lines }] });
+    expect(doc.extensions[0]?.items).toHaveLength(20);
+    expect(doc.extensions[0]?.items[19]).toBe("l19");
+  });
+
+  test("見出しは 40、項目は 200 コードポイントで切る", () => {
+    const doc = toDoc({
+      ...empty,
+      extensions: [{ heading: "あ".repeat(50), body: "い".repeat(250) }],
+    });
+    expect([...(doc.extensions[0]?.heading ?? "")]).toHaveLength(40);
+    expect([...(doc.extensions[0]?.items[0] ?? "")]).toHaveLength(200);
+  });
+
+  test("SB の自由記述は 1 行 1 項目、空行を捨てて 10 行で切る", () => {
+    expect(toDoc({ ...empty, sendBack: "a\n\n b \n" }).sendBackItems).toEqual(["a", "b"]);
+    const lines = Array.from({ length: 11 }, (_, i) => `l${i}`).join("\n");
+    expect(toDoc({ ...empty, sendBack: lines }).sendBackItems).toHaveLength(10);
   });
 });

@@ -37,10 +37,13 @@ export function identParts(state: State): { version: string; tags: string[] } {
   return { version: VERSION, tags: tagsFrom(state) };
 }
 
-// 識別子文字列。タグなしはバージョンのみ。
-export function ident(state: State): string {
+// 拡張があるときに識別子の末尾へ付ける印。プレーンテキスト版と HTML 版が共有する。
+export const EXTENSION_MARK = " +";
+
+// 識別子文字列。タグなしはバージョンのみ。拡張があれば末尾に印を付ける。
+export function ident(state: State, hasExtensions = false): string {
   const { version, tags } = identParts(state);
-  return `CosPL ${version}${tags.length ? ` / ${tags.join("-")}` : ""}`;
+  return `CosPL ${version}${tags.length ? ` / ${tags.join("-")}` : ""}${hasExtensions ? EXTENSION_MARK : ""}`;
 }
 
 // 文字列が既知タグかどうかを判定する型述語

@@ -32,7 +32,7 @@ describe("MR の免責文", () => {
 
 describe("本体の章（2.0）", () => {
   const free = "- 写真データは自由に加工していただいて構いません";
-  const noDerivatives = "- 写真の加工はご遠慮ください（トリミング・リサイズは構いません）";
+  const noDerivatives = "- 写真の加工（トリミング・リサイズを除く）";
 
   test("ND が OFF なら加工の許可を権利関係の章の末尾に 1 行置く", () => {
     const md = humanMD(unwrapState("BY"));
@@ -43,10 +43,15 @@ describe("本体の章（2.0）", () => {
     expect(rights.indexOf(free)).toBeLessThan(rights.indexOf("\n## ", 5));
   });
 
-  test("ND が ON なら加工の許可の代わりに加工のご遠慮を置く", () => {
-    const md = humanMD(unwrapState("ND"));
-    expect(md).toContain(noDerivatives);
+  test("ND が ON なら加工の許可の代わりに禁止事項へ加工を NC の直後・第三者提供の前に置く", () => {
+    const md = humanMD(unwrapState("NC-ND"));
     expect(md).not.toContain(free);
+    const nc = md.indexOf("- 商用利用");
+    const nd = md.indexOf(noDerivatives);
+    const third = md.indexOf("- データそのものの第三者");
+    expect(md.indexOf("## 禁止・要相談事項")).toBeLessThan(nc);
+    expect(nc).toBeLessThan(nd);
+    expect(nd).toBeLessThan(third);
   });
 
   test("内容物と加工の章は本体に無い", () => {
@@ -74,7 +79,7 @@ describe("本体の章（2.0）", () => {
   test("NAI の禁止行は加工のための AI 利用を除外する", () => {
     const md = humanMD(unwrapState("NAI"));
     expect(md).toContain(
-      "- 生成AIの学習用データとしての利用、およびこの写真を元にした別の画像・動画の生成（AIによるノイズ除去・レタッチ・背景の拡張など、この写真を仕上げるための加工は除きます）",
+      "- 生成AIの学習用データとしての利用、およびこの写真を元にした別の画像・動画の生成（この写真を仕上げるための加工は本項の対象外です）",
     );
     expect(md).not.toContain("生成素材");
   });
@@ -86,6 +91,15 @@ describe("aiMD（2.0）", () => {
       "- derivatives: prohibited (cropping and resizing allowed)   # ND",
     );
     expect(aiMD(unwrapState("BY"))).toContain("- derivatives: allowed   # ND");
+  });
+
+  test("NAI の条件行は学習と別作品の生成を示すキーで宣言する", () => {
+    expect(aiMD(unwrapState("NAI"))).toContain(
+      "- ai_training_and_new_work_generation: prohibited   # NAI",
+    );
+    expect(aiMD(unwrapState("BY"))).toContain(
+      "- ai_training_and_new_work_generation: not_restricted   # NAI",
+    );
   });
 
   test("SB はデータバックの依頼を宣言する", () => {

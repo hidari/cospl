@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { ident, parseTag, parseTags, tagsFrom } from "../../src/license/tags";
+import { ident, ORDER, parseTag, parseTags, tagsFrom } from "../../src/license/tags";
 import { unwrapState } from "./helpers";
 
 describe("parseTag", () => {
@@ -45,6 +45,7 @@ describe("parseTags", () => {
     if (!result.success) {
       expect(result.error.kind).toBe("unknown_tag");
       expect(result.error.input).toBe("ZZZ");
+      expect(result.error.message).toContain(ORDER.join(", "));
     }
   });
 

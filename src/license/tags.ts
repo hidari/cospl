@@ -64,7 +64,7 @@ export function parseTags(raw: string): Result<State, ParseError> {
   for (const token of trimmed.split("-")) {
     const parsed = parseTag(token);
     if (!parsed.some) {
-      return fail(unknownTagError(token.trim()));
+      return fail(unknownTagError(token.trim(), ORDER));
     }
     state[parsed.value] = true;
   }

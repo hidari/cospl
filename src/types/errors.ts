@@ -22,9 +22,10 @@ export type ParseError = {
 };
 
 // エラー構築ヘルパー
-export const unknownTagError = (input: string): ParseError => ({
+// 許容タグ一覧は呼び出し側（tags.ts の ORDER）から受ける。ここで列挙すると定義と drift する。
+export const unknownTagError = (input: string, allowed: readonly string[]): ParseError => ({
   kind: "unknown_tag",
-  message: `Unknown tag: "${input}". Allowed tags are BY, NC, ND, NAI, TD, SB, MR.`,
+  message: `Unknown tag: "${input}". Allowed tags are ${allowed.join(", ")}.`,
   input,
 });
 

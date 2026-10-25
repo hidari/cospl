@@ -23,21 +23,18 @@ export function humanMD(state: State, fields: Fields = DEFAULT_FIELDS): string {
   L.push(`- 写真の著作権は撮影者（${fields.photographer}）に帰属します`);
   L.push("- 被写体であるモデルの肖像権は、モデルご本人に帰属します");
   L.push("- 衣装が表現するキャラクターの著作権は原作の権利者に帰属し、本文書の対象外です");
-  L.push(
-    state.ND
-      ? "- 写真の加工はご遠慮ください（トリミング・リサイズは構いません）"
-      : "- 写真データは自由に加工していただいて構いません",
-    "",
-  );
+  if (!state.ND) L.push("- 写真データは自由に加工していただいて構いません");
+  L.push("");
   const bans: string[] = [];
   if (state.NC)
     bans.push(
       "- 商用利用（広告・販促物、有償頒布物への収録、有料配信プラットフォームでの利用 等）",
     );
+  if (state.ND) bans.push("- 写真の加工（トリミング・リサイズを除く）");
   bans.push("- データそのものの第三者への提供・再配布・販売");
   if (state.NAI)
     bans.push(
-      "- 生成AIの学習用データとしての利用、およびこの写真を元にした別の画像・動画の生成（AIによるノイズ除去・レタッチ・背景の拡張など、この写真を仕上げるための加工は除きます）",
+      "- 生成AIの学習用データとしての利用、およびこの写真を元にした別の画像・動画の生成（この写真を仕上げるための加工は本項の対象外です）",
     );
   if (bans.length) {
     L.push("## 禁止・要相談事項");
@@ -89,7 +86,9 @@ export function aiMD(state: State): string {
   L.push(
     `- derivatives: ${state.ND ? "prohibited (cropping and resizing allowed)" : "allowed"}   # ND`,
   );
-  L.push(`- ai_training_and_generation: ${state.NAI ? "prohibited" : "not_restricted"}   # NAI`);
+  L.push(
+    `- ai_training_and_new_work_generation: ${state.NAI ? "prohibited" : "not_restricted"}   # NAI`,
+  );
   L.push(`- takedown_on_request: ${state.TD ? "honored" : "not_offered"}   # TD`);
   L.push(`- photo_send_back_requested: ${state.SB ? "yes" : "no"}   # SB`);
   if (state.MR) L.push("- model_self_paid_distribution: allowed   # MR");

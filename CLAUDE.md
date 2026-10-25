@@ -22,11 +22,11 @@
 ## [MUST] 必ず守らなければならないルール
 
 - 作業開始前に適切なブランチを選択する
-- コードの修正が終わったら最初に `pkf run lint`（必要に応じて `pkf run check`）でLint等を実行する
+- コードの修正が終わったら最初に `pnpm lint`（必要に応じて `pnpm check`）でLint等を実行する
 - ブランチのpush後は以下の手順でPull Requestを確認してください
   1. `gh pr list --head $(git branch --show-current) --base main` で Pull Request の存在を確認
   2. Pull Requestが無ければ `gh pr create --assignee @me --base main --fill` で作成
-- [MUST] 本リポジトリでの作業中のコマンド実行は **絶対に** `pkf` の開発用コマンドを使用し、直接 `pnpm` コマンドを叩かない
+- 開発用コマンドの入口は `package.json` の scripts に一本化する（ローカルも CI も同じ scripts を叩く）
 - シークレット情報（APIキー、パスワード等）をコードにハードコードしない
 - シークレットは環境変数経由で注入し、コンソールやログに表示されないようにする
 - `.env.example` にキー名のみ記載し、実際の値は `.env`（.gitignore済み）で管理する
@@ -42,7 +42,7 @@
 
 ## [MUST] プロダクトコード
 
-- 全ての外部ライブラリは以下の理由からlibrary-contractパターンを使ってcrates/relay-adaptersに切り離し層をつくる
+- 全ての外部ライブラリは以下の理由からlibrary-contractパターンを使って切り離し層（アダプタ）をつくる
   - 外部ライブラリのバージョンアップ時の挙動確認テスト（契約テスト）を行いやすくする
   - 外部ライブラリを差し替え可能にすることでメンテナンスされなくなった場合の移行を簡単にする
   - サプライチェーン攻撃の影響範囲をアダプター層に限定し、コアドメインロジックを保護する

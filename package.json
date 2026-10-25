@@ -11,14 +11,15 @@
     "preview": "vite preview",
     "deploy": "vite build && wrangler deploy",
     "cf-typegen": "wrangler types",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.sw.json",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.sw.json && tsc -p tsconfig.e2e.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "biome check .",
+    "check": "pnpm lint && pnpm typecheck && pnpm test",
+    "images": "node scripts/build-images.mjs",
     "format": "biome format --write .",
     "regen:golden": "node scripts/regen-golden.mjs",
-    "e2e": "playwright test",
-    "typecheck:e2e": "tsc -p tsconfig.e2e.json"
+    "e2e": "playwright test"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.3",

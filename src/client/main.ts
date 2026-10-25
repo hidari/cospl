@@ -6,6 +6,7 @@ import {
   EMPTY_FIELDS,
   type Fields,
   humanMD,
+  identParts,
   parseHash,
   parseTag,
   SITE_URL,
@@ -58,8 +59,8 @@ function downloadName(state: AppState): string {
 }
 
 function identHTML(state: AppState): string {
-  const tags = tagsFrom(state.tags);
-  return `CosPL 1.0${tags.length ? ` / <b>${tags.join("-")}</b>` : ""}`;
+  const { version, tags } = identParts(state.tags);
+  return `CosPL ${version}${tags.length ? ` / <b>${tags.join("-")}</b>` : ""}`;
 }
 
 function endpoint(state: AppState): string {

@@ -26,7 +26,7 @@ export default defineConfig({
   webServer: isExternalTarget
     ? undefined
     : {
-        command: "pnpm build && pnpm exec vite preview --port 4173",
+        command: "just build && just preview --port 4173",
         url: baseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,

@@ -42,7 +42,7 @@ gh run list --repo hidari/cospl --branch main --workflow "Merge Gate" -L 1 \
 ```
 
 - 直近の Merge Gate が `success` であることを確認。緑でなければデプロイしない。
-- 任意でローカル高速検証: `pnpm install --frozen-lockfile && pnpm run lint && pnpm run typecheck && pnpm test`。
+- 任意でローカル高速検証: `pnpm install --frozen-lockfile && just check`。
 
 ### 3. デプロイ workflow を起動
 
@@ -82,6 +82,6 @@ curl -fsS -o /dev/null -w "ai:    %{http_code}\n" "https://cospl.org/license.md?
 
 ## 落とし穴
 
-- ローカルで `wrangler deploy` や `pnpm run deploy` を実行しない（必ず workflow 経由）。
+- ローカルで `wrangler deploy` を実行しない（必ず workflow 経由）。
 - 待機コマンド（`gh run watch`）の exit を結論と取り違えない。結論は `gh run view --json conclusion` で確認する。
 - Secrets / ゾーン未設定のままデプロイしない（deploy ジョブが失敗する）。

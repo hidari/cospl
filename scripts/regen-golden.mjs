@@ -1,5 +1,5 @@
 // golden fixture を現在の src/core.ts の出力から再生成する。
-// 文面（humanMD/aiMD）を編集したら `pnpm regen:golden` を実行して固定値を更新する。
+// 文面（humanMD/aiMD）を編集したら `just regen-golden` を実行して固定値を更新する。
 // core.ts は拡張子なしの相対 import を持つため、esbuild で bundle してから読み込む。
 
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";

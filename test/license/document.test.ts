@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { aiMD, humanMD, humanText } from "../../src/license/document";
 import { DEFAULT_OPTIONS } from "../../src/license/options";
-import { DEFAULT_DOC, type Doc } from "../../src/license/sanitize";
+import { DEFAULT_DOC, type Doc, hasExtensions } from "../../src/license/sanitize";
 import { ident, tagsFrom } from "../../src/license/tags";
 import { TERMS_URL } from "../../src/license/version";
 import golden from "../__fixtures__/golden.json";
@@ -117,10 +117,34 @@ describe("本体の章（2.0）", () => {
     expect(nd).toBeLessThan(third);
   });
 
-  test("内容物と加工の章は本体に無い", () => {
+  test("内容物が空なら章は無く、加工の章も本体に無い", () => {
     const md = humanMD(unwrapState("BY-NC-NAI-TD"));
     expect(md).not.toContain("## データの内容物");
     expect(md).not.toContain("## 写真の加工・編集について");
+  });
+
+  test("内容物があれば導入文の直後・最初の章の前に「本README文書」を先頭にして置く", () => {
+    const doc: Doc = { ...DEFAULT_DOC, contentsItems: ["現像済みデータ", "RAWはご相談ください"] };
+    const md = humanMD(unwrapState("BY-NC-NAI-TD"), DEFAULT_OPTIONS, doc);
+    const intro = "お渡しした写真データの取り扱いについて、以下の点をご確認いただければ幸いです。";
+    expect(md).toContain(
+      `${intro}\n\n## データの内容物\n- 本README文書\n- 現像済みデータ\n- RAWはご相談ください\n\n## SNS・Web掲載とクレジットについて`,
+    );
+  });
+
+  test("BY が無くても内容物は最初の章（権利関係）の前に置く", () => {
+    const doc: Doc = { ...DEFAULT_DOC, contentsItems: ["現像済みデータ"] };
+    const md = humanMD(unwrapState("NC"), DEFAULT_OPTIONS, doc);
+    expect(md.indexOf("## データの内容物")).toBeLessThan(md.indexOf("## 権利関係について"));
+  });
+
+  test("内容物は拡張ではないので識別子に「 +」を付けず、AI 宣言にも現れない", () => {
+    const doc: Doc = { ...DEFAULT_DOC, contentsItems: ["現像済みデータ"] };
+    const state = unwrapState("BY-NC-NAI-TD");
+    const md = humanMD(state, DEFAULT_OPTIONS, doc);
+    expect(md).toContain(`適用: ${ident(state)} ／`);
+    expect(md).not.toContain("追加事項");
+    expect(aiMD(state, DEFAULT_OPTIONS, hasExtensions(doc))).not.toContain("additional_terms");
   });
 
   test("SB が ON ならデータバックの章を TD の章の直後に置く", () => {
@@ -139,10 +163,10 @@ describe("本体の章（2.0）", () => {
     expect(md).not.toContain("写真の返送をお願いします");
   });
 
-  test("NAI の禁止行は加工のための AI 利用を除外する", () => {
+  test("NAI の禁止行は加工のための AI 利用を除外し、不明点の相談を促す", () => {
     const md = humanMD(unwrapState("NAI"));
     expect(md).toContain(
-      "- 生成AIの学習用データとしての利用、およびこの写真を元にした別の画像・動画の生成（この写真を仕上げるための加工は本項の対象外です）",
+      "- 生成AIの学習用データとしての利用、およびこの写真を元にした別の画像・動画の生成（この写真を仕上げるための加工は本項の対象外です。不明点はご相談ください）",
     );
     expect(md).not.toContain("生成素材");
   });

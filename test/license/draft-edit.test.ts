@@ -49,7 +49,7 @@ describe("拡張", () => {
   });
 
   test("指定の拡張を削除する", () => {
-    const draft = addExtension(addExtension(EMPTY_DRAFT, "contents"), "editing");
+    const draft = addExtension(addExtension(EMPTY_DRAFT, "photographer-use"), "editing");
     expect(removeExtension(draft, 0).extensions.map((e) => e.heading)).toEqual(["加工"]);
   });
 

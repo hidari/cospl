@@ -302,6 +302,7 @@ const TEXT_FIELDS: ReadonlyArray<readonly [string, TextField]> = [
   ["f-photographer", "photographer"],
   ["f-contacts", "contacts"],
   ["f-send-back", "sendBack"],
+  ["f-contents", "contents"],
 ];
 
 function isTextControl(el: HTMLElement): el is HTMLInputElement | HTMLTextAreaElement {

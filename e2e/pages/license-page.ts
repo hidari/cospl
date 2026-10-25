@@ -17,6 +17,7 @@ export class LicensePage {
   readonly inputsSummary: Locator;
   readonly contacts: Locator;
   readonly sendBack: Locator;
+  readonly contents: Locator;
   readonly extensionAdd: Locator;
   readonly humanTab: Locator;
   readonly aiTab: Locator;
@@ -36,6 +37,7 @@ export class LicensePage {
     this.inputsSummary = page.locator("#inputs > summary");
     this.contacts = page.getByLabel("連絡先", { exact: true });
     this.sendBack = page.getByLabel("データバックの追記事項");
+    this.contents = page.getByLabel("データの内容物");
     this.extensionAdd = page.getByRole("button", { name: "＋ 項目を追加" });
     // タブは aria-label でアクセシブル名が安定するため role ベースで取得する。
     this.humanTab = page.getByRole("tab", { name: "README用" });
@@ -80,7 +82,7 @@ export class LicensePage {
   }
 
   // ひな形ボタンは id（EXTENSION_PRESETS）で引く。表示名はチップ「加工禁止」等と部分一致しうるため。
-  preset(id: "contents" | "editing" | "photographer-use"): Locator {
+  preset(id: "editing" | "photographer-use"): Locator {
     return this.page.locator(`[data-preset="${id}"]`);
   }
 

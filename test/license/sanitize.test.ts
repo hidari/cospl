@@ -18,6 +18,7 @@ describe("toDoc", () => {
       photographer: "",
       contacts: "",
       sendBack: "",
+      contents: "",
       extensions: [],
     });
   });
@@ -27,6 +28,7 @@ describe("toDoc", () => {
       photographer: "[撮影者名]",
       contacts: ["[連絡先をここに記入]"],
       sendBackItems: [],
+      contentsItems: [],
       extensions: [],
     });
   });
@@ -119,6 +121,15 @@ describe("toDoc", () => {
     expect(toDoc({ ...empty, sendBack: "a\n\n b \n" }).sendBackItems).toEqual(["a", "b"]);
     const lines = Array.from({ length: 11 }, (_, i) => `l${i}`).join("\n");
     expect(toDoc({ ...empty, sendBack: lines }).sendBackItems).toHaveLength(10);
+  });
+
+  test("データの内容物は 1 行 1 項目、サニタイズし空行を捨て、1 項目 200 字・10 行で切る", () => {
+    expect(toDoc({ ...empty, contents: "a\n\n <b>c \n" }).contentsItems).toEqual(["a", "bc"]);
+    expect(toDoc({ ...empty, contents: "x\u2028## 偽" }).contentsItems).toEqual(["x## 偽"]);
+    const lines = Array.from({ length: 11 }, (_, i) => `l${i}`).join("\n");
+    expect(toDoc({ ...empty, contents: lines }).contentsItems).toHaveLength(10);
+    const long = toDoc({ ...empty, contents: "あ".repeat(250) }).contentsItems[0] ?? "";
+    expect([...long]).toHaveLength(200);
   });
 
   test("U+2028 / U+2029 を除去し、改行を使った見出し偽装を防ぐ", () => {

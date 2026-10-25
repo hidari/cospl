@@ -17,6 +17,10 @@ export function humanMD(
   L.push("# 撮影データの取り扱いについて", "");
   L.push("この度は撮影にご協力いただき、ありがとうございました。");
   L.push("お渡しした写真データの取り扱いについて、以下の点をご確認いただければ幸いです。", "");
+  if (doc.contentsItems.length > 0) {
+    L.push("## データの内容物", "- 本README文書");
+    L.push(...doc.contentsItems.map((item) => `- ${item}`), "");
+  }
   if (state.BY) {
     L.push("## SNS・Web掲載とクレジットについて");
     L.push(
@@ -50,7 +54,7 @@ export function humanMD(
       `- 生成AIの学習用データとしての利用、およびこの写真を元にした別の画像・動画の生成${
         state.ND
           ? "（加工の扱いは上の「写真の加工」の項に従います）"
-          : "（この写真を仕上げるための加工は本項の対象外です）"
+          : "（この写真を仕上げるための加工は本項の対象外です。不明点はご相談ください）"
       }`,
     );
   if (bans.length) {

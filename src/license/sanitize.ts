@@ -7,6 +7,7 @@ export type Draft = Readonly<{
   photographer: string;
   contacts: string;
   sendBack: string;
+  contents: string;
   extensions: readonly Extension[];
 }>;
 
@@ -15,6 +16,7 @@ export type Doc = Readonly<{
   photographer: string;
   contacts: readonly string[];
   sendBackItems: readonly string[];
+  contentsItems: readonly string[];
   extensions: readonly Readonly<{ heading: string; items: readonly string[] }>[];
 }>;
 
@@ -23,6 +25,7 @@ export const EMPTY_DRAFT: Draft = {
   photographer: "",
   contacts: "",
   sendBack: "",
+  contents: "",
   extensions: [],
 };
 
@@ -31,6 +34,7 @@ export const DEFAULT_DOC: Doc = {
   photographer: "[撮影者名]",
   contacts: ["[連絡先をここに記入]"],
   sendBackItems: [],
+  contentsItems: [],
   extensions: [],
 };
 
@@ -42,6 +46,7 @@ const MAX_ITEM = 200;
 const MAX_ITEMS_PER_EXTENSION = 20;
 export const MAX_EXTENSIONS = 10;
 const MAX_SEND_BACK_ITEMS = 10;
+const MAX_CONTENTS_ITEMS = 10;
 
 // 除去対象コードポイントの判定。C0/C1 制御文字（改行・タブ含む）と双方向テキスト制御文字
 // （Trojan Source 型の視覚的文言偽装に使われる）を弾く。正規表現を避けてコードポイントで判定し、
@@ -104,6 +109,7 @@ export function toDoc(draft: Draft): Doc {
     photographer: cleanText(draft.photographer, MAX_PHOTOGRAPHER) || DEFAULT_DOC.photographer,
     contacts: contacts.length > 0 ? contacts : DEFAULT_DOC.contacts,
     sendBackItems: cleanLines(draft.sendBack, MAX_ITEM, MAX_SEND_BACK_ITEMS),
+    contentsItems: cleanLines(draft.contents, MAX_ITEM, MAX_CONTENTS_ITEMS),
     extensions,
   };
 }

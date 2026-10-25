@@ -113,7 +113,7 @@ test("AI 宣言のタブでも入力欄は見え、識別子の印が出る", as
   await licensePage.selectAiView();
 
   await expect(licensePage.photographer).toBeVisible();
-  await licensePage.preset("contents").click();
+  await licensePage.preset("editing").click();
   await expect(licensePage.ident).toContainText("+");
 });
 
@@ -146,5 +146,18 @@ test("クリアで連絡先の欄と拡張の追加欄も消え、各欄が状�
   await expect(licensePage.contacts).toHaveValue("");
   await expect(licensePage.extensionHeading(1)).toHaveCount(0);
   await expect(licensePage.output).not.toContainText("### 加工");
+  await expect(licensePage.ident).not.toContainText("+");
+});
+
+test("データの内容物を書くと冒頭の章に本README文書が先頭で出て、識別子に「 +」は付かない", async ({
+  licensePage,
+}) => {
+  await licensePage.goto();
+  await licensePage.openInputs();
+  await licensePage.contents.fill("現像済みデータ\nRAWはご相談ください");
+
+  await expect(licensePage.output).toContainText(
+    "## データの内容物\n- 本README文書\n- 現像済みデータ\n- RAWはご相談ください",
+  );
   await expect(licensePage.ident).not.toContainText("+");
 });

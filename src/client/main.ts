@@ -288,7 +288,7 @@ function render(state: AppState): void {
     });
   }
 
-  // データバックの詳細欄は SB が ON のときだけ見せる（OFF でも入力値は保持し、出力には出さない）。
+  // データバックの追記事項欄は SB が ON のときだけ見せる（OFF でも入力値は保持し、出力には出さない）。
   ifSome(byId("send-back-field"), (el) => {
     el.hidden = !state.tags.SB;
   });

@@ -127,14 +127,18 @@
         <div class="rows" id="contacts"></div>
         <button class="ghost" id="contact-add" type="button">＋ 連絡先を追加</button>
       </fieldset>
-      <div class="field-group" id="send-back-field" hidden>
-        <label for="f-send-back">データバックの詳細</label>
-        <textarea id="f-send-back" rows="3" autocomplete="off" placeholder="1行が1項目になります（例: 現像済みJPEGのみ返送）"></textarea>
-      </div>
+      <fieldset class="field-group" id="send-back-field" hidden>
+        <legend>データバック</legend>
+        <label for="f-send-back">追記事項</label>
+        <textarea id="f-send-back" rows="3" autocomplete="off" aria-label="データバックの追記事項" placeholder="1行が1項目になります（例: お気に召したもの1枚、返送方法は〇〇 etc.）"></textarea>
+      </fieldset>
       <fieldset class="field-group">
         <legend>追加事項</legend>
         <p class="hint">README に好きな項目を足せます。本文は1行が1項目の箇条書きになります。</p>
-        <div class="presets" id="ext-presets" role="group" aria-label="ひな形から追加"></div>
+        <div class="presets-box">
+          <span class="presets-label" id="ext-presets-label">テンプレートから追加</span>
+          <div class="presets" id="ext-presets" role="group" aria-labelledby="ext-presets-label"></div>
+        </div>
         <div class="rows" id="extensions"></div>
         <button class="ghost" id="ext-add" type="button">＋ 項目を追加</button>
       </fieldset>

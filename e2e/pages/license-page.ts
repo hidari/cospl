@@ -35,7 +35,7 @@ export class LicensePage {
     this.photographer = page.locator("#f-photographer");
     this.inputsSummary = page.locator("#inputs > summary");
     this.contactAdd = page.getByRole("button", { name: "＋ 連絡先を追加" });
-    this.sendBack = page.getByLabel("データバックの詳細");
+    this.sendBack = page.getByLabel("データバックの追記事項");
     this.extensionAdd = page.getByRole("button", { name: "＋ 項目を追加" });
     // タブは aria-label でアクセシブル名が安定するため role ベースで取得する。
     this.humanTab = page.getByRole("tab", { name: "README用" });

@@ -434,12 +434,26 @@
   border-color: var(--accent);
 }
 /* 連絡先・データバック・追加事項のまとまり。罫線は引かず、見出し文字と余白で区切る。 */
+/* グループ同士は見出しの上の余白で区切る（罫線は引かない）。 */
 :global(.field-group) {
   display: grid;
   gap: 8px;
-  margin: 0;
-  padding: 14px 16px 0;
+  margin: 22px 0 0;
+  padding: 0 16px;
   border: 0;
+}
+/* テンプレートのボタン群を 1 つの塊として見せ、白紙の「＋ 項目を追加」と区別する。 */
+:global(.presets-box) {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px dashed var(--line-soft);
+  border-radius: 10px;
+}
+:global(.presets-label) {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
 }
 :global(.field-group[hidden]) {
   display: none;

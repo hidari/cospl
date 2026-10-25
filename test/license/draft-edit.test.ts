@@ -20,7 +20,7 @@ describe("setTextField", () => {
     expect(next).toEqual({ ...EMPTY_DRAFT, photographer: "太郎" });
   });
 
-  test("データバックの詳細も同じ経路で書き換える", () => {
+  test("データバックの追記事項も同じ経路で書き換える", () => {
     expect(setTextField(EMPTY_DRAFT, "sendBack", "a\nb").sendBack).toBe("a\nb");
   });
 });

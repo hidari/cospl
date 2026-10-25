@@ -19,7 +19,6 @@ test("撮影者名を入力→blur しても URL に載らず、クリアで欄�
   page,
 }) => {
   await licensePage.goto();
-  await licensePage.openFillSection();
 
   // 入力→blur（change）しても URL hash に個人情報は載らない。
   await licensePage.photographer.fill("テスト太郎");
@@ -33,12 +32,11 @@ test("撮影者名を入力→blur しても URL に載らず、クリアで欄�
   await expect(licensePage.flashStatus).toHaveText("クリアしました");
 });
 
-test("クリア後の日付欄は出力の最終更新日と一致する", async ({ licensePage, page }) => {
+test("クリア後の日付欄は出力の最終更新日と一致する", async ({ licensePage }) => {
   await licensePage.goto();
-  await licensePage.openFillSection();
 
   await licensePage.clearButton.click();
-  const date = await page.locator("#f-date").inputValue();
+  const date = await licensePage.date.inputValue();
   expect(date).not.toBe("");
   await expect(licensePage.output).toContainText(`最終更新: ${date}`);
 });
@@ -48,7 +46,6 @@ test("個人情報入りの古い URL を開くと欄に入らず URL からも�
   page,
 }) => {
   await licensePage.goto("#tags=BY-NC&photographer=テスト太郎&contact=x");
-  await licensePage.openFillSection();
 
   await expect(licensePage.photographer).toHaveValue("");
   await expect(page).not.toHaveURL(/photographer=|contact=/);

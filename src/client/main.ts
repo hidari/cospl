@@ -2,26 +2,43 @@
 // 副作用（DOM 取得・clipboard・履歴更新）は境界に押し出し、欠落値は Option、失敗は Result で扱う。
 
 import {
+  addContact,
+  addExtension,
   aiMD,
   type CreditMethod,
+  canAddContact,
+  canAddExtension,
+  contactRows,
   DEFAULT_OPTIONS,
   type Doc,
   type Draft,
   EMPTY_DRAFT,
   EXTENSION_MARK,
+  EXTENSION_PRESETS,
+  type Extension,
+  type ExtensionPresetId,
   hasExtensions,
   humanMD,
   identParts,
+  MAX_CONTACT,
+  MAX_HEADING,
+  MAX_PHOTOGRAPHER,
   type Options,
   parseCredit,
   parseHash,
   parseTag,
+  removeContact,
+  removeExtension,
   SITE_URL,
   type State,
   serializeHash,
+  setContact,
+  setExtension,
+  setTextField,
   siteShareMessage,
   siteSharePayload,
   type Tag,
+  type TextField,
   tagsFrom,
   toDoc,
   type View,
@@ -31,30 +48,25 @@ import { fail, type Result, success } from "../types/result";
 import styles from "./styles.module.css";
 import { registerServiceWorker } from "./sw-register";
 
-// 現在の UI が持つ単一行の入力欄（連絡先は 1 件目に対応する）。
-type FieldKey = "photographer" | "date" | "contact";
-
-// アプリ状態（タグ集合 + 文面オプション + 出力ビュー + フィールド生入力）。不変に扱う。
+// アプリ状態（タグ集合 + 文面オプション + 出力ビュー + 入力欄の生入力）。不変に扱う。
 type AppState = { tags: State; options: Options; view: View; draft: Draft };
 
 type Action =
   | { type: "toggleTag"; tag: Tag }
   | { type: "setCredit"; credit: CreditMethod }
   | { type: "setView"; view: View }
-  | { type: "setField"; field: FieldKey; value: string }
-  | { type: "clearFields" };
+  | { type: "setField"; field: TextField; value: string }
+  | { type: "addContact" }
+  | { type: "setContact"; index: number; value: string }
+  | { type: "removeContact"; index: number }
+  | { type: "addExtension"; preset?: ExtensionPresetId }
+  | { type: "setExtension"; index: number; field: keyof Extension; value: string }
+  | { type: "removeExtension"; index: number }
+  | { type: "clearDraft" };
 
 // 日付だけ当日を初期表示する入力の初期値。
 function initialDraft(): Draft {
   return { ...EMPTY_DRAFT, date: todayISO() };
-}
-
-function setDraftField(draft: Draft, field: FieldKey, value: string): Draft {
-  return field === "contact" ? { ...draft, contacts: [value] } : { ...draft, [field]: value };
-}
-
-function fieldValue(draft: Draft, field: FieldKey): string {
-  return field === "contact" ? (draft.contacts[0] ?? "") : draft[field];
 }
 
 // 純粋な状態遷移
@@ -67,10 +79,68 @@ function update(state: AppState, action: Action): AppState {
     case "setView":
       return { ...state, view: action.view };
     case "setField":
-      return { ...state, draft: setDraftField(state.draft, action.field, action.value) };
-    case "clearFields":
+      return { ...state, draft: setTextField(state.draft, action.field, action.value) };
+    case "addContact":
+      return { ...state, draft: addContact(state.draft) };
+    case "setContact":
+      return { ...state, draft: setContact(state.draft, action.index, action.value) };
+    case "removeContact":
+      return { ...state, draft: removeContact(state.draft, action.index) };
+    case "addExtension":
+      return { ...state, draft: addExtension(state.draft, action.preset) };
+    case "setExtension":
+      return {
+        ...state,
+        draft: setExtension(state.draft, action.index, action.field, action.value),
+      };
+    case "removeExtension":
+      return { ...state, draft: removeExtension(state.draft, action.index) };
+    case "clearDraft":
       return { ...state, draft: initialDraft() };
   }
+}
+
+// 行の数が変わる action。入力中の欄を作り直さないよう、連絡先と拡張の行 DOM はこのときだけ組み直す。
+function changesRows(action: Action): boolean {
+  switch (action.type) {
+    case "addContact":
+    case "removeContact":
+    case "addExtension":
+    case "removeExtension":
+    case "clearDraft":
+      return true;
+    default:
+      return false;
+  }
+}
+
+// 行を組み直したあとにフォーカスを移す先の要素 id。追加は新しい入力欄、削除は追加ボタンへ移す。
+function focusTargetAfter(action: Action, draft: Draft): string | null {
+  switch (action.type) {
+    case "addContact":
+      return contactId(contactRows(draft).length - 1);
+    case "addExtension":
+      return extensionHeadingId(draft.extensions.length - 1);
+    case "removeContact":
+      return "contact-add";
+    case "removeExtension":
+      return "ext-add";
+    default:
+      return null;
+  }
+}
+
+function contactId(index: number): string {
+  return `contact-${index}`;
+}
+
+function extensionHeadingId(index: number): string {
+  return `ext-heading-${index}`;
+}
+
+// 削除ボタンのアクセシブル名。見出しが空の間は番号で呼ぶ。
+function extensionDeleteLabel(heading: string, index: number): string {
+  return `${heading.trim() || `追加事項 ${index + 1}`} を削除`;
 }
 
 // 状態から導出する純粋な値 ---------------------------------------------------
@@ -225,6 +295,11 @@ function render(state: AppState): void {
     });
   }
 
+  // データバックの詳細欄は SB が ON のときだけ見せる（OFF でも入力値は保持し、出力には出さない）。
+  ifSome(byId("send-back-field"), (el) => {
+    el.hidden = !state.tags.SB;
+  });
+
   // クレジットの選択肢は BY が ON のときだけ見せ、選択中の値をラジオへ同期する。
   ifSome(byId("credit-options"), (el) => {
     el.hidden = !state.tags.BY;
@@ -247,7 +322,7 @@ function render(state: AppState): void {
   ifSome(byId("panel-out"), (el) => el.setAttribute("aria-labelledby", tabId(state.view)));
 }
 
-// タグ状態とオプションを URL hash へ同期する（プレビュー更新とは分離）。フィールド（個人情報）は載せない。
+// タグ状態とオプションを URL hash へ同期する（プレビュー更新とは分離）。入力欄（個人情報）は載せない。
 function syncUrl(state: AppState): void {
   history.replaceState(null, "", serializeHash(state.tags, state.options));
 }
@@ -262,31 +337,38 @@ function todayISO(): string {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
-// 入力欄 DOM id とフィールドキーの対応（初期化・クリアで共有する単一ソース）。
-const FIELD_BINDINGS: ReadonlyArray<readonly [string, FieldKey]> = [
+// 単一欄の DOM id と draft のキーの対応（初期化・クリアで共有する単一ソース）。
+const TEXT_FIELDS: ReadonlyArray<readonly [string, TextField]> = [
   ["f-photographer", "photographer"],
   ["f-date", "date"],
-  ["f-contact", "contact"],
+  ["f-send-back", "sendBack"],
 ];
 
-// 入力欄の値を draft から書き戻す（状態を単一ソースにする）。
-// input への programmatic 代入は input イベントを発火しないため、プレビューとは二重にならない。
-function syncFields(draft: Draft): void {
-  for (const [id, field] of FIELD_BINDINGS) {
+function isTextControl(el: HTMLElement): el is HTMLInputElement | HTMLTextAreaElement {
+  return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement;
+}
+
+// 単一欄の値を draft から書き戻す（状態を単一ソースにする）。
+// programmatic な値の代入は input イベントを発火しないため、プレビューとは二重にならない。
+function syncTextFields(draft: Draft): void {
+  for (const [id, field] of TEXT_FIELDS) {
     ifSome(byId(id), (el) => {
-      if (el instanceof HTMLInputElement) {
-        el.value = fieldValue(draft, field);
+      if (isTextControl(el)) {
+        el.value = draft[field];
       }
     });
   }
 }
 
-// 入力欄を draft で初期化し、input でプレビューを更新する。URL には反映しない。
-function bindFields(getState: () => AppState, dispatch: (action: Action) => void): void {
-  for (const [id, field] of FIELD_BINDINGS) {
+// 単一欄を draft で初期化し、入力でプレビューを更新する。URL には反映しない。
+function bindTextFields(getState: () => AppState, dispatch: (action: Action) => void): void {
+  for (const [id, field] of TEXT_FIELDS) {
     ifSome(byId(id), (el) => {
-      if (el instanceof HTMLInputElement) {
-        el.value = fieldValue(getState().draft, field);
+      if (isTextControl(el)) {
+        if (field === "photographer") {
+          el.maxLength = MAX_PHOTOGRAPHER;
+        }
+        el.value = getState().draft[field];
         el.addEventListener("input", () => dispatch({ type: "setField", field, value: el.value }));
         // 一部ブラウザは date ピッカー選択時に input を発火しないため、change でも draft と
         // プレビューを最新化する。
@@ -294,6 +376,162 @@ function bindFields(getState: () => AppState, dispatch: (action: Action) => void
       }
     });
   }
+}
+
+// 連絡先・拡張の行 DOM ---------------------------------------------------------
+// 行は draft から組み直す純粋な「状態 → DOM」。値は value / textContent だけで入れ、innerHTML は使わない。
+
+function withChildren<T extends HTMLElement>(parent: T, ...children: Node[]): T {
+  for (const child of children) {
+    parent.appendChild(child);
+  }
+  return parent;
+}
+
+function labelFor(forId: string, text: string): HTMLLabelElement {
+  const label = document.createElement("label");
+  label.htmlFor = forId;
+  label.textContent = text;
+  return label;
+}
+
+function deleteButton(accessibleName: string, onClick: () => void): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "ghost";
+  button.textContent = "削除";
+  button.setAttribute("aria-label", accessibleName);
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+function contactRow(
+  value: string,
+  index: number,
+  removable: boolean,
+  dispatch: (action: Action) => void,
+): HTMLElement {
+  const row = document.createElement("div");
+  row.className = "row";
+  const id = contactId(index);
+  const input = document.createElement("input");
+  input.id = id;
+  input.type = "text";
+  input.maxLength = MAX_CONTACT;
+  input.autocomplete = "off";
+  input.placeholder = "[連絡先をここに記入]";
+  input.value = value;
+  input.addEventListener("input", () =>
+    dispatch({ type: "setContact", index, value: input.value }),
+  );
+  withChildren(row, labelFor(id, `連絡先 ${index + 1}`), input);
+  if (removable) {
+    withChildren(
+      row,
+      deleteButton(`連絡先 ${index + 1} を削除`, () => dispatch({ type: "removeContact", index })),
+    );
+  }
+  return row;
+}
+
+function extensionRow(
+  ext: Extension,
+  index: number,
+  dispatch: (action: Action) => void,
+): HTMLElement {
+  const group = document.createElement("fieldset");
+  group.className = "ext";
+  const legend = document.createElement("legend");
+  legend.textContent = `追加事項 ${index + 1}`;
+
+  const headingId = extensionHeadingId(index);
+  const heading = document.createElement("input");
+  heading.id = headingId;
+  heading.type = "text";
+  heading.maxLength = MAX_HEADING;
+  heading.autocomplete = "off";
+  heading.value = ext.heading;
+
+  const bodyId = `ext-body-${index}`;
+  const body = document.createElement("textarea");
+  body.id = bodyId;
+  body.rows = 3;
+  body.autocomplete = "off";
+  body.placeholder = "1行が1項目になります";
+  body.value = ext.body;
+
+  const remove = deleteButton(extensionDeleteLabel(ext.heading, index), () =>
+    dispatch({ type: "removeExtension", index }),
+  );
+  // 行は組み直さないため、見出しの入力に削除ボタンの名前を追従させる。
+  heading.addEventListener("input", () => {
+    remove.setAttribute("aria-label", extensionDeleteLabel(heading.value, index));
+    dispatch({ type: "setExtension", index, field: "heading", value: heading.value });
+  });
+  body.addEventListener("input", () =>
+    dispatch({ type: "setExtension", index, field: "body", value: body.value }),
+  );
+
+  return withChildren(
+    group,
+    legend,
+    labelFor(headingId, `追加事項 ${index + 1} の見出し`),
+    heading,
+    labelFor(bodyId, `追加事項 ${index + 1} の本文（1行が1項目）`),
+    body,
+    remove,
+  );
+}
+
+// 連絡先と拡張の行、および上限に応じた追加ボタンの有効/無効を draft から組み直す。
+function renderRows(draft: Draft, dispatch: (action: Action) => void): void {
+  const contacts = contactRows(draft);
+  ifSome(byId("contacts"), (el) => {
+    el.replaceChildren(
+      ...contacts.map((value, index) => contactRow(value, index, contacts.length > 1, dispatch)),
+    );
+  });
+  ifSome(byId("extensions"), (el) => {
+    el.replaceChildren(...draft.extensions.map((ext, index) => extensionRow(ext, index, dispatch)));
+  });
+  setDisabled("contact-add", !canAddContact(draft));
+  setDisabled("ext-add", !canAddExtension(draft));
+  for (const button of document.querySelectorAll<HTMLButtonElement>("[data-preset]")) {
+    button.disabled = !canAddExtension(draft);
+  }
+}
+
+function setDisabled(id: string, disabled: boolean): void {
+  ifSome(byId(id), (el) => {
+    if (el instanceof HTMLButtonElement) {
+      el.disabled = disabled;
+    }
+  });
+}
+
+// ひな形ボタンは EXTENSION_PRESETS から作る（見出しの二重管理を避ける）。
+function bindExtensionButtons(dispatch: (action: Action) => void): void {
+  ifSome(byId("ext-presets"), (group) => {
+    group.replaceChildren(
+      ...EXTENSION_PRESETS.map((preset) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "ghost";
+        button.dataset.preset = preset.id;
+        button.textContent = preset.heading;
+        button.addEventListener("click", () =>
+          dispatch({ type: "addExtension", preset: preset.id }),
+        );
+        return button;
+      }),
+    );
+  });
+  ifSome(byId("ext-add"), (btn) =>
+    btn.addEventListener("click", () => dispatch({ type: "addExtension" })),
+  );
+  ifSome(byId("contact-add"), (btn) =>
+    btn.addEventListener("click", () => dispatch({ type: "addContact" })),
+  );
 }
 
 // view に対応するタブ要素の id。aria-labelledby とフォーカス移動で共用する。
@@ -370,7 +608,7 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
 
   bindCopy("copy", () => currentMarkdown(getState()));
   bindCopy("ep-copy", () => endpoint(getState()));
-  // URL はタグ変更のたびに同期済みで、フィールドを含まない共有 URL になっている。
+  // URL はタグ変更のたびに同期済みで、入力欄を含まない共有 URL になっている。
   bindCopy("link", () => location.href);
 
   // サイト共有。設定を含まない素の URL と SNS 貼り付け用の文面を配る（状態に依存しない定数）。
@@ -378,13 +616,15 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
   bindCopy("share-url", () => SITE_URL);
   bindCopy("share-msg", () => siteShareMessage());
 
-  bindFields(getState, dispatch);
+  bindTextFields(getState, dispatch);
+  bindExtensionButtons(dispatch);
 
-  // 入力欄のクリア。draft を初期値へ戻し、DOM の値も状態から書き戻す（日付は当日を再表示）。
+  // 入力欄のクリア。draft を初期値（日付は当日）へ戻す。追加した連絡先・拡張の行は dispatch が
+  // 状態から組み直し、単一欄の値はここで状態から書き戻す。
   ifSome(byId("clear-fields"), (btn) => {
     btn.addEventListener("click", () => {
-      dispatch({ type: "clearFields" });
-      syncFields(getState().draft);
+      dispatch({ type: "clearDraft" });
+      syncTextFields(getState().draft);
       flash(btn, "クリアしました");
     });
   });
@@ -465,7 +705,7 @@ function main(): void {
   // CSS Module のローカルクラスを body に適用（スタイルの起点）
   ifSome(fromNullable(styles.app), (cls) => document.body.classList.add(cls));
   const { tags, options } = parseHash(location.hash);
-  // フィールドは URL から復元しない。日付は当日を初期表示し、名前・連絡先は空のまま（プレースホルダ表示）。
+  // 入力欄は URL から復元しない。日付は当日を初期表示し、名前・連絡先は空のまま（プレースホルダ表示）。
   let state: AppState = {
     tags,
     options,
@@ -475,6 +715,12 @@ function main(): void {
   const dispatch = (action: Action): void => {
     state = update(state, action);
     render(state);
+    if (changesRows(action)) {
+      renderRows(state.draft, dispatch);
+      ifSome(fromNullable(focusTargetAfter(action, state.draft)), (id) =>
+        ifSome(byId(id), (el) => el.focus()),
+      );
+    }
     // URL へ同期する action（URL に載る状態を変えるもの）をホワイトリストで明示する。
     // 新 action は既定で URL 非同期にする。
     if (action.type === "toggleTag" || action.type === "setCredit" || action.type === "setView") {
@@ -482,6 +728,7 @@ function main(): void {
     }
   };
   bindEvents(() => state, dispatch);
+  renderRows(state.draft, dispatch);
   render(state);
   // 初期ロードで URL を正規化する（裸タグ→新形式、旧 URL に残る個人情報の除去）。
   syncUrl(state);

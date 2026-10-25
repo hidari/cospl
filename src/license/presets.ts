@@ -1,8 +1,10 @@
 // 拡張のひな形。押すと一般化した文面入りの拡張が足され、利用者が書き換える。
 // 数値は [◯] のプレースホルダで置く。実在の名前・URL・受け取りコードは入れない。
 
+export type ExtensionPresetId = "contents" | "editing" | "photographer-use";
+
 export const EXTENSION_PRESETS: readonly Readonly<{
-  id: "contents" | "editing" | "photographer-use";
+  id: ExtensionPresetId;
   heading: string;
   body: string;
 }>[] = [

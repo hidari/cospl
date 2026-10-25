@@ -38,13 +38,13 @@ export const DEFAULT_DOC: Doc = {
   extensions: [],
 };
 
-const MAX_PHOTOGRAPHER = 50;
-const MAX_CONTACT = 100;
-const MAX_CONTACTS = 5;
-const MAX_HEADING = 40;
+export const MAX_PHOTOGRAPHER = 50;
+export const MAX_CONTACT = 100;
+export const MAX_CONTACTS = 5;
+export const MAX_HEADING = 40;
 const MAX_ITEM = 200;
 const MAX_ITEMS_PER_EXTENSION = 20;
-const MAX_EXTENSIONS = 10;
+export const MAX_EXTENSIONS = 10;
 const MAX_SEND_BACK_ITEMS = 10;
 
 // 除去対象コードポイントの判定。C0/C1 制御文字（改行・タブ含む）と双方向テキスト制御文字

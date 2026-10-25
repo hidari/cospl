@@ -369,44 +369,38 @@
   color: var(--accent-ink);
 }
 
-/* 任意フィールド入力（折りたたみ） --------------------------------------- */
-:global(.fill) {
-  margin: 18px 0;
+/* STEP 2 の入力欄 -------------------------------------------------------- */
+:global(.inputs) {
+  margin: 14px 0 18px;
+  padding-bottom: 4px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: #fff;
 }
-:global(.fill > summary) {
-  cursor: pointer;
-  padding: 14px 16px;
-  font-weight: 600;
-  font-size: 0.92rem;
-  color: var(--ink);
-  list-style-position: inside;
-}
-:global(.fill[open] > summary) {
-  border-bottom: 1px solid var(--line);
-}
-:global(.fill .hint) {
+:global(.inputs .hint) {
   margin: 14px 16px 0;
 }
 :global(.fill-grid) {
   display: grid;
   grid-template-columns: 1fr;
   gap: 6px;
-  padding: 12px 16px 18px;
+  padding: 12px 16px 6px;
 }
-:global(.fill-grid label) {
+:global(.inputs label) {
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--muted);
+}
+:global(.fill-grid label) {
   margin-top: 8px;
 }
-:global(.fill-grid input) {
+:global(.inputs input),
+:global(.inputs textarea) {
   width: 100%;
   /* grid item は既定で min-width: auto となり中身の最小幅以下に縮まないため、
      intrinsic 幅の大きい入力（type="date" 等）が列を押し広げて溢れるのを防ぐ。 */
   min-width: 0;
+  box-sizing: border-box;
   font-family: var(--sans), sans-serif;
   font-size: 0.92rem;
   color: var(--ink);
@@ -415,27 +409,98 @@
   border-radius: 10px;
   background: var(--surface);
 }
-:global(.fill-grid input:focus-visible) {
+:global(.inputs textarea) {
+  resize: vertical;
+}
+:global(.inputs input:focus-visible),
+:global(.inputs textarea:focus-visible) {
   border-color: var(--accent);
-  outline: none;
 }
 /* iOS WebKit（X アプリ内ブラウザ等）の type="date" は UA appearance により
    width: 100% を無視してコンテナをはみ出すことがあるため appearance をリセットする
    （grid 列のはみ出し自体は上の min-width: 0 が解消する）。 */
-:global(.fill-grid input[type="date"]) {
+:global(.inputs input[type="date"]) {
   -webkit-appearance: none;
   appearance: none;
 }
 /* iOS WebKit は値テキストを中央寄せで描画する。input 本体への text-align は
    iOS 15+ で効かないため、値を描画する擬似要素を直接指定して左寄せに揃える。 */
-:global(.fill-grid input[type="date"]::-webkit-date-and-time-value) {
+:global(.inputs input[type="date"]::-webkit-date-and-time-value) {
   text-align: left;
 }
-/* 入力欄のクリアボタン（名前入り URL の誤共有を防ぐ）。グリッド下に右寄せで控えめに置く。 */
+/* 連絡先・データバック・追加事項のまとまり。罫線の区切りと余白で並べる。 */
+:global(.field-group) {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 14px 16px;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+:global(.field-group[hidden]) {
+  display: none;
+}
+:global(.field-group > legend) {
+  padding: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+:global(.field-group > .hint) {
+  margin: 0;
+}
+:global(.field-group > .ghost) {
+  justify-self: start;
+}
+:global(.rows) {
+  display: grid;
+  gap: 10px;
+}
+:global(.rows:empty) {
+  display: none;
+}
+:global(.row) {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 8px;
+  align-items: end;
+}
+:global(.row > label) {
+  grid-column: 1 / -1;
+}
+/* 追加事項 1 件分。見出し・本文・削除を縦に積む。 */
+:global(.ext) {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+:global(.ext > legend) {
+  padding: 0 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+:global(.ext > .ghost) {
+  justify-self: end;
+}
+:global(.presets) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+:global(.ghost:disabled) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+/* 入力欄のクリアボタン（名前入り URL の誤共有を防ぐ）。下に右寄せで控えめに置く。 */
 :global(.fill-actions) {
   display: flex;
   justify-content: flex-end;
-  padding: 0 16px 16px;
+  padding: 12px 16px 12px;
+  border-top: 1px solid var(--line);
 }
 
 /* 識別子バー ----------------------------------------------------------- */

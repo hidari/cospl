@@ -14,7 +14,10 @@ export class LicensePage {
   readonly linkButton: Locator;
   readonly clearButton: Locator;
   readonly photographer: Locator;
-  readonly contact: Locator;
+  readonly date: Locator;
+  readonly contactAdd: Locator;
+  readonly sendBack: Locator;
+  readonly extensionAdd: Locator;
   readonly humanTab: Locator;
   readonly aiTab: Locator;
   readonly creditGroup: Locator;
@@ -30,7 +33,10 @@ export class LicensePage {
     this.linkButton = page.locator("#link");
     this.clearButton = page.locator("#clear-fields");
     this.photographer = page.locator("#f-photographer");
-    this.contact = page.locator("#f-contact");
+    this.date = page.locator("#f-date");
+    this.contactAdd = page.getByRole("button", { name: "＋ 連絡先を追加" });
+    this.sendBack = page.getByLabel("データバックの詳細");
+    this.extensionAdd = page.getByRole("button", { name: "＋ 項目を追加" });
     // タブは aria-label でアクセシブル名が安定するため role ベースで取得する。
     this.humanTab = page.getByRole("tab", { name: "README用" });
     this.aiTab = page.getByRole("tab", { name: "AI向け宣言" });
@@ -57,14 +63,26 @@ export class LicensePage {
     await this.aiTab.click();
   }
 
-  // 入力フォーム（撮影者名・連絡先など）を含む details.fill を開く。
-  // index.html の markup（details.fill > summary、初期は閉じた状態）に依存する。
-  // 開いている details の summary を click すると閉じてしまうため、open 判定で冪等にする。
-  async openFillSection(): Promise<void> {
-    const details = this.page.locator("details.fill");
-    const isOpen = await details.evaluate((el) => (el as HTMLDetailsElement).open);
-    if (!isOpen) {
-      await details.locator("summary").click();
-    }
+  // 連絡先・拡張の入力欄は 1 始まりの番号を label に持つ（支援技術から見える名前と一致させる）。
+  contactInput(n: number): Locator {
+    return this.page.getByLabel(`連絡先 ${n}`, { exact: true });
+  }
+
+  extensionHeading(n: number): Locator {
+    return this.page.getByLabel(`追加事項 ${n} の見出し`);
+  }
+
+  extensionBody(n: number): Locator {
+    return this.page.getByLabel(`追加事項 ${n} の本文`);
+  }
+
+  // ひな形ボタンは id（EXTENSION_PRESETS）で引く。表示名はチップ「加工禁止」等と部分一致しうるため。
+  preset(id: "contents" | "editing" | "photographer-use"): Locator {
+    return this.page.locator(`[data-preset="${id}"]`);
+  }
+
+  // 削除ボタンのアクセシブル名は「<見出し> を削除」。
+  deleteButton(label: string): Locator {
+    return this.page.getByRole("button", { name: `${label} を削除`, exact: true });
   }
 }

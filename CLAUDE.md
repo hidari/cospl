@@ -22,11 +22,11 @@
 ## [MUST] 必ず守らなければならないルール
 
 - 作業開始前に適切なブランチを選択する
-- コードの修正が終わったら最初に `pnpm lint`（必要に応じて `pnpm check`）でLint等を実行する
+- コードの修正が終わったら最初に `just lint`（必要に応じて `just check`）でLint等を実行する
 - ブランチのpush後は以下の手順でPull Requestを確認してください
   1. `gh pr list --head $(git branch --show-current) --base main` で Pull Request の存在を確認
   2. Pull Requestが無ければ `gh pr create --assignee @me --base main --fill` で作成
-- 開発用コマンドの入口は `package.json` の scripts に一本化する（ローカルも CI も同じ scripts を叩く）
+- 開発用コマンドの入口は `justfile` に一本化する（ローカルも CI も同じ recipe を叩く）
 - シークレット情報（APIキー、パスワード等）をコードにハードコードしない
 - シークレットは環境変数経由で注入し、コンソールやログに表示されないようにする
 - `.env.example` にキー名のみ記載し、実際の値は `.env`（.gitignore済み）で管理する

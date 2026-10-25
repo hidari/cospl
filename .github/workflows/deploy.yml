@@ -39,7 +39,7 @@ jobs:
             pnpm-workspace.yaml
       - run: pnpm install --frozen-lockfile
       - name: Build & deploy
-        run: pnpm run deploy
+        run: pnpm exec vite build && pnpm exec wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

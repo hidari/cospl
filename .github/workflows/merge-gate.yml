@@ -30,6 +30,9 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+        with:
+          just-version: 1.59.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
@@ -38,10 +41,10 @@ jobs:
             pnpm-lock.yaml
             pnpm-workspace.yaml
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run lint
-      - run: pnpm run typecheck
-      - run: pnpm test
-      - run: pnpm run build
+      - run: just lint
+      - run: just typecheck
+      - run: just test
+      - run: just build
       - name: wrangler デプロイ設定の検証（dry-run・認証不要）
         run: pnpm exec wrangler deploy --dry-run
 
@@ -54,6 +57,9 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+        with:
+          just-version: 1.59.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
@@ -63,7 +69,7 @@ jobs:
             pnpm-workspace.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps
-      - run: pnpm e2e
+      - run: just e2e
 
   gate:
     name: Merge Gate Result

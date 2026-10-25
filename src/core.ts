@@ -1,6 +1,6 @@
 // CosPL core — タグロジックと Markdown 生成の単一ソース。
 // DOM に依存しない純粋関数群。Worker（src/worker.ts）と Client（src/client/main.ts）が共有する。
-// 生成文書の文字列は golden（test/__fixtures__/golden.json）と byte 一致を保つ。文面変更時は pnpm regen:golden で更新する。
+// 生成文書の文字列は golden（test/__fixtures__/golden.json）と byte 一致を保つ。文面変更時は just regen-golden で更新する。
 
 import {
   invalidFormatError,

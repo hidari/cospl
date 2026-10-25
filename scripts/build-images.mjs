@@ -3,7 +3,7 @@
 // cwebp / ImageMagick(magick) で WebP・JPEG・ICO へ変換する。
 //
 // 前提コマンド: Google Chrome（channel: 'chrome'）, cwebp, magick
-// 実行: pnpm images
+// 実行: just images
 
 import { execFile } from "node:child_process";
 import { mkdtemp, readFile, rm } from "node:fs/promises";

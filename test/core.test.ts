@@ -24,7 +24,7 @@ import {
 } from "../src/core";
 import golden from "./__fixtures__/golden.json";
 
-// golden.json は現在の core 出力を固定した回帰用フィクスチャ。`pnpm regen:golden` で更新する。
+// golden.json は現在の core 出力を固定した回帰用フィクスチャ。`just regen-golden` で更新する。
 type GoldenCase = {
   tags: string[];
   ident: string;

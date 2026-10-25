@@ -201,10 +201,9 @@ function render(state: AppState): void {
   ifSome(byId("panel-out"), (el) => el.setAttribute("aria-labelledby", tabId(state.view)));
 }
 
-// 状態を URL hash へ同期する（プレビュー更新とは分離）。タグ/ビュー変更は即時、フィールドは
-// blur（change）と共有リンク押下でまとめて反映する。入力中に PII を逐次 URL へ書かないため。
+// タグ状態を URL hash へ同期する（プレビュー更新とは分離）。フィールド（個人情報）は載せない。
 function syncUrl(state: AppState): void {
-  history.replaceState(null, "", serializeHash(state.tags, state.draft));
+  history.replaceState(null, "", serializeHash(state.tags));
 }
 
 // 初期化 --------------------------------------------------------------------
@@ -224,20 +223,16 @@ const FIELD_BINDINGS: ReadonlyArray<readonly [string, keyof Fields]> = [
   ["f-contact", "contact"],
 ];
 
-// 入力欄を draft で初期化する。input でプレビューだけ更新し（URL は汚さない）、
-// change（値変更を伴う blur）でまとめて URL へ同期する。
+// 入力欄を draft で初期化し、input でプレビューを更新する。URL には反映しない。
 function bindFields(getState: () => AppState, dispatch: (action: Action) => void): void {
   for (const [id, field] of FIELD_BINDINGS) {
     ifSome(byId(id), (el) => {
       if (el instanceof HTMLInputElement) {
         el.value = getState().draft[field];
         el.addEventListener("input", () => dispatch({ type: "setField", field, value: el.value }));
-        // change では URL 同期前に draft を最新化する。一部ブラウザは date ピッカー選択時に
-        // input を発火しないため、change だけが来ても draft とプレビューを取り残さない。
-        el.addEventListener("change", () => {
-          dispatch({ type: "setField", field, value: el.value });
-          syncUrl(getState());
-        });
+        // 一部ブラウザは date ピッカー選択時に input を発火しないため、change でも draft と
+        // プレビューを最新化する。
+        el.addEventListener("change", () => dispatch({ type: "setField", field, value: el.value }));
       }
     });
   }
@@ -303,11 +298,8 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
 
   bindCopy("copy", () => currentMarkdown(getState()));
   bindCopy("ep-copy", () => endpoint(getState()));
-  // 未確定の入力（blur 前）も取りこぼさないよう、コピー直前に URL を最新化する。
-  bindCopy("link", () => {
-    syncUrl(getState());
-    return location.href;
-  });
+  // URL はタグ変更のたびに同期済みで、フィールドを含まない共有 URL になっている。
+  bindCopy("link", () => location.href);
 
   // サイト共有。設定を含まない素の URL と SNS 貼り付け用の文面を配る（状態に依存しない定数）。
   bindShareDisclosure();
@@ -316,7 +308,7 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
 
   bindFields(getState, dispatch);
 
-  // 入力欄のクリア。draft を空にする（dispatch 経由で URL からも PII を除去）と同時に、
+  // 入力欄のクリア。draft を空にすると同時に、
   // input への programmatic 代入は input イベントを発火しないため、DOM の値も明示的に空へ戻す。
   ifSome(byId("clear-fields"), (btn) => {
     btn.addEventListener("click", () => {
@@ -407,27 +399,25 @@ function bindCopy(id: string, textOf: () => string): void {
 function main(): void {
   // CSS Module のローカルクラスを body に適用（スタイルの起点）
   ifSome(fromNullable(styles.app), (cls) => document.body.classList.add(cls));
-  const { tags, fields } = parseHash(location.hash);
-  // 日付未指定なら当日を初期表示。名前・連絡先は空のまま（プレースホルダ表示）。
+  const { tags } = parseHash(location.hash);
+  // フィールドは URL から復元しない。日付は当日を初期表示し、名前・連絡先は空のまま（プレースホルダ表示）。
   let state: AppState = {
     tags,
     view: "human",
-    draft: { ...fields, date: fields.date || todayISO() },
+    draft: { ...EMPTY_FIELDS, date: todayISO() },
   };
   const dispatch = (action: Action): void => {
     state = update(state, action);
     render(state);
-    // URL へ即時同期する action をホワイトリストで明示する。フィールド入力（setField）は blur まで
-    // 書かない一方、クリア（clearFields）は PII を URL から消す操作なので即時同期して安全側に倒す。
-    // 新 action は既定で URL 非同期（安全側）にする。
-    if (action.type === "toggleTag" || action.type === "setView" || action.type === "clearFields") {
+    // URL へ同期する action（URL に載る状態を変えるもの）をホワイトリストで明示する。
+    // 新 action は既定で URL 非同期にする。
+    if (action.type === "toggleTag" || action.type === "setView") {
       syncUrl(state);
     }
   };
   bindEvents(() => state, dispatch);
   render(state);
-  // 初期ロードで URL を正規化（裸タグ→新形式）。date は当日を初期値とするため URL に含まれる。
-  // PII の photographer / contact は空なので含まれない。
+  // 初期ロードで URL を正規化する（裸タグ→新形式、旧 URL に残る個人情報の除去）。
   syncUrl(state);
 
   // 本番ビルドでのみ SW を登録する（dev は /sw.js を emit しないため）。import.meta.env は DEV のみ

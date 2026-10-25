@@ -10,8 +10,7 @@ export const DEFAULT_FIELDS: Fields = {
   contact: "[連絡先をここに記入]",
 };
 
-// 全フィールド空の初期値（入力欄クリアと hash 復元の単一ソース）。空のまま serializeHash すると
-// date / photographer / contact は URL に出力されず、PII を残さない。
+// 全フィールド空の初期値（入力欄の初期化とクリアの単一ソース）。
 export const EMPTY_FIELDS: Fields = { date: "", photographer: "", contact: "" };
 
 // 除去対象コードポイントの判定。C0/C1 制御文字（改行・タブ含む）と双方向テキスト制御文字

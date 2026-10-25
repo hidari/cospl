@@ -98,7 +98,7 @@ export function apiCatalogJson(origin: string): string {
 }
 
 // /openapi.json（OpenAPI 3.1）。GET /license.md の機械可読仕様。
-// パラメータ仕様は src/core.ts の parseTags / parseView / parseFormat / parseCredit と一致させる。
+// パラメータ仕様は src/license/ の parseTags / parseView / parseFormat / parseCredit と一致させる。
 export function openApiJson(origin: string): string {
   const spec = {
     openapi: "3.1.0",

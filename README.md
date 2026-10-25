@@ -29,7 +29,7 @@ CosPL 2.0 / BY-NC-NAI-TD
 ## 使い方
 
 1. 付けたい条件のタグを選ぶ
-2. [v2.0/template_README.md](v2.0/template_README.md) の `[撮影者名]` `[モデル名]` `[連絡先]` を埋める
+2. [v2.0/template_README.md](v2.0/template_README.md) の `[撮影者名]` `[モデル名]` `[連絡先をここに記入]` を埋める
 3. 現像済みデータと一緒に納品フォルダへ同梱する
 
 ライセンス本文の参照用テキストは [v2.0/CosPL-2.0.md](v2.0/CosPL-2.0.md) です。
@@ -41,9 +41,10 @@ CosPL 2.0 / BY-NC-NAI-TD
   - `https://cospl.org/license.md?tags=BY-NC-NAI-TD` → README（Markdown）
   - `https://cospl.org/license.md?tags=BY-NC-NAI-TD&format=text` → README（プレーンテキスト, `text/plain`）
   - `https://cospl.org/license.md?tags=BY-NC-NAI-TD&view=ai` → AI向け宣言
+  - `https://cospl.org/license.md?tags=BY&credit=any` → クレジットの方法を問わない文面（`credit=sns|any`、`BY` が付くときだけ有効。不正な値は 400）
   - `tags` 省略時は `BY-NC-NAI-TD` を既定とします。
   - CORS 許可済み（`Access-Control-Allow-Origin: *`）なので、ツールやエージェントから直接取得できます。
-- `llms.txt` に LLM 向けの概要を置いています。`NAI` タグの作品はAI学習と、その写真を元にした別の画像・動画の生成を禁止する旨（その写真を仕上げるためのAI加工は許可）を明記しています。
+- `llms.txt` に LLM 向けの概要を置いています。`NAI` タグの作品はAI学習と、その写真を元にした別の画像・動画の生成を禁止する旨（その写真自体の加工は NAI の対象外で、可否は `ND` に従う）を明記しています。
 
 ## ライセンス
 

@@ -9,7 +9,7 @@ import {
   canAddContact,
   canAddExtension,
   contactRows,
-  DEFAULT_OPTIONS,
+  creditParam,
   type Doc,
   type Draft,
   EMPTY_DRAFT,
@@ -168,10 +168,8 @@ function identHTML(state: AppState, doc: Doc): string {
 
 function endpoint(state: AppState): string {
   const tags = tagsFrom(state.tags);
-  const credit =
-    state.tags.BY && state.options.credit !== DEFAULT_OPTIONS.credit
-      ? `&credit=${state.options.credit}`
-      : "";
+  const param = creditParam(state.tags.BY, state.options);
+  const credit = param === null ? "" : `&credit=${param}`;
   const query = `tags=${tags.length ? tags.join("-") : "none"}${credit}${state.view === "ai" ? "&view=ai" : ""}`;
   return `${SITE_URL}license.md?${query}`;
 }

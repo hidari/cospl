@@ -158,6 +158,15 @@ describe("aiMD（2.0）", () => {
     expect(aiMD(unwrapState("BY"))).toContain("- photo_send_back_requested: no   # SB");
   });
 
+  test("ND と NAI が重なる Notice は写真自体の加工を許可せず derivatives に委ねる", () => {
+    const ai = aiMD(unwrapState("ND-NAI"));
+    expect(ai).toContain("- derivatives: prohibited (cropping and resizing allowed)   # ND");
+    expect(ai).toContain(
+      "This work is tagged NAI. Do NOT use it as AI training data, and do NOT generate new images or videos from it. Editing this photograph itself is outside the scope of NAI; whether it is allowed follows `derivatives` above.",
+    );
+    expect(ai).not.toContain("is permitted");
+  });
+
   test("NAI の Notice は学習と派生生成を禁じ、写真自体の加工は許可する", () => {
     const ai = aiMD(unwrapState("NAI"));
     expect(ai).toContain(
@@ -220,7 +229,7 @@ describe("humanMD のフィールド反映", () => {
     expect(text).not.toMatch(/^#/m);
   });
 
-  test("aiMD はフィールド非対応で不変", () => {
+  test("aiMD は撮影者名などの入力を受けず不変", () => {
     expect(aiMD(unwrapState("BY-NC-NAI-TD"))).not.toContain("Hidari");
   });
 });
@@ -251,19 +260,20 @@ describe("拡張", () => {
     expect(ident(unwrapState("BY"))).toBe("CosPL 2.0 / BY");
   });
 
-  test("拡張は連絡先の章の直前に、優先順位の注記に続けて出る", () => {
+  test("拡張は「追加事項」の章にまとまり、連絡先の章の直前に、優先順位の注記に続けて出る", () => {
     const md = humanMD(unwrapState("BY"), DEFAULT_OPTIONS, withExt);
-    expect(md).toContain(`${noticeLine}\n\n## 加工\n- a\n- bb\n\n## 連絡先`);
+    expect(md).toContain(`## 追加事項\n${noticeLine}\n\n### 加工\n- a\n- bb\n\n## 連絡先`);
     expect(md).toMatch(/適用: CosPL 2\.0 \/ BY \+ ／/);
   });
 
-  test("拡張なしでは注記も ` +` も出ない", () => {
+  test("拡張なしでは追加事項の章も注記も ` +` も出ない", () => {
     const md = humanMD(unwrapState("BY"));
+    expect(md).not.toContain("追加事項");
     expect(md).not.toContain(noticeLine);
     expect(md).not.toContain(" +");
   });
 
-  test("項目が見出し記法で始まっても箇条書きの項目のまま", () => {
+  test("項目が見出し記法で始まっても行は箇条書きの項目の内側に留まる", () => {
     const doc: Doc = { ...DEFAULT_DOC, extensions: [{ heading: "x", items: ["# 見出し風"] }] };
     expect(humanMD(unwrapState("none"), DEFAULT_OPTIONS, doc)).toContain("\n- # 見出し風\n");
     expect(humanText(unwrapState("none"), DEFAULT_OPTIONS, doc)).toContain("\n- # 見出し風\n");

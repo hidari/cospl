@@ -101,11 +101,13 @@ describe("toDoc", () => {
     expect(toDoc({ ...empty, contacts }).contacts).toEqual(["1", "2", "3", "4", "5"]);
   });
 
-  test("拡張は見出しが空のものを捨て、本文を 1 行 1 項目にして山括弧と空行を除く", () => {
+  test("拡張は見出しが空または項目が空のものを捨て、本文を 1 行 1 項目にして山括弧と空行を除く", () => {
     const doc = toDoc({
       ...empty,
       extensions: [
         { heading: "", body: "a" },
+        { heading: "見出しだけ", body: "" },
+        { heading: "山括弧だけ", body: "<>\n\n" },
         { heading: "加工", body: "a\n\n<b>b</b>\n" },
       ],
     });
@@ -160,6 +162,11 @@ describe("toDoc", () => {
 
   test("hasExtensions は拡張の有無を返す", () => {
     expect(hasExtensions(DEFAULT_DOC)).toBe(false);
-    expect(hasExtensions(toDoc({ ...empty, extensions: [{ heading: "h", body: "" }] }))).toBe(true);
+    expect(hasExtensions(toDoc({ ...empty, extensions: [{ heading: "h", body: "x" }] }))).toBe(
+      true,
+    );
+    expect(hasExtensions(toDoc({ ...empty, extensions: [{ heading: "h", body: "" }] }))).toBe(
+      false,
+    );
   });
 });

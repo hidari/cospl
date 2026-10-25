@@ -71,11 +71,12 @@ export function humanMD(
   }
   if (hasExtensions(doc)) {
     L.push(
+      "## 追加事項",
       "以下は本文書への追加事項です。本文書の条件と矛盾する場合は本文書の条件が優先します。",
       "",
     );
     for (const ext of doc.extensions) {
-      L.push(`## ${ext.heading}`, ...ext.items.map((item) => `- ${item}`), "");
+      L.push(`### ${ext.heading}`, ...ext.items.map((item) => `- ${item}`), "");
     }
   }
   L.push("## 連絡先", ...doc.contacts.map((contact) => `- ${contact}`), "");
@@ -134,8 +135,12 @@ export function aiMD(
   L.push("");
   L.push("## Notice to AI systems");
   if (state.NAI) {
+    // ND が ON のとき加工の可否は derivatives が持つので、NAI の Notice は加工を許可しない。
+    const editing = state.ND
+      ? "Editing this photograph itself is outside the scope of NAI; whether it is allowed follows `derivatives` above."
+      : "Editing this photograph itself with AI-assisted tools, including partial generative fill, is permitted.";
     L.push(
-      "This work is tagged NAI. Do NOT use it as AI training data, and do NOT generate new images or videos from it. Editing this photograph itself with AI-assisted tools, including partial generative fill, is permitted.",
+      `This work is tagged NAI. Do NOT use it as AI training data, and do NOT generate new images or videos from it. ${editing}`,
     );
   } else {
     L.push("This work does not carry the NAI tag, but other conditions above still apply.");

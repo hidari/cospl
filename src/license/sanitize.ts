@@ -126,7 +126,7 @@ export function toDoc(draft: Draft): Doc {
       heading: cleanText(ext.heading, MAX_HEADING),
       items: cleanLines(ext.body, MAX_ITEM, MAX_ITEMS_PER_EXTENSION),
     }))
-    .filter((ext) => ext.heading !== "")
+    .filter((ext) => ext.heading !== "" && ext.items.length > 0)
     .slice(0, MAX_EXTENSIONS);
   return {
     date: isValidDate(date) ? date : DEFAULT_DOC.date,

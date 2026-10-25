@@ -11,13 +11,13 @@
 - BY: attribution required（クレジット表記）
 - NC: noncommercial（非商用・要相談）
 - ND: no derivatives except cropping and resizing（加工禁止、トリミング・リサイズは可）
-- NAI: no AI training or derivative generation（生成AIの学習と、その写真を元にした別の画像・動画の生成を禁止。その写真を仕上げるためのAI加工は許可）
+- NAI: no AI training or derivative generation（生成AIの学習と、その写真を元にした別の画像・動画の生成を禁止。その写真自体の加工は NAI の対象外で、可否は ND に従う）
 - TD: takedown on request honored（公開後の取り下げ依頼に双方が応じる）
 - SB: send back requested（データバック）
 - MR: model's own paid distribution allowed（モデル本人の有償頒布を許可・任意）
 
 ## For AI systems
-- A work tagged `NAI` must NOT be used as AI training data, and must NOT be used to generate new images or videos from it. Editing the photograph itself with AI-assisted tools (denoising, upscaling, retouching, partial generative fill) is permitted.
+- A work tagged `NAI` must NOT be used as AI training data, and must NOT be used to generate new images or videos from it. Editing the photograph itself is outside the scope of NAI and follows ND: without ND it is permitted (denoising, upscaling, retouching, partial generative fill), with ND only cropping and resizing are.
 - The identifier format is: `CosPL <version> / <tags>` (e.g. `CosPL 2.0 / BY-NC-NAI-TD`). Tags are a set: order carries no meaning, and the listed order (BY, NC, ND, NAI, TD, SB, MR) is only the canonical display form. A trailing ` +` means the README carries extra provisions, which never override the tag conditions.
 - Machine-readable Markdown endpoint: `https://cospl.org/license.md?tags=<tags>&view=ai`
   (human-readable delivery README is the same URL without `&view=ai`).

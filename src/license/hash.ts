@@ -1,7 +1,7 @@
 // URL hash とタグ状態の相互変換。hash は共有してよいタグだけを運び、個人情報（フィールド）は載せない。
 
 import { getOrElse } from "../types/result";
-import { DEFAULT_OPTIONS, type Options, parseCredit } from "./options";
+import { creditParam, DEFAULT_OPTIONS, type Options, parseCredit } from "./options";
 import { DEFAULT_TAGS, defaultTagState, parseTags, type State, tagsFrom } from "./tags";
 
 // hash 文字列（先頭 # は任意）からタグ状態を復元する。
@@ -28,7 +28,7 @@ export function parseHash(hash: string): { tags: State; options: Options } {
 // credit は BY が ON で既定以外のときだけ付ける（効かないオプションを URL に残さない）。
 export function serializeHash(state: State, options: Options): string {
   const tags = tagsFrom(state);
-  const credit =
-    state.BY && options.credit !== DEFAULT_OPTIONS.credit ? `&credit=${options.credit}` : "";
+  const param = creditParam(state.BY, options);
+  const credit = param === null ? "" : `&credit=${param}`;
   return `#tags=${tags.length ? tags.join("-") : "none"}${credit}`;
 }

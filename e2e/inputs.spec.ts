@@ -1,3 +1,4 @@
+import { MAX_EXTENSIONS } from "../src/core";
 import { expect, test } from "./fixtures";
 
 test("ひな形「加工」で拡張が足され、出力と識別子に出て、削除で両方消える", async ({
@@ -9,13 +10,13 @@ test("ひな形「加工」で拡張が足され、出力と識別子に出て�
   await licensePage.preset("editing").click();
 
   await expect(licensePage.extensionHeading(1)).toHaveValue("加工");
-  await expect(licensePage.output).toContainText("## 加工");
+  await expect(licensePage.output).toContainText("### 加工");
   await expect(licensePage.ident).toContainText("+");
 
   await licensePage.deleteButton("加工").click();
 
   await expect(licensePage.extensionHeading(1)).toHaveCount(0);
-  await expect(licensePage.output).not.toContainText("## 加工");
+  await expect(licensePage.output).not.toContainText("### 加工");
   await expect(licensePage.ident).not.toContainText("+");
 });
 
@@ -30,7 +31,7 @@ test("「＋ 項目を追加」で白紙の拡張が足され、見出し欄に�
   await licensePage.extensionHeading(1).fill("その他");
   await licensePage.extensionBody(1).fill("一つ目\n二つ目");
 
-  await expect(licensePage.output).toContainText("## その他\n- 一つ目\n- 二つ目");
+  await expect(licensePage.output).toContainText("### その他\n- 一つ目\n- 二つ目");
 });
 
 test("入力中の欄は他の欄の入力で作り直されずフォーカスを保つ", async ({ licensePage }) => {
@@ -53,7 +54,7 @@ test("削除ボタンの名前は入力した見出しに追従する", async ({
 
 test("上限の件数に達すると追加ボタンが無効になる", async ({ licensePage }) => {
   await licensePage.goto();
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < MAX_EXTENSIONS; i++) {
     await licensePage.extensionAdd.click();
   }
 
@@ -146,6 +147,6 @@ test("クリアで連絡先と拡張の追加欄も消え、各欄が状態か�
   await expect(licensePage.contactInput(1)).toHaveValue("");
   await expect(licensePage.contactInput(2)).toHaveCount(0);
   await expect(licensePage.extensionHeading(1)).toHaveCount(0);
-  await expect(licensePage.output).not.toContainText("## 加工");
+  await expect(licensePage.output).not.toContainText("### 加工");
   await expect(licensePage.ident).not.toContainText("+");
 });

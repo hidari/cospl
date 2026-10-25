@@ -25,7 +25,7 @@ Spec: `docs/superpowers/specs/2026-10-26-readme-extensions-design.md`
 
 - 古い共有 URL（`#tags=BY-NC&photographer=...&contact=...`）を開く: 値は欄に入らず、読み込み直後に URL から消える（Task 2）
 - 拡張の見出しだけ・本文だけ・空行だけの入力: 見出しが空の拡張は出力されず、` +` も付かない。空行は捨てる（Task 5）
-- 本文に `#` や `- ` で始まる行や山括弧を書く: Markdown 構造を壊さない（行頭の記号は残すが見出しにはならない、山括弧は除去）（Task 5）
+- 本文に `#` や `- ` で始まる行や山括弧を書く: Markdown 構造を壊さない（行頭の記号は残すが箇条書きの項目の内側に留まる、山括弧は除去）（Task 5）
 - BY を OFF にしてから ON に戻す: `credit` の選択は保持され、OFF の間は URL と文書から消える（Task 4）
 - `/license.md?credit=xyz` や `credit` だけ指定（BY なし）: 前者は 400 `invalid_credit`、後者は無視して 200（Task 4）
 

@@ -18,6 +18,7 @@ export {
 export { parseHash, serializeHash } from "./license/hash";
 export {
   type CreditMethod,
+  creditParam,
   DEFAULT_OPTIONS,
   type Options,
   parseCredit,

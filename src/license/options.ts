@@ -16,3 +16,8 @@ export function parseCredit(raw: string | null): Result<CreditMethod, ParseError
   }
   return fail(invalidCreditError(normalized));
 }
+
+// 効くときだけ URL に載せる credit の値。BY が OFF、または既定のときは null（効かないオプションを URL に残さない）。
+export function creditParam(byOn: boolean, options: Options): CreditMethod | null {
+  return byOn && options.credit !== DEFAULT_OPTIONS.credit ? options.credit : null;
+}

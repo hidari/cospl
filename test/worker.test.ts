@@ -133,6 +133,12 @@ describe("GET /license.md", () => {
     expect(await res.text()).not.toContain("クレジットの方法は問いません");
   });
 
+  test("BY が OFF でも不正な credit は 400 を返す", async () => {
+    const res = await call("/license.md?tags=NC&credit=xyz");
+    expect(res.status).toBe(400);
+    expect(await res.text()).toContain("error: invalid_credit");
+  });
+
   test("不正な format は 400 を返す", async () => {
     const res = await call("/license.md?format=pdf");
     expect(res.status).toBe(400);

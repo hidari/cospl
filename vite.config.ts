@@ -69,6 +69,6 @@ function serviceWorkerPlugin(): Plugin {
 // クライアント（index.html / src/client）の両方をビルドする。
 export default defineConfig({
   plugins: [cloudflare(), serviceWorkerPlugin()],
-  // dev サーバのポートを固定し、Taskfile.pkl の dev.readyPort と一致させる。
+  // 既定の 5173 はローカルで並走させる別プロジェクトと衝突するため固定する。
   server: { port: 5210 },
 });

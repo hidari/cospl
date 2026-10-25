@@ -15,7 +15,7 @@ export class LicensePage {
   readonly clearButton: Locator;
   readonly photographer: Locator;
   readonly inputsSummary: Locator;
-  readonly contactAdd: Locator;
+  readonly contacts: Locator;
   readonly sendBack: Locator;
   readonly extensionAdd: Locator;
   readonly humanTab: Locator;
@@ -34,7 +34,7 @@ export class LicensePage {
     this.clearButton = page.locator("#clear-fields");
     this.photographer = page.locator("#f-photographer");
     this.inputsSummary = page.locator("#inputs > summary");
-    this.contactAdd = page.getByRole("button", { name: "＋ 連絡先を追加" });
+    this.contacts = page.getByLabel("連絡先", { exact: true });
     this.sendBack = page.getByLabel("データバックの追記事項");
     this.extensionAdd = page.getByRole("button", { name: "＋ 項目を追加" });
     // タブは aria-label でアクセシブル名が安定するため role ベースで取得する。
@@ -70,11 +70,7 @@ export class LicensePage {
     await this.aiTab.click();
   }
 
-  // 連絡先・拡張の入力欄は 1 始まりの番号を label に持つ（支援技術から見える名前と一致させる）。
-  contactInput(n: number): Locator {
-    return this.page.getByLabel(`連絡先 ${n}`, { exact: true });
-  }
-
+  // 拡張の入力欄は 1 始まりの番号を aria-label に持つ（支援技術から見える名前と一致させる）。
   extensionHeading(n: number): Locator {
     return this.page.getByLabel(`追加事項 ${n} の見出し`);
   }

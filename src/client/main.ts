@@ -2,13 +2,10 @@
 // 副作用（DOM 取得・clipboard・履歴更新）は境界に押し出し、欠落値は Option、失敗は Result で扱う。
 
 import {
-  addContact,
   addExtension,
   aiMD,
   type CreditMethod,
-  canAddContact,
   canAddExtension,
-  contactRows,
   creditParam,
   type Doc,
   type Draft,
@@ -20,19 +17,16 @@ import {
   hasExtensions,
   humanMD,
   identParts,
-  MAX_CONTACT,
   MAX_HEADING,
   MAX_PHOTOGRAPHER,
   type Options,
   parseCredit,
   parseHash,
   parseTag,
-  removeContact,
   removeExtension,
   SITE_URL,
   type State,
   serializeHash,
-  setContact,
   setExtension,
   setTextField,
   siteShareMessage,
@@ -56,9 +50,6 @@ type Action =
   | { type: "setCredit"; credit: CreditMethod }
   | { type: "setView"; view: View }
   | { type: "setField"; field: TextField; value: string }
-  | { type: "addContact" }
-  | { type: "setContact"; index: number; value: string }
-  | { type: "removeContact"; index: number }
   | { type: "addExtension"; preset?: ExtensionPresetId }
   | { type: "setExtension"; index: number; field: keyof Extension; value: string }
   | { type: "removeExtension"; index: number }
@@ -75,12 +66,6 @@ function update(state: AppState, action: Action): AppState {
       return { ...state, view: action.view };
     case "setField":
       return { ...state, draft: setTextField(state.draft, action.field, action.value) };
-    case "addContact":
-      return { ...state, draft: addContact(state.draft) };
-    case "setContact":
-      return { ...state, draft: setContact(state.draft, action.index, action.value) };
-    case "removeContact":
-      return { ...state, draft: removeContact(state.draft, action.index) };
     case "addExtension":
       return { ...state, draft: addExtension(state.draft, action.preset) };
     case "setExtension":
@@ -95,11 +80,9 @@ function update(state: AppState, action: Action): AppState {
   }
 }
 
-// 行の数が変わる action。入力中の欄を作り直さないよう、連絡先と拡張の行 DOM はこのときだけ組み直す。
+// 行の数が変わる action。入力中の欄を作り直さないよう、拡張の行 DOM はこのときだけ組み直す。
 function changesRows(action: Action): boolean {
   switch (action.type) {
-    case "addContact":
-    case "removeContact":
     case "addExtension":
     case "removeExtension":
     case "clearDraft":
@@ -112,21 +95,13 @@ function changesRows(action: Action): boolean {
 // 行を組み直したあとにフォーカスを移す先の要素 id。追加は新しい入力欄、削除は追加ボタンへ移す。
 function focusTargetAfter(action: Action, draft: Draft): string | null {
   switch (action.type) {
-    case "addContact":
-      return contactId(contactRows(draft).length - 1);
     case "addExtension":
       return extensionHeadingId(draft.extensions.length - 1);
-    case "removeContact":
-      return "contact-add";
     case "removeExtension":
       return "ext-add";
     default:
       return null;
   }
-}
-
-function contactId(index: number): string {
-  return `contact-${index}`;
 }
 
 function extensionHeadingId(index: number): string {
@@ -325,6 +300,7 @@ function syncUrl(state: AppState): void {
 // 単一欄の DOM id と draft のキーの対応（初期化・クリアで共有する単一ソース）。
 const TEXT_FIELDS: ReadonlyArray<readonly [string, TextField]> = [
   ["f-photographer", "photographer"],
+  ["f-contacts", "contacts"],
   ["f-send-back", "sendBack"],
 ];
 
@@ -359,7 +335,7 @@ function bindTextFields(getState: () => AppState, dispatch: (action: Action) => 
   }
 }
 
-// 連絡先・拡張の行 DOM ---------------------------------------------------------
+// 拡張の行 DOM ---------------------------------------------------------
 // 行は draft から組み直す純粋な「状態 → DOM」。値は value / textContent だけで入れ、innerHTML は使わない。
 
 function withChildren<T extends HTMLElement>(parent: T, ...children: Node[]): T {
@@ -384,35 +360,6 @@ function deleteButton(accessibleName: string, onClick: () => void): HTMLButtonEl
   button.setAttribute("aria-label", accessibleName);
   button.addEventListener("click", onClick);
   return button;
-}
-
-function contactRow(
-  value: string,
-  index: number,
-  removable: boolean,
-  dispatch: (action: Action) => void,
-): HTMLElement {
-  const row = document.createElement("div");
-  row.className = "row";
-  const id = contactId(index);
-  const input = document.createElement("input");
-  input.id = id;
-  input.type = "text";
-  input.maxLength = MAX_CONTACT;
-  input.autocomplete = "off";
-  input.placeholder = "[連絡先をここに記入]";
-  input.value = value;
-  input.addEventListener("input", () =>
-    dispatch({ type: "setContact", index, value: input.value }),
-  );
-  withChildren(row, labelFor(id, `連絡先 ${index + 1}`), input);
-  if (removable) {
-    withChildren(
-      row,
-      deleteButton(`連絡先 ${index + 1} を削除`, () => dispatch({ type: "removeContact", index })),
-    );
-  }
-  return row;
 }
 
 function extensionRow(
@@ -469,18 +416,11 @@ function extensionRow(
   );
 }
 
-// 連絡先と拡張の行、および上限に応じた追加ボタンの有効/無効を draft から組み直す。
+// 拡張の行、および上限に応じた追加ボタンの有効/無効を draft から組み直す。
 function renderRows(draft: Draft, dispatch: (action: Action) => void): void {
-  const contacts = contactRows(draft);
-  ifSome(byId("contacts"), (el) => {
-    el.replaceChildren(
-      ...contacts.map((value, index) => contactRow(value, index, contacts.length > 1, dispatch)),
-    );
-  });
   ifSome(byId("extensions"), (el) => {
     el.replaceChildren(...draft.extensions.map((ext, index) => extensionRow(ext, index, dispatch)));
   });
-  setDisabled("contact-add", !canAddContact(draft));
   setDisabled("ext-add", !canAddExtension(draft));
   for (const button of document.querySelectorAll<HTMLButtonElement>("[data-preset]")) {
     button.disabled = !canAddExtension(draft);
@@ -514,9 +454,6 @@ function bindExtensionButtons(dispatch: (action: Action) => void): void {
   });
   ifSome(byId("ext-add"), (btn) =>
     btn.addEventListener("click", () => dispatch({ type: "addExtension" })),
-  );
-  ifSome(byId("contact-add"), (btn) =>
-    btn.addEventListener("click", () => dispatch({ type: "addContact" })),
   );
 }
 
@@ -605,7 +542,7 @@ function bindEvents(getState: () => AppState, dispatch: (action: Action) => void
   bindTextFields(getState, dispatch);
   bindExtensionButtons(dispatch);
 
-  // 入力欄のクリア。draft を初期値へ戻す。追加した連絡先・拡張の行は dispatch が
+  // 入力欄のクリア。draft を初期値へ戻す。追加した拡張の行は dispatch が
   // 状態から組み直し、単一欄の値はここで状態から書き戻す。
   ifSome(byId("clear-fields"), (btn) => {
     btn.addEventListener("click", () => {

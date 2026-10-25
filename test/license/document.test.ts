@@ -52,9 +52,20 @@ describe("クレジット依頼の方法（BY）", () => {
     expect(md).not.toContain(sns);
   });
 
-  test("テンプレートの行は方法の行の直下に入れ子で置く", () => {
+  const imageCredit = [
+    "- 可能であれば画像内にクレジット表記をお願いします",
+    "  - 例） Photo. [撮影者名] / Model. [モデル名]",
+    template,
+  ].join("\n");
+
+  test("章は方法、画像内の表記、その例とテンプレートの順に並ぶ", () => {
     const md = humanMD(unwrapState("BY"), DEFAULT_OPTIONS);
-    expect(md).toContain(`${sns}\n${template}\n- 可能であれば画像内`);
+    expect(md).toContain(`## SNS・Web掲載とクレジットについて\n${sns}\n${imageCredit}\n\n`);
+  });
+
+  test("any でも先頭の行だけが変わり、並びは同じ", () => {
+    const md = humanMD(unwrapState("BY"), { credit: "any" });
+    expect(md).toContain(`## SNS・Web掲載とクレジットについて\n${any}\n${imageCredit}\n\n`);
   });
 
   test("BY が OFF なら方法は出ない", () => {

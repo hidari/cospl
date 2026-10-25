@@ -122,16 +122,14 @@
         <label for="f-photographer">撮影者名</label>
         <input id="f-photographer" type="text" autocomplete="off" inputmode="text" placeholder="[撮影者名]">
       </div>
-      <fieldset class="field-group">
-        <legend>連絡先</legend>
-        <div class="rows" id="contacts"></div>
-        <button class="ghost" id="contact-add" type="button">＋ 連絡先を追加</button>
-      </fieldset>
-      <fieldset class="field-group" id="send-back-field" hidden>
-        <legend>データバック</legend>
-        <label for="f-send-back">追記事項</label>
-        <textarea id="f-send-back" rows="3" autocomplete="off" aria-label="データバックの追記事項" placeholder="1行が1項目になります（例: お気に召したもの1枚、返送方法は〇〇 etc.）"></textarea>
-      </fieldset>
+      <div class="field-group">
+        <label class="group-title" for="f-contacts">連絡先</label>
+        <textarea id="f-contacts" rows="3" autocomplete="off" placeholder="1行が1件になります（例: X: @your_id）"></textarea>
+      </div>
+      <div class="field-group" id="send-back-field" hidden>
+        <label class="group-title" for="f-send-back">データバックの追記事項</label>
+        <textarea id="f-send-back" rows="3" autocomplete="off" placeholder="1行が1項目になります（例: お気に召したもの1枚、返送方法は〇〇 etc.）"></textarea>
+      </div>
       <fieldset class="field-group">
         <legend>追加事項</legend>
         <p class="hint">README に好きな項目を足せます。本文は1行が1項目の箇条書きになります。</p>

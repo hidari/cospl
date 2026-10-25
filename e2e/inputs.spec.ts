@@ -76,31 +76,13 @@ test("上限の件数に達すると追加ボタンが無効になる", async ({
   await expect(licensePage.preset("editing")).toBeDisabled();
 });
 
-test("「＋ 連絡先を追加」で 2 件入れると連絡先の章に 2 行出る", async ({ licensePage }) => {
+test("連絡先を 2 行入力すると、出力の連絡先に 2 件の箇条書きが出る", async ({ licensePage }) => {
   await licensePage.goto();
   await licensePage.openInputs();
 
-  await licensePage.contactInput(1).fill("@example_a");
-  await licensePage.contactAdd.click();
-  await expect(licensePage.contactInput(2)).toBeFocused();
-  await licensePage.contactInput(2).fill("@example_b");
+  await licensePage.contacts.fill("@example_a\n@example_b");
 
   await expect(licensePage.output).toContainText("## 連絡先\n- @example_a\n- @example_b");
-});
-
-test("連絡先を削除すると出力から消える。残り 1 行のときは削除できない", async ({ licensePage }) => {
-  await licensePage.goto();
-  await licensePage.openInputs();
-  await licensePage.contactInput(1).fill("@example_a");
-  await licensePage.contactAdd.click();
-  await licensePage.contactInput(2).fill("@example_b");
-
-  await licensePage.deleteButton("連絡先 1").click();
-
-  await expect(licensePage.output).not.toContainText("@example_a");
-  await expect(licensePage.output).toContainText("- @example_b");
-  await expect(licensePage.contactInput(1)).toHaveValue("@example_b");
-  await expect(licensePage.deleteButton("連絡先 1")).toHaveCount(0);
 });
 
 test("データバックを ON にすると詳細欄が現れ、入力が出力に出る。OFF で隠れて出力から消える", async ({
@@ -141,8 +123,7 @@ test("どの入力をしても URL はタグとクレジット以外を含まな
   await licensePage.toggleTag("SB");
 
   await licensePage.photographer.fill("テスト太郎");
-  await licensePage.contactInput(1).fill("@example_a");
-  await licensePage.contactAdd.click();
+  await licensePage.contacts.fill("@example_a\n@example_b");
   await licensePage.preset("editing").click();
   await licensePage.extensionAdd.click();
   await licensePage.sendBack.fill("返送メモ");
@@ -152,19 +133,17 @@ test("どの入力をしても URL はタグとクレジット以外を含まな
   expect(hash).toMatch(/^#tags=[A-Z-]+(&credit=\w+)?$/);
 });
 
-test("クリアで連絡先と拡張の追加欄も消え、各欄が状態から戻る", async ({ licensePage }) => {
+test("クリアで連絡先の欄と拡張の追加欄も消え、各欄が状態から戻る", async ({ licensePage }) => {
   await licensePage.goto();
   await licensePage.openInputs();
   await licensePage.photographer.fill("テスト太郎");
-  await licensePage.contactInput(1).fill("@example_a");
-  await licensePage.contactAdd.click();
+  await licensePage.contacts.fill("@example_a\n@example_b");
   await licensePage.preset("editing").click();
 
   await licensePage.clearButton.click();
 
   await expect(licensePage.photographer).toHaveValue("");
-  await expect(licensePage.contactInput(1)).toHaveValue("");
-  await expect(licensePage.contactInput(2)).toHaveCount(0);
+  await expect(licensePage.contacts).toHaveValue("");
   await expect(licensePage.extensionHeading(1)).toHaveCount(0);
   await expect(licensePage.output).not.toContainText("### 加工");
   await expect(licensePage.ident).not.toContainText("+");

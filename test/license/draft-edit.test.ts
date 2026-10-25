@@ -1,18 +1,13 @@
 import { describe, expect, test } from "vitest";
 import {
-  addContact,
   addExtension,
-  canAddContact,
   canAddExtension,
-  contactRows,
-  removeContact,
   removeExtension,
-  setContact,
   setExtension,
   setTextField,
 } from "../../src/license/draft-edit";
 import { EXTENSION_PRESETS } from "../../src/license/presets";
-import { EMPTY_DRAFT, MAX_CONTACTS, MAX_EXTENSIONS } from "../../src/license/sanitize";
+import { EMPTY_DRAFT, MAX_EXTENSIONS } from "../../src/license/sanitize";
 
 describe("setTextField", () => {
   test("指定した単一行欄だけを書き換える", () => {
@@ -26,34 +21,8 @@ describe("setTextField", () => {
 });
 
 describe("連絡先", () => {
-  test("空のときも入力行は 1 行見せる", () => {
-    expect(contactRows(EMPTY_DRAFT)).toEqual([""]);
-  });
-
-  test("空の状態で追加すると、見えている 1 行目に続けて 2 行になる", () => {
-    expect(addContact(EMPTY_DRAFT).contacts).toEqual(["", ""]);
-  });
-
-  test("空の状態で 1 行目に入力すると 1 件になる", () => {
-    expect(setContact(EMPTY_DRAFT, 0, "x").contacts).toEqual(["x"]);
-  });
-
-  test("指定行だけを書き換える", () => {
-    const draft = { ...EMPTY_DRAFT, contacts: ["a", "b"] };
-    expect(setContact(draft, 1, "c").contacts).toEqual(["a", "c"]);
-  });
-
-  test("指定行を削除する。最後の 1 行を消すと空に戻る", () => {
-    const draft = { ...EMPTY_DRAFT, contacts: ["a", "b"] };
-    expect(removeContact(draft, 0).contacts).toEqual(["b"]);
-    expect(removeContact(removeContact(draft, 0), 0).contacts).toEqual([]);
-  });
-
-  test("上限に達したら追加できず、状態も変わらない", () => {
-    const full = { ...EMPTY_DRAFT, contacts: Array.from({ length: MAX_CONTACTS }, () => "x") };
-    expect(canAddContact(full)).toBe(false);
-    expect(addContact(full)).toEqual(full);
-    expect(canAddContact({ ...full, contacts: full.contacts.slice(1) })).toBe(true);
+  test("単一行欄と同じ経路で生の複数行テキストを書き換える", () => {
+    expect(setTextField(EMPTY_DRAFT, "contacts", "a\nb").contacts).toBe("a\nb");
   });
 });
 

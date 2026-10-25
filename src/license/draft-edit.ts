@@ -1,37 +1,13 @@
 // 入力（Draft）の編集操作。UI の action から呼ばれる純粋関数で、上限は追加の時点で守る。
 
 import { EXTENSION_PRESETS, type ExtensionPresetId } from "./presets";
-import { type Draft, type Extension, MAX_CONTACTS, MAX_EXTENSIONS } from "./sanitize";
+import { type Draft, type Extension, MAX_EXTENSIONS } from "./sanitize";
 
-// 単一行（または単一の自由記述）で持つ欄。連絡先と拡張は件数を持つので別の操作にする。
-export type TextField = "photographer" | "sendBack";
+// 生の文字列で持つ欄（単一行、または 1 行 1 件の複数行）。拡張は件数を持つので別の操作にする。
+export type TextField = "photographer" | "contacts" | "sendBack";
 
 export function setTextField(draft: Draft, field: TextField, value: string): Draft {
   return { ...draft, [field]: value };
-}
-
-// 画面に出す連絡先の行。空でも入力行を 1 行は見せる。
-export function contactRows(draft: Draft): readonly string[] {
-  return draft.contacts.length > 0 ? draft.contacts : [""];
-}
-
-export function canAddContact(draft: Draft): boolean {
-  return contactRows(draft).length < MAX_CONTACTS;
-}
-
-export function addContact(draft: Draft): Draft {
-  return canAddContact(draft) ? { ...draft, contacts: [...contactRows(draft), ""] } : draft;
-}
-
-export function setContact(draft: Draft, index: number, value: string): Draft {
-  return {
-    ...draft,
-    contacts: contactRows(draft).map((contact, i) => (i === index ? value : contact)),
-  };
-}
-
-export function removeContact(draft: Draft, index: number): Draft {
-  return { ...draft, contacts: draft.contacts.filter((_, i) => i !== index) };
 }
 
 export function canAddExtension(draft: Draft): boolean {

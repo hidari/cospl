@@ -24,9 +24,9 @@ export function humanMD(
         ? "- クレジットの方法は問いません"
         : "- SNSへ投稿される際は、SNSの機能による本文内でのメンションやタグでのクレジットをお願いします",
     );
-    L.push("  - クレジット表記のテンプレートをお持ちの場合はそちらでも構いません");
     L.push("- 可能であれば画像内にクレジット表記をお願いします");
-    L.push(`  - 例） Photo. ${doc.photographer} / Model. [モデル名]`, "");
+    L.push(`  - 例） Photo. ${doc.photographer} / Model. [モデル名]`);
+    L.push("  - クレジット表記のテンプレートをお持ちの場合はそちらでも構いません", "");
   }
   L.push("## 権利関係について");
   L.push(`- 写真の著作権は撮影者（${doc.photographer}）に帰属します`);

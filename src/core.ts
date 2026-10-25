@@ -3,14 +3,9 @@
 
 export { aiMD, humanMD, humanText } from "./license/document";
 export {
-  addContact,
   addExtension,
-  canAddContact,
   canAddExtension,
-  contactRows,
-  removeContact,
   removeExtension,
-  setContact,
   setExtension,
   setTextField,
   type TextField,
@@ -32,7 +27,6 @@ export {
   EMPTY_DRAFT,
   type Extension,
   hasExtensions,
-  MAX_CONTACT,
   MAX_CONTACTS,
   MAX_EXTENSIONS,
   MAX_HEADING,

@@ -5,7 +5,7 @@ export type Extension = Readonly<{ heading: string; body: string }>;
 // UI の生入力。
 export type Draft = Readonly<{
   photographer: string;
-  contacts: readonly string[];
+  contacts: string;
   sendBack: string;
   extensions: readonly Extension[];
 }>;
@@ -21,7 +21,7 @@ export type Doc = Readonly<{
 // 全欄空の初期値（入力欄の初期化とクリアの単一ソース）。
 export const EMPTY_DRAFT: Draft = {
   photographer: "",
-  contacts: [],
+  contacts: "",
   sendBack: "",
   extensions: [],
 };
@@ -92,10 +92,7 @@ function cleanLines(raw: string, maxCodePoints: number, maxLines: number): strin
 
 // 生入力から文書生成用の Doc を作る。サニタイズし、空欄は既定プレースホルダへ畳む。
 export function toDoc(draft: Draft): Doc {
-  const contacts = draft.contacts
-    .map((contact) => cleanText(contact, MAX_CONTACT))
-    .filter((contact) => contact !== "")
-    .slice(0, MAX_CONTACTS);
+  const contacts = cleanLines(draft.contacts, MAX_CONTACT, MAX_CONTACTS);
   const extensions = draft.extensions
     .map((ext) => ({
       heading: cleanText(ext.heading, MAX_HEADING),

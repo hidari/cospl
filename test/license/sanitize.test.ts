@@ -16,7 +16,7 @@ describe("toDoc", () => {
   test("EMPTY_DRAFT は全欄が空", () => {
     expect(EMPTY_DRAFT).toEqual({
       photographer: "",
-      contacts: [],
+      contacts: "",
       sendBack: "",
       extensions: [],
     });
@@ -44,7 +44,7 @@ describe("toDoc", () => {
   });
 
   test("山括弧を除去する（休眠 XSS の保険）", () => {
-    expect(toDoc({ ...empty, contacts: ["<script>x</script>"] }).contacts).toEqual([
+    expect(toDoc({ ...empty, contacts: "<script>x</script>" }).contacts).toEqual([
       "scriptx/script",
     ]);
   });
@@ -56,7 +56,7 @@ describe("toDoc", () => {
 
   test("連絡先は 1 件あたりコードポイント 100 で切る", () => {
     const long = "x".repeat(120);
-    expect(toDoc({ ...empty, contacts: [long] }).contacts[0]?.length).toBe(100);
+    expect(toDoc({ ...empty, contacts: long }).contacts[0]?.length).toBe(100);
   });
 
   test("サロゲートペア（絵文字）を途中で割らない", () => {
@@ -66,16 +66,20 @@ describe("toDoc", () => {
     expect(cut).toBe("😀".repeat(50));
   });
 
+  test("連絡先は改行で 1 行 1 件に分かれ、区切り線の偽装も 1 件のまま", () => {
+    expect(toDoc({ ...empty, contacts: "x\n----" }).contacts).toEqual(["x", "----"]);
+  });
+
   test("連絡先は空行を捨てて詰める", () => {
-    expect(toDoc({ ...empty, contacts: ["X: @a", "  ", "B"] }).contacts).toEqual(["X: @a", "B"]);
+    expect(toDoc({ ...empty, contacts: "X: @a\n  \nB" }).contacts).toEqual(["X: @a", "B"]);
   });
 
   test("連絡先がすべて空ならプレースホルダ 1 件", () => {
-    expect(toDoc({ ...empty, contacts: ["", " "] }).contacts).toEqual(["[連絡先をここに記入]"]);
+    expect(toDoc({ ...empty, contacts: "\n " }).contacts).toEqual(["[連絡先をここに記入]"]);
   });
 
   test("連絡先は 5 件で切る", () => {
-    const contacts = ["1", "2", "3", "4", "5", "6"];
+    const contacts = "1\n2\n3\n4\n5\n6";
     expect(toDoc({ ...empty, contacts }).contacts).toEqual(["1", "2", "3", "4", "5"]);
   });
 
@@ -122,14 +126,12 @@ describe("toDoc", () => {
     expect(toDoc({ ...empty, photographer: "a\u2029## 偽" }).photographer).toBe("a## 偽");
   });
 
-  test("単一行の値に混ざった改行は潰れる（見出し・区切り線の偽装）", () => {
+  test("単一行の値に混ざった改行は潰れる（見出しの偽装）", () => {
     const doc = toDoc({
       ...empty,
-      contacts: ["x\n----"],
       extensions: [{ heading: "a\n## 偽", body: "x" }],
     });
     expect(doc.extensions[0]?.heading).toBe("a## 偽");
-    expect(doc.contacts).toEqual(["x----"]);
   });
 
   test("SB の自由記述は改行で項目に分かれ、見出し記法も項目のまま", () => {

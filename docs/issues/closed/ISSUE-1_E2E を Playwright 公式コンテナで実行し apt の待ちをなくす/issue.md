@@ -1,5 +1,5 @@
 ---
-status: open
+status: closed
 ---
 
 # ci: E2E を Playwright 公式コンテナで実行し apt の待ちをなくす
@@ -17,10 +17,10 @@ Merge Gate の E2E ジョブは `pnpm exec playwright install --with-deps` で�
 
 ## タスク
 
-- [ ] merge-gate.yml の e2e ジョブを公式コンテナで動かし、install ステップを外す
-- [ ] e2e-prod.yml も同様にする
-- [ ] ワークフローのイメージの版と pnpm-lock.yaml の Playwright の版が一致することを検査するテストを足す
-- [ ] PR の Merge Gate で E2E が実際にテストを実行して緑になることを確認する
+- [x] merge-gate.yml の e2e ジョブを公式コンテナで動かし、install ステップを外す
+- [x] e2e-prod.yml も同様にする
+- [x] ワークフローのイメージの版と pnpm-lock.yaml の Playwright の版が一致することを検査するテストを足す
+- [x] PR の Merge Gate で E2E が実際にテストを実行して緑になることを確認する
 
 ## 関連
 

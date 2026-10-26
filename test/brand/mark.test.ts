@@ -189,7 +189,7 @@ describe("ロゴ", () => {
     expect(group).toContain(`fill="${PALETTE.logoLight.dot}"`);
   });
 
-  // 文字の em 箱の縦中央は基線の 0.35em 上（Space Grotesk・line-height 1 での見積もり。目視で確認する）。
+  // 文字の em 箱の縦中央は基線の 0.35em 上（Space Grotesk・line-height 1 での見積もり）。
   test("マークの縦中央は基線から文字の大きさの 0.35 倍だけ上", () => {
     const cy = numbers(group, /translate\([\d.-]+ ([\d.-]+)\) scale/)[0] ?? Number.NaN;
     expect(cy).toBeCloseTo(100 - 0.35 * fontSize, 2);

@@ -99,6 +99,12 @@ const PAIRS: ReadonlyArray<readonly [string, string, number]> = [
   ["--accent", "--paper", 3],
   ["--accent", "--card", 3],
   ["--accent", "--accent-soft", 3],
+  // 実際に重なる組。.id b、選択中のチップ・タブ、pre の出力、.ext のラベル、入力のフォーカス枠。
+  ["--warm-on-dark", "--panel", 4.5],
+  ["--accent-ink", "--accent-soft", 4.5],
+  ["--code-ink", "--surface", 4.5],
+  ["--muted", "--accent-soft", 4.5],
+  ["--accent", "--surface", 3],
 ];
 
 describe.each([

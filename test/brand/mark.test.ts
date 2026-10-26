@@ -80,6 +80,34 @@ describe("アイコン", () => {
   });
 });
 
+describe("マークの外形", () => {
+  // 描かれる外形（弧の外周、両端の丸い線端、点）を実際に標本化し、枠の中心 (46, 50) からの最遠距離を求める。
+  // markExtentRadius の実装（端点と線幅からの閉形式）とは独立に、図形の定義だけから導く。
+  const farthestSampled = (): number => {
+    const center = { x: 46, y: 50 };
+    const dist = (x: number, y: number) => Math.hypot(x - center.x, y - center.y);
+    const steps = 7200;
+    const circle = (cx: number, cy: number, r: number) =>
+      Array.from({ length: steps }, (_, i) => {
+        const a = (2 * Math.PI * i) / steps;
+        return dist(cx + r * Math.cos(a), cy + r * Math.sin(a));
+      });
+    // 半径 30 の弧が (72, 30)-(72, 70) を結ぶので、中心は (72 - sqrt(30^2 - 20^2), 50)。
+    const arcCx = 72 - Math.sqrt(30 * 30 - 20 * 20);
+    const edge = Math.atan2(20, 72 - arcCx);
+    const ring = Array.from({ length: steps }, (_, i) => {
+      const a = edge + ((2 * Math.PI - 2 * edge) * i) / (steps - 1);
+      return dist(arcCx + 35.5 * Math.cos(a), 50 + 35.5 * Math.sin(a));
+    });
+    return Math.max(...ring, ...circle(72, 30, 5.5), ...circle(72, 70, 5.5), ...circle(52, 50, 11));
+  };
+
+  test("外形の最遠点は枠の中心から約 38.3（端の丸い線端の外側）", () => {
+    expect(markExtentRadius()).toBeCloseTo(Math.hypot(26, 20) + 5.5, 6);
+    expect(markExtentRadius()).toBeCloseTo(farthestSampled(), 2);
+  });
+});
+
 describe("maskable アイコン", () => {
   test("安全円の半径は 40", () => {
     expect(MASKABLE_SAFE_RADIUS).toBe(40);
@@ -159,6 +187,12 @@ describe("ロゴ", () => {
     expect(group).toContain(`fill="${PALETTE.logoLight.text}"`);
     expect(group).toContain(`stroke="${PALETTE.logoLight.c}"`);
     expect(group).toContain(`fill="${PALETTE.logoLight.dot}"`);
+  });
+
+  // 文字の em 箱の縦中央は基線の 0.35em 上（Space Grotesk・line-height 1 での見積もり。目視で確認する）。
+  test("マークの縦中央は基線から文字の大きさの 0.35 倍だけ上", () => {
+    const cy = numbers(group, /translate\([\d.-]+ ([\d.-]+)\) scale/)[0] ?? Number.NaN;
+    expect(cy).toBeCloseTo(100 - 0.35 * fontSize, 2);
   });
 
   test("x を動かすとマークも文字も同じだけ動く", () => {

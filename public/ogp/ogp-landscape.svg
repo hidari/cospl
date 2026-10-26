@@ -60,7 +60,7 @@
     </g>
     <path d="M554,444L554,474C554,481.727 547.727,488 540,488L98,488C90.273,488 84,481.727 84,474L84,444C84,436.273 90.273,430 98,430L540,430C547.727,430 554,436.273 554,444Z" style="fill:rgb(28,20,48);"/>
     <g transform="matrix(1,0,0,1,108,468)">
-        <text x="0px" y="0px" style="font-family:'Space Mono', monospace;font-size:26px;fill:white;">CosPL 1.0 /</text>
+        <text x="0px" y="0px" style="font-family:'Space Mono', monospace;font-size:26px;fill:white;">CosPL 2.0 /</text>
         <g transform="matrix(1,0,0,1,187.84,0)">
             <text x="0px" y="0px" style="font-family:'Space Mono', monospace;font-weight:700;font-size:26px;fill:rgb(255,158,92);">BY-NC-NAI-TD</text>
         </g>

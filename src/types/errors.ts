@@ -7,7 +7,12 @@
  */
 
 // エラーの種別一覧（ランタイム検証とコンパイル時型の両方を一元管理）
-const PARSE_ERROR_KIND_LIST = ["unknown_tag", "invalid_view", "invalid_format"] as const;
+const PARSE_ERROR_KIND_LIST = [
+  "unknown_tag",
+  "invalid_view",
+  "invalid_format",
+  "invalid_credit",
+] as const;
 
 export type ParseErrorKind = (typeof PARSE_ERROR_KIND_LIST)[number];
 export const PARSE_ERROR_KINDS: ReadonlySet<string> = new Set<ParseErrorKind>(
@@ -22,9 +27,10 @@ export type ParseError = {
 };
 
 // エラー構築ヘルパー
-export const unknownTagError = (input: string): ParseError => ({
+// 許容タグ一覧は呼び出し側（tags.ts の ORDER）から受ける。ここで列挙すると定義と drift する。
+export const unknownTagError = (input: string, allowed: readonly string[]): ParseError => ({
   kind: "unknown_tag",
-  message: `Unknown tag: "${input}". Allowed tags are BY, NC, NAI, TD, MR.`,
+  message: `Unknown tag: "${input}". Allowed tags are ${allowed.join(", ")}.`,
   input,
 });
 
@@ -37,5 +43,11 @@ export const invalidViewError = (input: string): ParseError => ({
 export const invalidFormatError = (input: string): ParseError => ({
   kind: "invalid_format",
   message: `Invalid format: "${input}". Allowed formats are markdown, text.`,
+  input,
+});
+
+export const invalidCreditError = (input: string, allowed: readonly string[]): ParseError => ({
+  kind: "invalid_credit",
+  message: `Invalid credit: "${input}". Allowed credits are ${allowed.join(", ")}.`,
   input,
 });

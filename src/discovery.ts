@@ -1,7 +1,7 @@
 // AI エージェント・クローラ向けの発見性リソースを生成・判定する純粋関数群。
 // 副作用は持たず入出力は文字列/boolean のみ。ルーティングと I/O は src/worker.ts が担う。
 
-import { DEFAULT_TAGS } from "./core";
+import { CREDITS, DEFAULT_TAGS, ORDER } from "./core";
 
 // 明示ブロックを置く主要 AI クローラ。CC0 サイトなので全て Allow: / にする。
 const AI_CRAWLERS = [
@@ -98,7 +98,7 @@ export function apiCatalogJson(origin: string): string {
 }
 
 // /openapi.json（OpenAPI 3.1）。GET /license.md の機械可読仕様。
-// パラメータ仕様は src/core.ts の parseTags / parseView / parseFormat と一致させる。
+// パラメータ仕様は src/license/ の parseTags / parseView / parseFormat / parseCredit と一致させる。
 export function openApiJson(origin: string): string {
   const spec = {
     openapi: "3.1.0",
@@ -117,7 +117,7 @@ export function openApiJson(origin: string): string {
               name: "tags",
               in: "query",
               required: false,
-              description: "Hyphen-joined tag identifier. Use 'none' for an empty tag set.",
+              description: `Hyphen-joined tag identifier of ${ORDER.join(", ")}. Tags are a set; order is not significant. Use 'none' for an empty tag set.`,
               schema: { type: "string", default: DEFAULT_TAGS },
             },
             {
@@ -134,6 +134,14 @@ export function openApiJson(origin: string): string {
               description: "markdown or text. Ignored when view=ai.",
               schema: { type: "string", enum: ["markdown", "text"], default: "markdown" },
             },
+            {
+              name: "credit",
+              in: "query",
+              required: false,
+              description:
+                "How credit is requested when the BY tag is on: sns (mention or tag via the SNS feature) or any (any method). Ignored without BY.",
+              schema: { type: "string", enum: [...CREDITS], default: "sns" },
+            },
           ],
           responses: {
             "200": {
@@ -144,7 +152,7 @@ export function openApiJson(origin: string): string {
               },
             },
             "400": {
-              description: "Unknown tag, or invalid view/format.",
+              description: "Unknown tag, or invalid view/format/credit.",
               content: { "text/markdown": { schema: { type: "string" } } },
             },
           },

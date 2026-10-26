@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { ORDER } from "../src/core";
 import {
   apiCatalogJson,
   LINK_HEADER,
@@ -54,7 +55,15 @@ describe("openApiJson", () => {
     expect(parsed.servers[0].url).toBe("https://cospl.org");
     const op = parsed.paths["/license.md"].get;
     const names = op.parameters.map((p: { name: string }) => p.name);
-    expect(names).toEqual(["tags", "view", "format"]);
+    expect(names).toEqual(["tags", "view", "format", "credit"]);
+  });
+
+  test("tags の説明に ORDER の全タグ（ND と SB を含む）を載せる", () => {
+    const parsed = JSON.parse(openApiJson(ORIGIN));
+    const tags = parsed.paths["/license.md"].get.parameters[0];
+    expect(tags.description).toContain(ORDER.join(", "));
+    expect(ORDER).toContain("ND");
+    expect(ORDER).toContain("SB");
   });
 });
 

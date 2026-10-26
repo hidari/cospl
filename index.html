@@ -15,14 +15,14 @@
 <meta property="og:url" content="https://cospl.org/">
 <meta property="og:title" content="CosPL — Cosplay Public License">
 <meta property="og:description" content="コスプレ撮影における、撮影者とモデルのための利用許諾テンプレート。">
-<meta property="og:image" content="https://cospl.org/ogp/ogp-landscape.jpg">
+<meta property="og:image" content="https://cospl.org/ogp/ogp-landscape.jpg?v=2.0">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="CosPL — 撮った写真の「使っていい範囲」を、言葉にする。">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="CosPL — Cosplay Public License">
 <meta name="twitter:description" content="コスプレ撮影における、撮影者とモデルのための利用許諾テンプレート。">
-<meta name="twitter:image" content="https://cospl.org/ogp/ogp-landscape.jpg">
+<meta name="twitter:image" content="https://cospl.org/ogp/ogp-landscape.jpg?v=2.0">
 <meta name="twitter:image:alt" content="CosPL — 撮った写真の「使っていい範囲」を、言葉にする。">
 </head>
 <body>
@@ -73,14 +73,24 @@
         <span class="txt"><span class="name">クレジット表記</span><span class="lead">お名前を載せてね</span></span>
         <span class="code">BY</span>
       </button>
+      <fieldset class="credit" id="credit-options">
+        <legend>クレジットのお願いの仕方</legend>
+        <label><input type="radio" name="credit" value="sns" checked><span>SNSの機能でメンション・タグ</span></label>
+        <label><input type="radio" name="credit" value="any"><span>方法は問わない</span></label>
+      </fieldset>
       <button class="chip" data-tag="NC" aria-pressed="true">
         <span class="ic" aria-hidden="true"></span>
         <span class="txt"><span class="name">非商用</span><span class="lead">商用はナシ</span></span>
         <span class="code">NC</span>
       </button>
+      <button class="chip opt" data-tag="ND" aria-pressed="false">
+        <span class="ic" aria-hidden="true"></span>
+        <span class="txt"><span class="name">加工禁止</span><span class="lead">トリミング・リサイズはOK</span></span>
+        <span class="code">ND</span>
+      </button>
       <button class="chip" data-tag="NAI" aria-pressed="true">
         <span class="ic" aria-hidden="true"></span>
-        <span class="txt"><span class="name">AI学習不可</span><span class="lead">AI学習用途は禁止</span></span>
+        <span class="txt"><span class="name">AI学習不可</span><span class="lead">AI学習と別作品の生成は禁止</span></span>
         <span class="code">NAI</span>
       </button>
       <button class="chip" data-tag="TD" aria-pressed="true">
@@ -88,34 +98,56 @@
         <span class="txt"><span class="name">取り下げOK</span><span class="lead">あとで下げられる</span></span>
         <span class="code">TD</span>
       </button>
+      <button class="chip opt" data-tag="SB" aria-pressed="false">
+        <span class="ic" aria-hidden="true"></span>
+        <span class="txt"><span class="name">データバック</span><span class="lead">掲載用に撮影者へ写真を返送</span></span>
+        <span class="code">SB</span>
+      </button>
       <button class="chip opt" data-tag="MR" aria-pressed="false">
         <span class="ic" aria-hidden="true"></span>
         <span class="txt"><span class="name">本人頒布OK</span><span class="lead">モデル本人の有償頒布だけは許可</span></span>
         <span class="code">MR</span>
       </button>
     </div>
-    <div class="id" id="ident" aria-live="polite">CosPL 1.0 / <b>BY-NC-NAI-TD</b></div>
+    <div class="id" id="ident" aria-live="polite">CosPL 2.0 / <b>BY-NC-NAI-TD</b></div>
   </section>
-
-  <details class="fill">
-    <summary>任意：名前や日付を入れる</summary>
-    <p class="hint">空欄なら文書にはプレースホルダ（[撮影者名] 等）が残ります。入力した内容は URL に付き、共有・復元できます。実名や連絡先を載せたくない場合は空のままにしてください。</p>
-    <div class="fill-grid">
-      <label for="f-photographer">撮影者名</label>
-      <input id="f-photographer" type="text" maxlength="50" autocomplete="off" inputmode="text" placeholder="[撮影者名]">
-      <label for="f-date">最終更新日</label>
-      <input id="f-date" type="date" autocomplete="off">
-      <label for="f-contact">連絡先</label>
-      <input id="f-contact" type="text" maxlength="100" autocomplete="off" inputmode="text" placeholder="[連絡先をここに記入]">
-    </div>
-    <div class="fill-actions">
-      <button class="ghost" id="clear-fields" type="button">入力をクリア</button>
-    </div>
-  </details>
 
   <section>
     <p class="step"><span class="step-no">STEP 2</span>決めた内容を書き出す</p>
-    <p class="hint">納品データ同梱用 README と、AI 向けの宣言を切り替えられます。</p>
+    <p class="hint">任意で入力すると、納品データ同梱用 README と AI 向けの宣言に反映されます。</p>
+    <details class="inputs" id="inputs">
+      <summary>任意：名前や連絡先、追加事項を入れる</summary>
+      <p class="hint">空欄なら文書にはプレースホルダ（[撮影者名] 等）が残ります。入力内容は URL にも共有リンクにも含まれず、ページを閉じると消えます。実名や連絡先を載せたくない場合は空のままにしてください。</p>
+      <div class="fill-grid">
+        <label for="f-photographer">撮影者名</label>
+        <input id="f-photographer" type="text" autocomplete="off" inputmode="text" placeholder="[撮影者名]">
+      </div>
+      <div class="field-group">
+        <label class="group-title" for="f-contents">データの内容物</label>
+        <textarea id="f-contents" rows="3" autocomplete="off" placeholder="1行が1項目になります。先頭に「本README文書」が入ります（例: 現像済みデータ）"></textarea>
+      </div>
+      <div class="field-group">
+        <label class="group-title" for="f-contacts">連絡先</label>
+        <textarea id="f-contacts" rows="3" autocomplete="off" placeholder="1行が1件になります（例: X: @your_id）"></textarea>
+      </div>
+      <div class="field-group" id="send-back-field" hidden>
+        <label class="group-title" for="f-send-back">データバックの追記事項</label>
+        <textarea id="f-send-back" rows="3" autocomplete="off" placeholder="1行が1項目になります（例: お気に召したもの1枚、返送方法は〇〇 etc.）"></textarea>
+      </div>
+      <fieldset class="field-group">
+        <legend>追加事項</legend>
+        <p class="hint">README に好きな項目を足せます。本文は1行が1項目の箇条書きになります。</p>
+        <div class="presets-box">
+          <span class="presets-label" id="ext-presets-label">テンプレートから追加</span>
+          <div class="presets" id="ext-presets" role="group" aria-labelledby="ext-presets-label"></div>
+        </div>
+        <div class="rows" id="extensions"></div>
+        <button class="ghost" id="ext-add" type="button">＋ 項目を追加</button>
+      </fieldset>
+      <div class="fill-actions">
+        <button class="ghost" id="clear-fields" type="button">入力をクリア</button>
+      </div>
+    </details>
     <div class="tabs" role="tablist" aria-label="出力フォーマット">
       <button class="tab" id="tab-h" role="tab" aria-selected="true" aria-controls="panel-out" aria-label="README用">README用<span class="tab-q" aria-hidden="true">?</span><span class="tab-tip" aria-hidden="true">撮影データと一緒に納品フォルダへ同梱する、人が読むテキスト形式。</span></button>
       <button class="tab" id="tab-a" role="tab" aria-selected="false" aria-controls="panel-out" tabindex="-1" aria-label="AI向け宣言">AI向け宣言<span class="tab-q" aria-hidden="true">?</span><span class="tab-tip" aria-hidden="true">クローラや AI エージェントに読ませる、機械向けの宣言。</span></button>
@@ -126,7 +158,7 @@
         <span class="copy-actions">
           <span class="help-wrap">
             <button class="help" type="button" aria-label="出力操作の説明" aria-describedby="out-help-tip">?</button>
-            <span class="help-tip" role="tooltip" id="out-help-tip">「この設定のリンクをコピー」は今の設定を含む共有 URL、「コピー」は README 本文、「ダウンロード」は README.txt（中身は Markdown）です。</span>
+            <span class="help-tip" role="tooltip" id="out-help-tip">「この設定のリンクをコピー」はタグと選択肢だけを含む共有 URL、「コピー」は README 本文、「ダウンロード」は README.txt（中身は Markdown）です。</span>
           </span>
           <button class="ghost" type="button" id="link">この設定のリンクをコピー</button>
           <button class="ghost" type="button" id="copy">コピー</button>
@@ -149,8 +181,8 @@
   <footer>
     <nav class="links" aria-label="関連リンク">
       <a href="https://github.com/hidari/cospl">リポジトリ</a>
-      <a href="https://github.com/hidari/cospl/blob/main/v1.0/CosPL-1.0.md">本文 v1.0</a>
-      <a href="https://github.com/hidari/cospl/blob/main/v1.0/TAGS.md">タグ仕様</a>
+      <a href="https://github.com/hidari/cospl/blob/main/v2.0/CosPL-2.0.md">本文 v2.0</a>
+      <a href="https://github.com/hidari/cospl/blob/main/v2.0/TAGS.md">タグ仕様</a>
       <a href="/llms.txt">llms.txt</a>
     </nav>
     <p>CosPL についての意見や議論は <a href="https://github.com/hidari/cospl/discussions">GitHub Discussions</a> で行っています。</p>

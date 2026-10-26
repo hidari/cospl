@@ -20,6 +20,12 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # ブラウザと OS 依存を同梱した公式イメージで動かし、apt での取得待ちをなくす。
+    # 版は pnpm-lock.yaml の @playwright/test と一致させる（test/ci-playwright.test.ts が検査する）。
+    # --user 1001 は runner のユーザーに合わせ、root での Firefox 起動とワークスペースの権限ずれを避ける。
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --user 1001
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -34,7 +40,6 @@ jobs:
             pnpm-lock.yaml
             pnpm-workspace.yaml
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps
       - run: just e2e
         env:
           E2E_BASE_URL: https://cospl.org

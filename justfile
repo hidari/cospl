@@ -58,6 +58,18 @@ images:
 regen-golden:
     node scripts/regen-golden.mjs
 
+# リリースタグの検証（CI の deploy / release-license が使う）。タグの形式と、タグのコミットが
+# main に含まれることを確かめる。タグは任意のコミットに打てるので、後者が main 限定の保証になる。
+# サイトは現行の版の条文のタグを指すリンクを持つので、その条文のタグが先にあることも確かめる
+release-check tag kind:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    license_tag=$(node scripts/check-release-tag.mjs "$1" "$2")
+    git merge-base --is-ancestor "$1^{commit}" origin/main
+    git rev-parse -q --verify "refs/tags/${license_tag}^{commit}" >/dev/null \
+      || { echo "条文のタグ ${license_tag} が無い。先に打つこと" >&2; exit 1; }
+    echo "ok: $1"
+
 # Playwright E2E（E2E_BASE_URL 未設定ならローカル preview に当てる）
 e2e *args:
     pnpm exec playwright test "$@"

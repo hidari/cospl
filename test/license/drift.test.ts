@@ -12,11 +12,18 @@ describe("手書きの面が VERSION と ORDER から drift しない", () => {
     expect(llmsTxt).toContain(`CosPL ${VERSION}`);
   });
 
-  test("規約ページの URL は現行の版のファイルを指し、そのファイルが存在して index.html からもリンクされる", () => {
+  // 条文は版ごとに不変であるべきなので、main ではなく条文のリリースタグの時点を指す。
+  test("規約ページの URL は現行の版のリリースタグのファイルを指し、index.html と llms.txt からリンクされる", () => {
     const path = `v${VERSION}/CosPL-${VERSION}.md`;
-    expect(TERMS_URL).toBe(`https://github.com/hidari/cospl/blob/main/${path}`);
+    expect(TERMS_URL).toBe(`https://github.com/hidari/cospl/blob/cospl-v${VERSION}/${path}`);
     expect(terms.split("\n")[0]).toContain(VERSION);
-    expect(indexHtml).toContain(path);
+    expect(indexHtml).toContain(TERMS_URL);
+    expect(llmsTxt).toContain(TERMS_URL);
+  });
+
+  test("index.html と llms.txt は条文の文書を main で参照しない", () => {
+    expect(indexHtml).not.toContain("/blob/main/");
+    expect(llmsTxt).not.toContain("/blob/main/");
   });
 
   test.each(ORDER)("タグ %s のチップが index.html に、一覧の行が llms.txt にある", (tag) => {

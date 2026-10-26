@@ -4,6 +4,7 @@ import ciRaw from "../.github/workflows/ci.yml?raw";
 import deployRaw from "../.github/workflows/deploy.yml?raw";
 import e2eProdRaw from "../.github/workflows/e2e-prod.yml?raw";
 import mergeGateRaw from "../.github/workflows/merge-gate.yml?raw";
+import releaseLicenseRaw from "../.github/workflows/release-license.yml?raw";
 import nodeVersionRaw from "../.node-version?raw";
 import lockRaw from "../pnpm-lock.yaml?raw";
 
@@ -17,6 +18,7 @@ const workflows = [
   { name: "merge-gate.yml", raw: mergeGateRaw },
   { name: "deploy.yml", raw: deployRaw },
   { name: "e2e-prod.yml", raw: e2eProdRaw },
+  { name: "release-license.yml", raw: releaseLicenseRaw },
 ];
 
 const RUNNER = "ubuntu-26.04";
@@ -72,6 +74,16 @@ describe("CI の実行環境の固定", () => {
       expect(raw.match(/^ +- uses: actions\/setup-node@/gm)?.length ?? 0).toBe(playwrightJobs);
     },
   );
+
+  // リリースはタグ駆動。起動経路をタグの push だけにし、タグの検証を必ず通す。
+  test.each([
+    { name: "deploy.yml", raw: deployRaw, prefix: "site-v*", kind: "site" },
+    { name: "release-license.yml", raw: releaseLicenseRaw, prefix: "cospl-v*", kind: "license" },
+  ])("$name は $prefix タグの push でだけ起動し、タグを検証する", ({ raw, prefix, kind }) => {
+    expect(raw).toContain(`on:\n  push:\n    tags: ["${prefix}"]\n\n`);
+    expect(raw).not.toContain("workflow_dispatch");
+    expect(raw).toContain(`      - run: just release-check "\${GITHUB_REF_NAME}" ${kind}\n`);
+  });
 
   test.each(workflows)("$name はブラウザを apt で入れない", ({ raw }) => {
     expect(raw).not.toContain("playwright install");

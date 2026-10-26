@@ -1,88 +1,78 @@
 ---
 name: deploy
-description: cospl を Cloudflare Workers (cospl.org) に GitHub Actions 経由でデプロイする。「デプロイして」「本番反映して」「cospl.org に出して」「リリースして」と指示された時に使う。ローカルから wrangler deploy せず deploy.yml workflow を起動し、結論と health check まで確認する。
+description: cospl をタグ駆動でリリースする。サイトは site-v タグで Cloudflare Workers (cospl.org) へデプロイし、条文は cospl-v タグで GitHub Release を作る。「デプロイして」「本番反映して」「cospl.org に出して」「リリースして」と指示された時に使う。ローカルから wrangler deploy せずタグを push し、結論と health check まで確認する。
 ---
 
-# cospl Deploy
+# cospl Release / Deploy
 
-cospl を cospl.org（Cloudflare Workers）へデプロイする。
+リリースはタグの push だけで行う。ローカルからの `wrangler deploy` は禁止。
 
-このプロジェクトでは「ローカルからのリリースは禁止、デプロイは必ず GitHub Actions を通す」。
-したがって本スキルは `wrangler deploy` をローカル実行せず、`deploy.yml` workflow を `gh workflow run` で起動し、結果を専用クエリで確認するだけにとどめる。
+- サイト: `site-vYYYY.MM.DD`（同日の 2 回目以降は `.1`, `.2` …）の CalVer。push で `deploy.yml` が cospl.org へデプロイし、成功後に `e2e-prod.yml` が本番へ E2E を当てる
+- 条文: `cospl-v<VERSION>`（`src/license/version.ts` の `VERSION`）。push で `release-license.yml` が GitHub Release を作る
 
-## いつ使うか
+タグの書式の canonical は `src/release/tag.ts`。両ワークフローは `just release-check` でタグの形式と「タグのコミットが main に含まれること」を検査してから動く。
 
-- 「デプロイして」「本番反映」「cospl.org に出して」「リリースして」と指示された時。
-- main の変更を本番へ反映したい時。
+## 前提
 
-## 前提（未充足なら先に案内する）
-
-- `production` environment の Secrets に `CLOUDFLARE_API_TOKEN`（Workers Scripts:Edit + Workers Routes/DNS 権限）と `CLOUDFLARE_ACCOUNT_ID` が登録済み。未登録だと deploy ジョブが失敗する。
-  - 確認: `gh secret list --repo hidari/cospl --env production`
-- cospl.org が対象 Cloudflare アカウントのゾーンに存在する（`wrangler.toml` の `custom_domain` route が紐付ける）。
+- `production` environment の Secrets に `CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` があり、デプロイ許可が `site-v*` タグだけになっている
+  - 確認: `gh secret list --repo hidari/cospl --env production` と `gh api repos/hidari/cospl/environments/production/deployment-branch-policies`
+- タグの作成・更新・削除は repository ruleset で管理者に限られている（`gh api repos/hidari/cospl/rulesets`）
 
 ## 手順
 
-### 1. Pre-flight（ローカル状態の確認）
+### 1. Pre-flight
 
 ```bash
-git fetch origin
-git status -sb                 # main 上・clean tree であること
-git rev-parse HEAD             # ローカル HEAD
-git rev-parse origin/main      # origin/main と一致すること
+git switch main && git pull
+git status -sb                 # clean であること
+git rev-parse HEAD origin/main # 一致すること
 ```
 
-- `main` 上でない / dirty / `origin/main` と不一致なら、デプロイ前に解消する。
+main の健全性は「main のツリーが Merge Gate 緑の PR head のツリーと一致する」ことで確かめる（main への push では CI が走らない）。
 
-### 2. main の CI 健全性を確認
+### 2. 条文を改定したとき（VERSION を上げたとき）だけ: 条文のタグ
+
+サイトの `TERMS_URL` は `cospl-v<VERSION>` のタグを指すので、サイトより先に打つ。条文のタグが無いままサイトのタグを打つと `release-check` が止める。
 
 ```bash
-gh run list --repo hidari/cospl --branch main --workflow "Merge Gate" -L 1 \
-  --json conclusion,headSha --jq '.[0]'
+git tag cospl-v<VERSION> && just release-check cospl-v<VERSION> license && git push origin cospl-v<VERSION>
 ```
 
-- 直近の Merge Gate が `success` であることを確認。緑でなければデプロイしない。
-- 任意でローカル高速検証: `pnpm install --frozen-lockfile && just check`。
+### 3. サイトのタグ
 
-### 3. デプロイ workflow を起動
+日付は UTC ではなく日本時間の今日でよい（タグ名は版の識別であって時刻ではない）。同日に既にあれば `.1` から連番を付ける。
 
 ```bash
-gh workflow run deploy.yml --repo hidari/cospl --ref main
+git tag --list 'site-v*' | tail -3
+git tag site-vYYYY.MM.DD && just release-check site-vYYYY.MM.DD site && git push origin site-vYYYY.MM.DD
 ```
 
 ### 4. 結論を専用クエリで確認（exit code に頼らない）
 
-run id を取得してから結論だけを直接問い合わせる。`<cmd>; echo $?` のように `$?` を上書きしない。
-
 ```bash
-# 起動直後の run id を取得
 run_id=$(gh run list --repo hidari/cospl --workflow Deploy -L 1 --json databaseId --jq '.[0].databaseId')
-
-# 完了まで待機（待機コマンドの exit ではなく下の JSON で結論を判定する）
 gh run watch "$run_id" --repo hidari/cospl --exit-status || true
-
-# 結論を直接確認
-gh run view "$run_id" --repo hidari/cospl --json status,conclusion --jq '{status,conclusion}'
+gh run view "$run_id" --repo hidari/cospl --json status,conclusion,headBranch --jq '{status,conclusion,headBranch}'
 ```
 
-- `conclusion == "success"` を確認する。`failure` なら `gh run view "$run_id" --log-failed` で原因を調べる。
+条文のタグを打ったときは `--workflow "Release (license)"` も同様に確認し、`gh release view cospl-v<VERSION>` で Release を確かめる。
 
-### 5. 本番の health check
+### 5. 本番の health check と本番 E2E
 
 ```bash
 curl -fsS -o /dev/null -w "human: %{http_code}\n" "https://cospl.org/license.md"
 curl -fsS -o /dev/null -w "ai:    %{http_code}\n" "https://cospl.org/license.md?tags=BY-NC&view=ai"
 ```
 
-- どちらも 200 であること。初回デプロイ直後はカスタムドメイン伝播に時間がかかることがあるため、数十秒おいて再確認する（workflow 側でもリトライ済み）。
+どちらも 200 であること。続けて `E2E (production)` の run の結論も確認する。
 
 ### 6. 報告
 
-- デプロイ run の URL（`gh run view "$run_id" --json url --jq .url`）、conclusion、health check 結果を簡潔に報告する。
+デプロイ run の URL、conclusion、health check と本番 E2E の結果を簡潔に報告する。
 
 ## 落とし穴
 
-- ローカルで `wrangler deploy` を実行しない（必ず workflow 経由）。
-- `--ref` に main 以外を渡すと production environment のブランチポリシーで deploy ジョブが拒否される。
-- 待機コマンド（`gh run watch`）の exit を結論と取り違えない。結論は `gh run view --json conclusion` で確認する。
-- Secrets / ゾーン未設定のままデプロイしない（deploy ジョブが失敗する）。
+- ローカルで `wrangler deploy` を実行しない
+- タグを付け直して再デプロイしない。失敗したら原因を直して main へ入れ、新しいタグ（同日なら連番）を打つ
+- 待機コマンド（`gh run watch`）の exit を結論と取り違えない
+- push 前にローカルで `release-check` を通す（CI と同じ検査）。落ちたらローカルのタグを `git tag -d` で消し、main へ入れてから打ち直す

@@ -59,6 +59,14 @@ describe("CI の実行環境の固定", () => {
     expect(images.filter((image) => !allowed.some((re) => re.test(image)))).toEqual([]);
   });
 
+  // ワークスペースはランナーの uid 1001 の持ち物。root で動かすと checkout 後の git が
+  // dubious ownership で拒否する（タグ検証の git merge-base が本番で落ちた）。
+  test.each(workflows)("$name の全ジョブがランナーと同じ uid で動く", ({ raw }) => {
+    const options = linesOf(raw, "options");
+    expect(options.length).toBe(linesOf(raw, "image").length);
+    expect(options.every((o) => o === "--user 1001")).toBe(true);
+  });
+
   test.each(workflows)("$name は Node の版を .node-version からだけ読む", ({ raw }) => {
     expect(linesOf(raw, "node-version")).toEqual([]);
   });

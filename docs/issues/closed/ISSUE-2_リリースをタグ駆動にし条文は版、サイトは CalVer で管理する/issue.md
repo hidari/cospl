@@ -1,5 +1,5 @@
 ---
-status: open
+status: closed
 ---
 
 # feat: リリースをタグ駆動にし条文は版、サイトは CalVer で管理する
@@ -23,8 +23,12 @@ status: open
 - [x] release-license.yml を追加し、`cospl-v*` タグの push で Release を作る
 - [x] `TERMS_URL` と index.html / llms.txt のリンクを条文のタグの時点に向ける
 - [x] deploy skill の手順をタグ駆動にする
-- [ ] マージ後: production environment のデプロイ許可を `site-v*` タグにし、タグの ruleset を作り、`cospl-v2.0` と最初のサイトのタグを打つ
+- [x] マージ後: production environment のデプロイ許可を `site-v*` タグにし、タグの ruleset を作り、`cospl-v2.0` と最初のサイトのタグを打つ
+- [x] リリースを `just release-license` / `just release-site` に閉じ込め、この 2 つを許可ルールに載せて Claude が完遂できるようにする（PR 57）
+- [x] immutable releases を有効にし、条文の Release を不変にする
+- [x] `cospl-v2.0` の Release と `site-v2026.10.26` のデプロイ、本番 E2E が緑になることを確認する
 
 ## 関連
 
 - ISSUE-1（CI の実行環境の固定。両ワークフローもその固定に従う）
+- 最初の `cospl-v2.0` は root で動くコンテナの git が dubious ownership で落ちたため、全ジョブを uid 1001 で動かす修正（PR 56）の後に打ち直した

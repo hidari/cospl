@@ -8,7 +8,7 @@ const ARC = { from: [72, 30], to: [72, 70], radius: 30, width: 11 } as const;
 const DOT = { cx: 52, cy: 50, r: 11 } as const;
 
 // C の外形に見た目の中心を寄せた 71 四方の枠 `10.5 14.5 71 71`。
-const BOX = { x: 10.5, y: 14.5, size: 71 } as const;
+export const BOX = { x: 10.5, y: 14.5, size: 71 } as const;
 const BOX_CENTER = { x: BOX.x + BOX.size / 2, y: BOX.y + BOX.size / 2 } as const;
 
 // ロゴの文字の em 箱の縦中央は、基線からこの値だけ上にある（Space Grotesk で line-height 1 のとき）。
@@ -17,6 +17,12 @@ const LOGO_CENTER_ABOVE_BASELINE_EM = 0.35;
 export const ICON_MARK_RATIO = 0.75;
 export const MASKABLE_SAFE_RADIUS = 40;
 export const LOGO = { markEm: 1.05, gapEm: 0.28, letterSpacingEm: -0.02 };
+
+// OGP に差し込むロゴの位置。旧ワードマークの基線 x / y と文字サイズに合わせる。
+export const OGP_LOGO = {
+  "ogp-landscape": { x: 84, baseline: 152, fontSize: 64 },
+  "ogp-square": { x: 96, baseline: 222, fontSize: 84 },
+} as const;
 
 export const PALETTE = {
   iconLight: { bg: "#7b54ff", c: "#ffffff", dot: "#ffb37a" },

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 // workerd では node:fs が使えないため Vite の ?raw で本文を文字列として埋め込む。
 import stylesRaw from "../../src/client/styles.module.css?raw";
+import { declarationsOf } from "./css";
 
 // 色の定義が許されるのは :global(:root) のトークンブロックだけ
 // （ダーク用の @media 内にある同名ブロックも同じ形なので同じ規則で除かれる）。
@@ -12,12 +13,6 @@ const outsideTokenBlocks = (css: string): string =>
   css.replace(COMMENT, "").replace(TOKEN_BLOCK, "");
 const colorLiteralsOutsideTokenBlocks = (css: string): string[] =>
   outsideTokenBlocks(css).match(COLOR_LITERAL) ?? [];
-
-const declarationsOf = (css: string, selector: string): string => {
-  const start = css.indexOf(`${selector} {`);
-  expect(start, `${selector} が見つかる`).toBeGreaterThanOrEqual(0);
-  return css.slice(start, css.indexOf("}", start));
-};
 
 describe("色の直書き検査器", () => {
   test("トークンブロックの中の色は許す", () => {

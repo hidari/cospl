@@ -7,12 +7,17 @@ import landscapeRaw from "../../public/ogp/ogp-landscape.svg?raw";
 import squareRaw from "../../public/ogp/ogp-square.svg?raw";
 import {
   appleTouchSvg,
+  BOX,
   faviconSvg,
+  LOGO,
   logoGroup,
   markShapes,
   maskableSvg,
+  OGP_LOGO,
   PALETTE,
 } from "../../src/brand/mark";
+import stylesRaw from "../../src/client/styles.module.css?raw";
+import { declarationsOf } from "./css";
 
 // 生成物が src/brand/mark.ts と食い違わないことを固定する。食い違ったら `just images` を実行する。
 describe("生成された画像マスターは mark.ts と一致する", () => {
@@ -41,11 +46,13 @@ const between = (svg: string): string | undefined => {
   return svg.slice(from, svg.indexOf(END));
 };
 
-// ロゴの位置は旧ワードマーク（基線 x / y・文字サイズ）に合わせる。
+// ロゴの位置は mark.ts の OGP_LOGO が唯一の定義。
 describe.each([
-  { name: "ogp-landscape", raw: landscapeRaw, x: 84, baseline: 152, fontSize: 64 },
-  { name: "ogp-square", raw: squareRaw, x: 96, baseline: 222, fontSize: 84 },
-])("$name のロゴ", ({ raw, x, baseline, fontSize }) => {
+  { name: "ogp-landscape", raw: landscapeRaw },
+  { name: "ogp-square", raw: squareRaw },
+] as const)("$name のロゴ", ({ name, raw }) => {
+  const { x, baseline, fontSize } = OGP_LOGO[name];
+
   test("目印をちょうど 1 組持つ", () => {
     expect(between(raw)).toBeDefined();
   });
@@ -59,7 +66,22 @@ describe.each([
 describe("index.html のヘッダーロゴは mark.ts と一致する", () => {
   test("マークの弧と点は markShapes に CSS 変数の色を渡した出力と完全一致し、枠は 71 四方である", () => {
     const shapes = markShapes({ c: "var(--logo-c)", dot: "var(--logo-dot)" });
-    expect(indexRaw).toContain(`<svg viewBox="10.5 14.5 71 71"`);
+    expect(indexRaw).toContain(`<svg viewBox="${BOX.x} ${BOX.y} ${BOX.size} ${BOX.size}"`);
     expect(indexRaw).toContain(shapes);
+  });
+});
+
+// ロゴの大きさと隙間の CSS は mark.ts の LOGO と同じ値を em で書く。
+describe("styles.module.css のロゴは mark.ts の LOGO と一致する", () => {
+  test(".logo の隙間と字間", () => {
+    const block = declarationsOf(stylesRaw, ":global(.logo)");
+    expect(block).toContain(`gap: ${LOGO.gapEm}em;`);
+    expect(block).toContain(`letter-spacing: ${LOGO.letterSpacingEm}em;`);
+  });
+
+  test(".logo svg の大きさ", () => {
+    const block = declarationsOf(stylesRaw, ":global(.logo svg)");
+    expect(block).toContain(`width: ${LOGO.markEm}em;`);
+    expect(block).toContain(`height: ${LOGO.markEm}em;`);
   });
 });

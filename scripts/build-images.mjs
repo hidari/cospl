@@ -32,11 +32,6 @@ async function loadMark(tmp) {
   return import(file);
 }
 
-// OGP のロゴ位置。旧ワードマークの基線 x / y と文字サイズに合わせる（test/brand/generated.test.ts が同じ値を固定する）。
-const OGP_LOGO = {
-  "ogp-landscape": { x: 84, baseline: 152, fontSize: 64 },
-  "ogp-square": { x: 96, baseline: 222, fontSize: 84 },
-};
 const LOGO_START = "<!-- brand:logo -->";
 const LOGO_END = "<!-- /brand:logo -->";
 
@@ -75,6 +70,8 @@ async function renderSvg(browser, faces, svgPath, width, height, outPng, { trans
 </head><body>${svg}</body></html>`;
 
   const page = await browser.newPage({
+    // favicon.svg はダーク用の @media を持つため、既定値に頼らずライトで描く。
+    colorScheme: "light",
     viewport: { width, height },
     deviceScaleFactor: 1,
   });
@@ -154,7 +151,7 @@ async function main() {
     ];
     for (const { name, w, h } of ogps) {
       const svg = join(pub, "ogp", `${name}.svg`);
-      const { x, baseline, fontSize } = OGP_LOGO[name];
+      const { x, baseline, fontSize } = mark.OGP_LOGO[name];
       const logo = mark.logoGroup(x, baseline, fontSize, mark.PALETTE.logoLight);
       await writeFile(svg, withLogo(await readFile(svg, "utf8"), logo));
       const png = join(pub, "ogp", `${name}.png`);

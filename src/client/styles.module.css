@@ -56,6 +56,15 @@
   --blue: #2f8bff;
   --ok: #22c08a;
 
+  /* 面の役割。ライトでは値が同じでも用途が違うので別名にしておく（ダークで別々に動く）。 */
+  --card: #fff;
+  --overlay: rgba(255, 255, 255, 0.82);
+  --panel: #1c1430;
+  --on-panel: #fff;
+  --on-accent: #fff;
+  --shadow-strong: rgba(28, 20, 48, 0.22);
+  --shadow-soft: rgba(28, 20, 48, 0.18);
+
   --mono: "Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Noto Sans Mono CJK JP";
   --sans: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP";
   --display: "Space Grotesk", var(--sans);
@@ -219,7 +228,7 @@
   font-size: 0.7rem;
   letter-spacing: 0.04em;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   padding: 4px 9px;
   border-radius: 7px;
 }
@@ -243,7 +252,7 @@
   padding: 12px 15px;
   border: 2px solid var(--line);
   border-radius: 16px;
-  background: #fff;
+  background: var(--card);
   color: var(--ink);
   cursor: pointer;
   text-align: left;
@@ -332,7 +341,7 @@
   height: 13px;
   border-radius: 999px;
   background: var(--ok);
-  border: 2px solid #fff;
+  border: 2px solid var(--card);
 }
 :global(.chip .txt) {
   display: flex;
@@ -375,7 +384,7 @@
   padding-bottom: 4px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
+  background: var(--card);
 }
 :global(.inputs > summary) {
   padding: 14px 16px;
@@ -487,7 +496,7 @@
 }
 :global(.ext input),
 :global(.ext textarea) {
-  background: #fff;
+  background: var(--card);
 }
 /* 見出し入力（伸びる）と削除ボタンを横に並べる。 */
 :global(.ext-head) {
@@ -521,8 +530,8 @@
 :global(.id) {
   font-family: var(--mono), monospace;
   font-size: clamp(0.95rem, 3.2vw, 1.3rem);
-  background: var(--ink);
-  color: #fff;
+  background: var(--panel);
+  color: var(--on-panel);
   display: block;
   padding: 16px 18px;
   border-radius: 14px;
@@ -585,14 +594,14 @@
   width: max-content;
   max-width: min(280px, 78vw);
   padding: 8px 10px;
-  background: var(--ink);
-  color: #fff;
+  background: var(--panel);
+  color: var(--on-panel);
   font-size: 0.72rem;
   font-weight: 400;
   line-height: 1.5;
   text-align: left;
   border-radius: 8px;
-  box-shadow: 0 8px 22px rgba(28, 20, 48, 0.22);
+  box-shadow: 0 8px 22px var(--shadow-strong);
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.12s;
@@ -639,7 +648,7 @@
   gap: 10px;
   padding: 12px 14px;
   border-top: 1px solid var(--line);
-  background: #fff;
+  background: var(--card);
 }
 :global(.copy-actions) {
   display: flex;
@@ -671,7 +680,7 @@
   padding: 0;
   border: 2px solid var(--line);
   border-radius: 999px;
-  background: #fff;
+  background: var(--card);
   color: var(--muted);
   font-family: var(--sans), sans-serif;
   font-size: 0.72rem;
@@ -687,12 +696,12 @@
   width: max-content;
   max-width: 230px;
   padding: 8px 10px;
-  background: var(--ink);
-  color: #fff;
+  background: var(--panel);
+  color: var(--on-panel);
   font-size: 0.72rem;
   line-height: 1.5;
   border-radius: 8px;
-  box-shadow: 0 8px 22px rgba(28, 20, 48, 0.22);
+  box-shadow: 0 8px 22px var(--shadow-strong);
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.12s;
@@ -710,7 +719,7 @@
   font-weight: 600;
   border: 0;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   padding: 9px 16px;
   border-radius: 9px;
   cursor: pointer;
@@ -733,7 +742,7 @@
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--card);
 }
 :global(.ep-label) {
   font-size: 0.78rem;
@@ -760,7 +769,7 @@
   font-family: var(--sans), sans-serif;
   font-size: 0.85rem;
   border: 2px solid var(--line);
-  background: #fff;
+  background: var(--card);
   color: var(--ink);
   padding: 8px 13px;
   border-radius: 9px;
@@ -789,7 +798,7 @@
   font-weight: 600;
   color: var(--muted);
   border: 2px solid var(--line);
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--overlay);
   padding: 6px 13px;
   border-radius: 999px;
   cursor: pointer;
@@ -819,10 +828,10 @@
   gap: 8px;
   width: max-content;
   padding: 10px;
-  background: #fff;
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: 12px;
-  box-shadow: 0 10px 28px rgba(28, 20, 48, 0.18);
+  box-shadow: 0 10px 28px var(--shadow-soft);
 }
 :global(.hero-share[open] .hero-share-pop) {
   display: flex;

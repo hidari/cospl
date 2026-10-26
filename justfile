@@ -64,11 +64,45 @@ regen-golden:
 release-check tag kind:
     #!/usr/bin/env bash
     set -euo pipefail
-    license_tag=$(node scripts/check-release-tag.mjs "$1" "$2")
+    license_tag=$(node scripts/release-tag.mjs check "$1" "$2")
     git merge-base --is-ancestor "$1^{commit}" origin/main
     git rev-parse -q --verify "refs/tags/${license_tag}^{commit}" >/dev/null \
       || { echo "条文のタグ ${license_tag} が無い。先に打つこと" >&2; exit 1; }
     echo "ok: $1"
+
+# 条文のリリース。現行の VERSION の条文のタグを main の先頭に打ち、検証してから push する
+release-license:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just _release-preflight
+    tag=$(node scripts/release-tag.mjs license-tag)
+    if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+      echo "${tag} は既にある。条文を改定したなら VERSION を上げること" >&2
+      exit 1
+    fi
+    git tag "${tag}"
+    just release-check "${tag}" license || { git tag -d "${tag}"; exit 1; }
+    git push origin "refs/tags/${tag}"
+
+# サイトのリリース。日本時間の今日の日付で次のサイトのタグを main の先頭に打ち、検証してから push する
+release-site:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just _release-preflight
+    tag=$(git tag --list 'site-v*' | node scripts/release-tag.mjs next-site "$(TZ=Asia/Tokyo date +%F)")
+    git tag "${tag}"
+    just release-check "${tag}" site || { git tag -d "${tag}"; exit 1; }
+    git push origin "refs/tags/${tag}"
+
+# リリース前の共通確認。タグを origin と一致させ、clean な main が origin/main と同じコミットにあることを確かめる
+[private]
+_release-preflight:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    git fetch origin --prune --prune-tags --tags --force
+    [ "$(git branch --show-current)" = main ] || { echo "main 上で実行すること" >&2; exit 1; }
+    git diff --quiet && git diff --cached --quiet || { echo "作業ツリーが clean でない" >&2; exit 1; }
+    [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { echo "HEAD が origin/main と一致しない" >&2; exit 1; }
 
 # Playwright E2E（E2E_BASE_URL 未設定ならローカル preview に当てる）
 e2e *args:

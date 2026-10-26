@@ -24,28 +24,27 @@ description: cospl をタグ駆動でリリースする。サイトは site-v �
 
 ```bash
 git switch main && git pull
-git status -sb                 # clean であること
-git rev-parse HEAD origin/main # 一致すること
 ```
 
-main の健全性は「main のツリーが Merge Gate 緑の PR head のツリーと一致する」ことで確かめる（main への push では CI が走らない）。
+main の健全性は「main のツリーが Merge Gate 緑の PR head のツリーと一致する」ことで確かめる（main への push では CI が走らない）。clean・main 上・`origin/main` との一致は次の recipe が自分で確かめる。
 
-### 2. 条文を改定したとき（VERSION を上げたとき）だけ: 条文のタグ
-
-サイトの `TERMS_URL` は `cospl-v<VERSION>` のタグを指すので、サイトより先に打つ。条文のタグが無いままサイトのタグを打つと `release-check` が止める。
+### 2. 条文を改定したとき（VERSION を上げたとき）だけ: 条文のリリース
 
 ```bash
-git tag cospl-v<VERSION> && just release-check cospl-v<VERSION> license && git push origin cospl-v<VERSION>
+just release-license
 ```
 
-### 3. サイトのタグ
+サイトの `TERMS_URL` は `cospl-v<VERSION>` のタグを指すので、サイトより先に実行する。同じ版のタグが既にあれば止まる。
 
-日付は UTC ではなく日本時間の今日でよい（タグ名は版の識別であって時刻ではない）。同日に既にあれば `.1` から連番を付ける。
+### 3. サイトのリリース
 
 ```bash
-git tag --list 'site-v*' | tail -3
-git tag site-vYYYY.MM.DD && just release-check site-vYYYY.MM.DD site && git push origin site-vYYYY.MM.DD
+just release-site
 ```
+
+日本時間の今日の日付でタグ名を決め、同日に既にあれば連番を付ける。条文のタグが無ければ `release-check` が止める。
+
+どちらの recipe も、タグを打つ → `release-check` → push の順で、検査に落ちたらローカルのタグを消して止まる。
 
 ### 4. 結論を専用クエリで確認（exit code に頼らない）
 
@@ -75,4 +74,4 @@ curl -fsS -o /dev/null -w "ai:    %{http_code}\n" "https://cospl.org/license.md?
 - ローカルで `wrangler deploy` を実行しない
 - タグを付け直して再デプロイしない。失敗したら原因を直して main へ入れ、新しいタグ（同日なら連番）を打つ
 - 待機コマンド（`gh run watch`）の exit を結論と取り違えない
-- push 前にローカルで `release-check` を通す（CI と同じ検査）。落ちたらローカルのタグを `git tag -d` で消し、main へ入れてから打ち直す
+- タグは手で打たず recipe に任せる。順序と検査の取り違えを recipe が防ぐ

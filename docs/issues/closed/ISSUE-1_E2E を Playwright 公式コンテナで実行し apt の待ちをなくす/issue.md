@@ -21,6 +21,11 @@ Merge Gate の E2E ジョブは `pnpm exec playwright install --with-deps` で�
 - [x] e2e-prod.yml も同様にする
 - [x] ワークフローのイメージの版と pnpm-lock.yaml の Playwright の版が一致することを検査するテストを足す
 - [x] PR の Merge Gate で E2E が実際にテストを実行して緑になることを確認する
+- [x] サプライチェーン対策として CI の実行環境を全ジョブ固定する（同じ PR で範囲を広げた）
+  - ランナーを最新の LTS の ubuntu-26.04 に固定し、全ジョブを digest で固定したコンテナで動かす（ランナーのイメージは毎週更新されるため）
+  - Node は最新の LTS の完全な版を .node-version に置き、canonical をそこ 1 か所にする
+  - pnpm を 12 系の最新へ上げて integrity 付きで固定し、onlyBuiltDependencies を allowBuilds へ移行、minimumReleaseAge 1440 を明示する
+  - 上の固定を test/ci-environment.test.ts で検査する
 
 ## 関連
 

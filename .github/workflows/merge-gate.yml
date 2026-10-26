@@ -23,7 +23,9 @@ permissions:
 jobs:
   full:
     name: Full CI
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    container:
+      image: node:24.22.1-trixie@sha256:016f604a11c4c725f0a4c62e29ff11adab153d297bf97046c9bf2ddb9f1011d3
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -33,13 +35,6 @@ jobs:
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
         with:
           just-version: 1.59.0
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: |
-            pnpm-lock.yaml
-            pnpm-workspace.yaml
       - run: pnpm install --frozen-lockfile
       - run: just lint
       - run: just typecheck
@@ -50,13 +45,12 @@ jobs:
 
   e2e:
     name: E2E (Playwright)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     # ブラウザと OS 依存を同梱した公式イメージで動かし、apt での取得待ちをなくす。
-    # 版は pnpm-lock.yaml の @playwright/test と一致させる（test/ci-playwright.test.ts が検査する）。
     # --user 1001 は runner のユーザーに合わせ、root での Firefox 起動とワークスペースの権限ずれを避ける。
     container:
-      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      image: mcr.microsoft.com/playwright:v1.64.1-resolute@sha256:d89d0e4a7058330a8334306a5aef1e00807863d31af27cf11348eed696d6e0ba
       options: --user 1001
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -68,7 +62,7 @@ jobs:
           just-version: 1.59.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
+          node-version-file: .node-version
           cache: pnpm
           cache-dependency-path: |
             pnpm-lock.yaml
@@ -80,7 +74,9 @@ jobs:
     name: Merge Gate Result
     needs: [full, e2e]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    container:
+      image: node:24.22.1-trixie@sha256:016f604a11c4c725f0a4c62e29ff11adab153d297bf97046c9bf2ddb9f1011d3
     timeout-minutes: 2
     steps:
       - name: 集約結果の判定（fail-closed）

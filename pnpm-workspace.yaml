@@ -1,8 +1,11 @@
-# pnpm 10.x が build script の実行を許可するパッケージの allowlist。
+# build script の実行を許可するパッケージの allowlist。
 # pnpm はデフォルトで postinstall 等を実行しない（サプライチェーン対策）ため、
 # ネイティブバイナリの準備に build script が要る依存だけを明示的に信頼する。
-# pnpm 10.33+ は canonical なこの場所を参照する（package.json の pnpm フィールドは非推奨）。
-onlyBuiltDependencies:
-  - esbuild
-  - sharp
-  - workerd
+allowBuilds:
+  esbuild: true
+  sharp: true
+  workerd: true
+
+# 公開から 1 日（分単位）経っていない版を解決しない。乗っ取られた版が公開直後に
+# 検出・削除されるまでの窓を避けるため。pnpm の既定値と同じだが、既定の変更に左右されないよう明示する。
+minimumReleaseAge: 1440

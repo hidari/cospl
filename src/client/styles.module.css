@@ -47,6 +47,8 @@
   --accent: #7b54ff;
   --accent-soft: #efe9ff;
   --accent-ink: #5a39d6;
+  /* 本文中のリンク色。--accent は白文字の地にも使うので分け、ダークだけ明るくする。 */
+  --link: #7b54ff;
 
   --warm: #ff7a2f;
   --warm-on-dark: #ff9e5c;
@@ -93,6 +95,7 @@
 
     --accent-soft: #2e2352;
     --accent-ink: #b9a3ff;
+    --link: #a98bff;
 
     --warm-ink: #ff9e5c;
 
@@ -126,7 +129,7 @@
   padding: 0 20px;
 }
 :global(a) {
-  color: var(--accent);
+  color: var(--link);
   text-underline-offset: 3px;
 }
 :global(:focus-visible) {

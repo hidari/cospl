@@ -92,6 +92,13 @@ const PAIRS: ReadonlyArray<readonly [string, string, number]> = [
   ["--accent-ink", "--paper", 4.5],
   ["--on-accent", "--accent", 4.5],
   ["--warm-ink", "--paper", 3],
+  // リンクは本文の一部で、地にもカードにも載る。
+  ["--link", "--paper", 4.5],
+  ["--link", "--card", 4.5],
+  // フォーカスの輪郭は UI 部品として 3:1。
+  ["--accent", "--paper", 3],
+  ["--accent", "--card", 3],
+  ["--accent", "--accent-soft", 3],
 ];
 
 describe.each([

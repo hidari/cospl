@@ -30,6 +30,7 @@
 
 /* カラートークン。パープルを主役に、オレンジを差し色（ハイライト / CTA）。 */
 :global(:root) {
+  color-scheme: light dark;
   --ink: #1c1430;
   --paper: #ffffff;
   --paper-tint: #fbfaff;
@@ -65,9 +66,45 @@
   --shadow-strong: rgba(28, 20, 48, 0.22);
   --shadow-soft: rgba(28, 20, 48, 0.18);
 
+  /* ロゴのマーク色（コントラスト検査の対象外）。文字は --ink を使う。 */
+  --logo-c: #7b54ff;
+  --logo-dot: #ff7a2f;
+
   --mono: "Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Noto Sans Mono CJK JP";
   --sans: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP";
   --display: "Space Grotesk", var(--sans);
+}
+
+/* ダークモードは OS の設定にだけ従う。地は紫紺、パネルはそれより一段明るい紫紺のまま。 */
+@media (prefers-color-scheme: dark) {
+  :global(:root) {
+    --ink: #f4f0ff;
+    --paper: #1c1430;
+    --paper-tint: #221a3a;
+    --surface: #271e42;
+
+    --muted: #b3adc4;
+    --faint: #8d86a6;
+    --ghost: #6f6890;
+    --code-ink: #d9d2f0;
+
+    --line: #3a2f5a;
+    --line-soft: #33294f;
+
+    --accent-soft: #2e2352;
+    --accent-ink: #b9a3ff;
+
+    --warm-ink: #ff9e5c;
+
+    --card: #241b3d;
+    --overlay: rgba(28, 20, 48, 0.82);
+    --panel: #2e2352;
+    --shadow-strong: rgba(0, 0, 0, 0.55);
+    --shadow-soft: rgba(0, 0, 0, 0.45);
+
+    --logo-c: #a98bff;
+    --logo-dot: #ff9e5c;
+  }
 }
 :global(*) {
   box-sizing: border-box;

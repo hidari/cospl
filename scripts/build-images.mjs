@@ -27,18 +27,30 @@ function withLogo(mark, svg, logo) {
   return svg.slice(0, span.data.from) + logo + svg.slice(span.data.to);
 }
 
-// 自己ホスト欧文フォントを data URI 化（setContent はベース URL を持たないため）
-async function fontFace(family, weight, file) {
-  const b64 = await readFile(join(pub, "fonts", file)).then((b) => b.toString("base64"));
-  return `@font-face{font-family:'${family}';font-weight:${weight};font-display:block;src:url(data:font/woff2;base64,${b64}) format('woff2');}`;
+// フォントの拡張子（data URI の MIME の subtype）と @font-face の format() の対応
+const FONT_FORMATS = { woff2: "woff2", ttf: "truetype" };
+
+// フォントを data URI 化する（setContent はベース URL を持たないため）
+async function fontFace(family, weight, path, format) {
+  const fontFormat = FONT_FORMATS[format];
+  if (fontFormat === undefined) {
+    throw new Error(`未対応のフォント形式: ${format}`);
+  }
+  const b64 = await readFile(path).then((b) => b.toString("base64"));
+  return `@font-face{font-family:'${family}';font-weight:${weight};font-display:block;src:url(data:font/${format};base64,${b64}) format('${fontFormat}');}`;
 }
 
-// 自己ホスト欧文フォント（latin 3種）の @font-face を一度だけ組み立てる。
-async function latinFaces() {
+// 描画に使う @font-face を一度だけ組み立てる。欧文はサイトと同じ public/fonts、
+// 和文は OGP の描画専用に scripts/fonts に置いたもの（サイトでは配信しない。ライセンスは同じ場所の OFL）。
+async function fontFaces() {
+  const site = (file) => join(pub, "fonts", file);
+  const ogp = (file) => join(root, "scripts", "fonts", file);
   return [
-    await fontFace("Space Grotesk", 700, "SpaceGrotesk-latin.woff2"),
-    await fontFace("Space Mono", 400, "SpaceMono-400-latin.woff2"),
-    await fontFace("Space Mono", 700, "SpaceMono-700-latin.woff2"),
+    await fontFace("Space Grotesk", 700, site("SpaceGrotesk-latin.woff2"), "woff2"),
+    await fontFace("Space Mono", 400, site("SpaceMono-400-latin.woff2"), "woff2"),
+    await fontFace("Space Mono", 700, site("SpaceMono-700-latin.woff2"), "woff2"),
+    await fontFace("Zen Kaku Gothic New", 500, ogp("ZenKakuGothicNew-Medium.ttf"), "ttf"),
+    await fontFace("Zen Kaku Gothic New", 700, ogp("ZenKakuGothicNew-Bold.ttf"), "ttf"),
   ].join("");
 }
 
@@ -53,9 +65,7 @@ async function renderSvg(
   { transparent } = { transparent: false },
 ) {
   const svg = await readFile(svgPath, "utf8");
-  // 和文 Zen Kaku Gothic New はビルド時に CDN から取得し出力へ焼き込む
   const html = `<!doctype html><html><head><meta charset="utf-8">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&display=block">
 <style>${faces}*{margin:0;padding:0}html,body{width:${width}px;height:${height}px}svg{display:block}</style>
 </head><body>${svg}</body></html>`;
 
@@ -90,7 +100,7 @@ async function main() {
   const browser = await chromium.launch({ channel: "chrome" });
   const tmp = await mkdtemp(join(tmpdir(), "cospl-img-"));
   try {
-    const faces = await latinFaces();
+    const faces = await fontFaces();
     const mark = await loadTs({ entryPoint: join(root, "src", "brand", "mark.ts") }, "mark");
 
     // --- マスター SVG をマークの定義から書き出す ---

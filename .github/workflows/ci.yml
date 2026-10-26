@@ -16,7 +16,9 @@ permissions:
 jobs:
   ci:
     name: Lint / Typecheck / Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    container:
+      image: node:24.22.1-trixie@sha256:016f604a11c4c725f0a4c62e29ff11adab153d297bf97046c9bf2ddb9f1011d3
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -24,13 +26,6 @@ jobs:
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
         with:
           just-version: 1.59.0
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: |
-            pnpm-lock.yaml
-            pnpm-workspace.yaml
       - run: pnpm install --frozen-lockfile
       - run: just lint
       - run: just typecheck

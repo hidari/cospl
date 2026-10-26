@@ -18,8 +18,13 @@ jobs:
   e2e-prod:
     name: E2E against cospl.org
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
+    # ブラウザと OS 依存を同梱した公式イメージで動かし、apt での取得待ちをなくす。
+    # --user 1001 は runner のユーザーに合わせ、root での Firefox 起動とワークスペースの権限ずれを避ける。
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-resolute@sha256:d89d0e4a7058330a8334306a5aef1e00807863d31af27cf11348eed696d6e0ba
+      options: --user 1001
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -28,13 +33,12 @@ jobs:
           just-version: 1.59.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
+          node-version-file: .node-version
           cache: pnpm
           cache-dependency-path: |
             pnpm-lock.yaml
             pnpm-workspace.yaml
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps
       - run: just e2e
         env:
           E2E_BASE_URL: https://cospl.org

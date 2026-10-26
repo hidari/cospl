@@ -1,16 +1,9 @@
 import { describe, expect, test } from "vitest";
-// workerd では node:fs が使えないため Vite の ?raw で本文を文字列として埋め込む。
-import stylesRaw from "../../src/client/styles.module.css?raw";
-import { declarationsOf } from "./css";
+import { declarationsOf, stripComments, stylesCss, TOKEN_BLOCK } from "./css";
 
-// 色の定義が許されるのは :global(:root) のトークンブロックだけ
-// （ダーク用の @media 内にある同名ブロックも同じ形なので同じ規則で除かれる）。
-const TOKEN_BLOCK = /:global\(:root\)\s*\{[^{}]*\}/g;
-const COMMENT = /\/\*[\s\S]*?\*\//g;
 const COLOR_LITERAL = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/g;
 
-const outsideTokenBlocks = (css: string): string =>
-  css.replace(COMMENT, "").replace(TOKEN_BLOCK, "");
+const outsideTokenBlocks = (css: string): string => stripComments(css).replace(TOKEN_BLOCK, "");
 const colorLiteralsOutsideTokenBlocks = (css: string): string[] =>
   outsideTokenBlocks(css).match(COLOR_LITERAL) ?? [];
 
@@ -43,18 +36,18 @@ describe("色の直書き検査器", () => {
 
 describe("styles.module.css の色トークン", () => {
   test("検査対象が空でない（トークンブロックがあり、その外にも宣言がある）", () => {
-    expect(stylesRaw.match(TOKEN_BLOCK)?.length ?? 0).toBeGreaterThanOrEqual(1);
-    expect(outsideTokenBlocks(stylesRaw).match(/var\(--/g)?.length ?? 0).toBeGreaterThan(50);
+    expect(stylesCss.match(TOKEN_BLOCK)?.length ?? 0).toBeGreaterThanOrEqual(1);
+    expect(outsideTokenBlocks(stylesCss).match(/var\(--/g)?.length ?? 0).toBeGreaterThan(50);
   });
 
   test("トークンブロックの外に色の直書きが 1 つも無い", () => {
-    expect(colorLiteralsOutsideTokenBlocks(stylesRaw)).toEqual([]);
+    expect(colorLiteralsOutsideTokenBlocks(stylesCss)).toEqual([]);
   });
 
   test.each([".id", ".tab-tip", ".help-tip"])(
     "%s は濃い地（--panel）に --on-panel の文字",
     (cls) => {
-      const block = declarationsOf(stylesRaw, `:global(${cls})`);
+      const block = declarationsOf(stylesCss, `:global(${cls})`);
       expect(block).toContain("background: var(--panel);");
       expect(block).toContain("color: var(--on-panel);");
     },

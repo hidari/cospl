@@ -1,33 +1,25 @@
 import { describe, expect, test } from "vitest";
 import indexHtml from "../../index.html?raw";
-// workerd では node:fs が使えないため Vite の ?raw で本文を文字列として埋め込む。
-import stylesRaw from "../../src/client/styles.module.css?raw";
+import { PALETTE } from "../../src/brand/mark";
+import { DARK_MEDIA, rootTokens, splitByDarkMedia, stylesCss, type Tokens } from "./css";
 
-// 対象外: マークの色（--logo-c / --logo-dot とアイコン・OGP の色）。
-// マークは装飾図形で本文ではなく、ブランド色そのものを保つため比率の基準を課さない。
+// 対象外: マークの色（--logo-c / --logo-dot とアイコン・OGP の色）のコントラスト比。
+// マークは装飾図形で本文ではなく、ブランド色そのものを保つため比率の基準を課さない
+// （代わりに PALETTE との一致を下で固定する）。
 // ロゴの文字は --ink を使うので、下の (--ink, --paper) の検査に含まれる。
 
-type Tokens = Readonly<Record<string, string>>;
-
-const TOKEN_BLOCK = /:global\(:root\)\s*\{([^{}]*)\}/g;
-const DARK_MEDIA = /@media\s*\(prefers-color-scheme:\s*dark\)\s*\{/;
-
-const parseDeclarations = (body: string): Tokens =>
-  Object.fromEntries(
-    [...body.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map((m) => [m[1] ?? "", (m[2] ?? "").trim()]),
-  );
-
-const blocksOf = (css: string): string[] => [...css.matchAll(TOKEN_BLOCK)].map((m) => m[1] ?? "");
-
 const splitModes = (css: string): { light: Tokens; dark: Tokens } => {
-  const nocomment = css.replace(/\/\*[\s\S]*?\*\//g, "");
-  const darkAt = nocomment.search(DARK_MEDIA);
-  const lightPart = darkAt < 0 ? nocomment : nocomment.slice(0, darkAt);
-  const darkPart = darkAt < 0 ? "" : nocomment.slice(darkAt);
-  const light = Object.assign({}, ...blocksOf(lightPart).map(parseDeclarations));
-  const darkOverrides = Object.assign({}, ...blocksOf(darkPart).map(parseDeclarations));
+  const parts = splitByDarkMedia(css);
+  const light = rootTokens(parts.light);
   // ダークは明示した分だけ差し替える。書かなかったトークンはライトの値を引き継ぐ。
-  return { light, dark: { ...light, ...darkOverrides } };
+  return { light, dark: { ...light, ...rootTokens(parts.dark) } };
+};
+
+// 無いトークンは黙って既定値で通さず、名前を付けて失敗させる。
+const token = (tokens: Tokens, name: string): string => {
+  const value = tokens[name];
+  if (value === undefined) throw new Error(`${name} が定義されていない`);
+  return value;
 };
 
 const channel = (c: number): number => {
@@ -63,24 +55,29 @@ describe("コントラスト計算器", () => {
   });
 });
 
-const { light, dark } = splitModes(stylesRaw);
+const { light, dark } = splitModes(stylesCss);
 
 describe("ダークモードのトークン", () => {
   test("ダーク用の @media があり、ライトと異なる値を持つ", () => {
-    expect(stylesRaw).toMatch(DARK_MEDIA);
+    expect(stylesCss).toMatch(DARK_MEDIA);
     expect(dark["--paper"]).toBe("#1c1430");
     expect(dark["--paper"]).not.toBe(light["--paper"]);
   });
   test("OS 設定に従う（color-scheme）", () => {
-    expect(stylesRaw).toContain("color-scheme: light dark;");
+    expect(stylesCss).toContain("color-scheme: light dark;");
   });
   test("ダークの --panel は地より一段明るい濃色のまま", () => {
-    expect(luminance(dark["--panel"] ?? "#fff")).toBeGreaterThan(luminance(dark["--paper"] ?? ""));
-    expect(luminance(dark["--panel"] ?? "#fff")).toBeLessThan(0.05);
+    const panel = luminance(token(dark, "--panel"));
+    expect(panel).toBeGreaterThan(luminance(token(dark, "--paper")));
+    expect(panel).toBeLessThan(0.05);
   });
-  test.each(["--logo-c", "--logo-dot"])("%s は両モードで定義される", (name) => {
-    expect(light[name]).toMatch(/^#[0-9a-f]{6}$/i);
-    expect(dark[name]).toMatch(/^#[0-9a-f]{6}$/i);
+  // マークの色は mark.ts の PALETTE が唯一の定義で、CSS の変数はその値を写す。
+  test.each([
+    ["--logo-c", "c"],
+    ["--logo-dot", "dot"],
+  ] as const)("%s は mark.ts の PALETTE のロゴ色と両モードで一致する", (name, key) => {
+    expect(token(light, name)).toBe(PALETTE.logoLight[key]);
+    expect(token(dark, name)).toBe(PALETTE.logoDark[key]);
   });
 });
 
@@ -112,11 +109,7 @@ describe.each([
   ["ダーク", dark],
 ] as const)("コントラスト比 (%s)", (_mode, tokens) => {
   test.each(PAIRS)("%s on %s は %s:1 以上", (fg, bg, min) => {
-    const f = tokens[fg];
-    const b = tokens[bg];
-    expect(f, `${fg} が定義されている`).toBeDefined();
-    expect(b, `${bg} が定義されている`).toBeDefined();
-    expect(contrast(f ?? "", b ?? "")).toBeGreaterThanOrEqual(min);
+    expect(contrast(token(tokens, fg), token(tokens, bg))).toBeGreaterThanOrEqual(min);
   });
 });
 

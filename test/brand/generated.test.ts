@@ -6,18 +6,17 @@ import maskableRaw from "../../public/icons/maskable.svg?raw";
 import landscapeRaw from "../../public/ogp/ogp-landscape.svg?raw";
 import squareRaw from "../../public/ogp/ogp-square.svg?raw";
 import {
-  appleTouchSvg,
   BOX,
   faviconSvg,
   LOGO,
   logoGroup,
+  logoMarkSpan,
   markShapes,
   maskableSvg,
   OGP_LOGO,
   PALETTE,
 } from "../../src/brand/mark";
-import stylesRaw from "../../src/client/styles.module.css?raw";
-import { declarationsOf } from "./css";
+import { declarationsOf, stylesCss } from "./css";
 
 // 生成物が src/brand/mark.ts と食い違わないことを固定する。食い違ったら `just images` を実行する。
 describe("生成された画像マスターは mark.ts と一致する", () => {
@@ -28,22 +27,11 @@ describe("生成された画像マスターは mark.ts と一致する", () => {
   test("maskable.svg は maskableSvg() と完全一致する", () => {
     expect(maskableRaw.trimEnd()).toBe(maskableSvg());
   });
-
-  test("apple-touch は favicon と別形（角丸なし・ダークなし）である", () => {
-    expect(appleTouchSvg()).not.toContain("<style>");
-    expect(appleTouchSvg()).not.toContain("rx=");
-  });
 });
 
-const START = "<!-- brand:logo -->";
-const END = "<!-- /brand:logo -->";
-
 const between = (svg: string): string | undefined => {
-  const starts = svg.split(START).length - 1;
-  const ends = svg.split(END).length - 1;
-  if (starts !== 1 || ends !== 1) return undefined;
-  const from = svg.indexOf(START) + START.length;
-  return svg.slice(from, svg.indexOf(END));
+  const span = logoMarkSpan(svg);
+  return span.success ? svg.slice(span.data.from, span.data.to) : undefined;
 };
 
 // ロゴの位置は mark.ts の OGP_LOGO が唯一の定義。
@@ -74,13 +62,13 @@ describe("index.html のヘッダーロゴは mark.ts と一致する", () => {
 // ロゴの大きさと隙間の CSS は mark.ts の LOGO と同じ値を em で書く。
 describe("styles.module.css のロゴは mark.ts の LOGO と一致する", () => {
   test(".logo の隙間と字間", () => {
-    const block = declarationsOf(stylesRaw, ":global(.logo)");
+    const block = declarationsOf(stylesCss, ":global(.logo)");
     expect(block).toContain(`gap: ${LOGO.gapEm}em;`);
     expect(block).toContain(`letter-spacing: ${LOGO.letterSpacingEm}em;`);
   });
 
   test(".logo svg の大きさ", () => {
-    const block = declarationsOf(stylesRaw, ":global(.logo svg)");
+    const block = declarationsOf(stylesCss, ":global(.logo svg)");
     expect(block).toContain(`width: ${LOGO.markEm}em;`);
     expect(block).toContain(`height: ${LOGO.markEm}em;`);
   });

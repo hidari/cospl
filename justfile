@@ -58,6 +58,12 @@ images:
 regen-golden:
     node scripts/regen-golden.mjs
 
+# リリースタグの検証（CI の deploy / release-license が使う）。タグの形式と、タグのコミットが
+# main に含まれることを確かめる。タグは任意のコミットに打てるので、後者が main 限定の保証になる
+release-check tag kind:
+    node scripts/check-release-tag.mjs "$1" "$2"
+    git merge-base --is-ancestor "$1^{commit}" origin/main
+
 # Playwright E2E（E2E_BASE_URL 未設定ならローカル preview に当てる）
 e2e *args:
     pnpm exec playwright test "$@"

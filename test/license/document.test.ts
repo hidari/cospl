@@ -222,7 +222,7 @@ describe("aiMD（2.0）", () => {
 
   test("terms_url は TERMS_URL を指す", () => {
     expect(aiMD(unwrapState("BY"))).toContain(`terms_url: ${TERMS_URL}`);
-    expect(TERMS_URL).toBe("https://github.com/hidari/cospl/blob/main/v2.0/CosPL-2.0.md");
+    expect(TERMS_URL).toBe("https://github.com/hidari/cospl/blob/cospl-v2.0/v2.0/CosPL-2.0.md");
   });
 });
 

@@ -11,5 +11,6 @@ export default defineConfig({
   ],
   test: {
     include: ["test/**/*.test.ts"],
+    css: { include: [/styles\.module\.css/] },
   },
 });

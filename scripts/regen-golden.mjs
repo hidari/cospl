@@ -2,26 +2,19 @@
 // 文面（humanMD/aiMD）を編集したら `just regen-golden` を実行して固定値を更新する。
 // core.ts は拡張子なしの相対 import を持つため、esbuild で bundle してから読み込む。
 
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { readFileSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import esbuild from "esbuild";
+import { loadTs } from "./lib/load-ts.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const corePath = resolve(here, "../src/core.ts");
 const goldenPath = resolve(here, "../test/__fixtures__/golden.json");
 
-const built = await esbuild.build({
-  entryPoints: [corePath],
-  bundle: true,
-  format: "esm",
-  platform: "node",
-  write: false,
-});
-const tmpFile = join(mkdtempSync(join(tmpdir(), "cospl-")), "core.mjs");
-writeFileSync(tmpFile, built.outputFiles[0].text);
-const { parseTags, humanMD, aiMD, ident, tagsFrom } = await import(tmpFile);
+const { parseTags, humanMD, aiMD, ident, tagsFrom } = await loadTs(
+  { entryPoint: corePath },
+  "core",
+);
 
 // 既存 golden の case キーを引き継ぎ、現在の core で値だけを更新する。
 const existing = JSON.parse(readFileSync(goldenPath, "utf8"));

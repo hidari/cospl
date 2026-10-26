@@ -30,6 +30,7 @@
 
 /* カラートークン。パープルを主役に、オレンジを差し色（ハイライト / CTA）。 */
 :global(:root) {
+  color-scheme: light dark;
   --ink: #1c1430;
   --paper: #ffffff;
   --paper-tint: #fbfaff;
@@ -46,6 +47,8 @@
   --accent: #7b54ff;
   --accent-soft: #efe9ff;
   --accent-ink: #5a39d6;
+  /* 本文中のリンク色。--accent は白文字の地にも使うので分け、ダークだけ明るくする。 */
+  --link: #7b54ff;
 
   --warm: #ff7a2f;
   --warm-on-dark: #ff9e5c;
@@ -56,9 +59,55 @@
   --blue: #2f8bff;
   --ok: #22c08a;
 
+  /* 面の役割。ライトでは値が同じでも用途が違うので別名にしておく（ダークで別々に動く）。 */
+  --card: #fff;
+  --overlay: rgba(255, 255, 255, 0.82);
+  --panel: #1c1430;
+  --on-panel: #fff;
+  --on-accent: #fff;
+  --shadow-strong: rgba(28, 20, 48, 0.22);
+  --shadow-soft: rgba(28, 20, 48, 0.18);
+
+  /* ロゴのマーク色（コントラスト検査の対象外）。文字は --ink を使う。 */
+  --logo-c: #7b54ff;
+  --logo-dot: #ff7a2f;
+
   --mono: "Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Noto Sans Mono CJK JP";
   --sans: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP";
   --display: "Space Grotesk", var(--sans);
+}
+
+/* ダークモードは OS の設定にだけ従う。地は紫紺、パネルはそれより一段明るい紫紺のまま。 */
+@media (prefers-color-scheme: dark) {
+  :global(:root) {
+    --ink: #f4f0ff;
+    --paper: #1c1430;
+    --paper-tint: #221a3a;
+    --surface: #271e42;
+
+    --muted: #b3adc4;
+    --faint: #8d86a6;
+    --ghost: #6f6890;
+    --code-ink: #d9d2f0;
+
+    --line: #3a2f5a;
+    --line-soft: #33294f;
+
+    --accent-soft: #2e2352;
+    --accent-ink: #b9a3ff;
+    --link: #a98bff;
+
+    --warm-ink: #ff9e5c;
+
+    --card: #241b3d;
+    --overlay: rgba(28, 20, 48, 0.82);
+    --panel: #2e2352;
+    --shadow-strong: rgba(0, 0, 0, 0.55);
+    --shadow-soft: rgba(0, 0, 0, 0.45);
+
+    --logo-c: #a98bff;
+    --logo-dot: #ff9e5c;
+  }
 }
 :global(*) {
   box-sizing: border-box;
@@ -80,7 +129,7 @@
   padding: 0 20px;
 }
 :global(a) {
-  color: var(--accent);
+  color: var(--link);
   text-underline-offset: 3px;
 }
 :global(:focus-visible) {
@@ -142,36 +191,22 @@
   opacity: 0.16;
 }
 
-:global(.wordmark) {
+/* ロゴ。大きさと隙間は src/brand/mark.ts の LOGO と同じ値を em で書く。 */
+:global(.logo) {
   display: inline-flex;
-  /* 「Cos」のベースラインと PL のテキストベースラインを揃える基準。
-     ここから .pl の translateY で PL ボックスの縦位置を微調整する。 */
-  align-items: baseline;
-  gap: 5px;
+  align-items: center;
+  gap: 0.28em;
   margin: 0 0 16px;
   font-family: var(--display), sans-serif;
   font-weight: 700;
   font-size: 2rem;
   line-height: 1;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   color: var(--ink);
 }
-:global(.wordmark .pl) {
-  display: inline-flex;
-  align-items: center;
-  border: 3px solid currentColor;
-  border-radius: 9px;
-  padding: 0 9px;
-  line-height: 1.18;
-  /* ▼ 微調整ノブ その1：PL ボックス全体（枠＋中の文字）の縦位置。
-     負で上へ、正で下へ。Cos に対する箱の位置を合わせる。 */
-  transform: translateY(-5px);
-}
-:global(.wordmark .pl .pl-t) {
-  display: inline-block;
-  /* ▼ 微調整ノブ その2：箱は動かさず、中の「PL」テキストだけを上下する。
-     負で上へ、正で下へ。0 で枠の中央。 */
-  transform: translateY(2px);
+:global(.logo svg) {
+  width: 1.05em;
+  height: 1.05em;
 }
 :global(.kicker) {
   font-family: var(--mono), monospace;
@@ -219,7 +254,7 @@
   font-size: 0.7rem;
   letter-spacing: 0.04em;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   padding: 4px 9px;
   border-radius: 7px;
 }
@@ -243,7 +278,7 @@
   padding: 12px 15px;
   border: 2px solid var(--line);
   border-radius: 16px;
-  background: #fff;
+  background: var(--card);
   color: var(--ink);
   cursor: pointer;
   text-align: left;
@@ -332,7 +367,7 @@
   height: 13px;
   border-radius: 999px;
   background: var(--ok);
-  border: 2px solid #fff;
+  border: 2px solid var(--card);
 }
 :global(.chip .txt) {
   display: flex;
@@ -375,7 +410,7 @@
   padding-bottom: 4px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
+  background: var(--card);
 }
 :global(.inputs > summary) {
   padding: 14px 16px;
@@ -487,7 +522,7 @@
 }
 :global(.ext input),
 :global(.ext textarea) {
-  background: #fff;
+  background: var(--card);
 }
 /* 見出し入力（伸びる）と削除ボタンを横に並べる。 */
 :global(.ext-head) {
@@ -521,8 +556,8 @@
 :global(.id) {
   font-family: var(--mono), monospace;
   font-size: clamp(0.95rem, 3.2vw, 1.3rem);
-  background: var(--ink);
-  color: #fff;
+  background: var(--panel);
+  color: var(--on-panel);
   display: block;
   padding: 16px 18px;
   border-radius: 14px;
@@ -585,14 +620,14 @@
   width: max-content;
   max-width: min(280px, 78vw);
   padding: 8px 10px;
-  background: var(--ink);
-  color: #fff;
+  background: var(--panel);
+  color: var(--on-panel);
   font-size: 0.72rem;
   font-weight: 400;
   line-height: 1.5;
   text-align: left;
   border-radius: 8px;
-  box-shadow: 0 8px 22px rgba(28, 20, 48, 0.22);
+  box-shadow: 0 8px 22px var(--shadow-strong);
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.12s;
@@ -639,7 +674,7 @@
   gap: 10px;
   padding: 12px 14px;
   border-top: 1px solid var(--line);
-  background: #fff;
+  background: var(--card);
 }
 :global(.copy-actions) {
   display: flex;
@@ -671,7 +706,7 @@
   padding: 0;
   border: 2px solid var(--line);
   border-radius: 999px;
-  background: #fff;
+  background: var(--card);
   color: var(--muted);
   font-family: var(--sans), sans-serif;
   font-size: 0.72rem;
@@ -687,12 +722,12 @@
   width: max-content;
   max-width: 230px;
   padding: 8px 10px;
-  background: var(--ink);
-  color: #fff;
+  background: var(--panel);
+  color: var(--on-panel);
   font-size: 0.72rem;
   line-height: 1.5;
   border-radius: 8px;
-  box-shadow: 0 8px 22px rgba(28, 20, 48, 0.22);
+  box-shadow: 0 8px 22px var(--shadow-strong);
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.12s;
@@ -710,7 +745,7 @@
   font-weight: 600;
   border: 0;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   padding: 9px 16px;
   border-radius: 9px;
   cursor: pointer;
@@ -733,7 +768,7 @@
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--card);
 }
 :global(.ep-label) {
   font-size: 0.78rem;
@@ -760,7 +795,7 @@
   font-family: var(--sans), sans-serif;
   font-size: 0.85rem;
   border: 2px solid var(--line);
-  background: #fff;
+  background: var(--card);
   color: var(--ink);
   padding: 8px 13px;
   border-radius: 9px;
@@ -789,7 +824,7 @@
   font-weight: 600;
   color: var(--muted);
   border: 2px solid var(--line);
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--overlay);
   padding: 6px 13px;
   border-radius: 999px;
   cursor: pointer;
@@ -819,10 +854,10 @@
   gap: 8px;
   width: max-content;
   padding: 10px;
-  background: #fff;
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: 12px;
-  box-shadow: 0 10px 28px rgba(28, 20, 48, 0.18);
+  box-shadow: 0 10px 28px var(--shadow-soft);
 }
 :global(.hero-share[open] .hero-share-pop) {
   display: flex;

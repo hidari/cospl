@@ -5,17 +5,7 @@
     <circle cx="810" cy="110" r="260" style="fill:rgb(255,122,47);fill-opacity:0.12;"/>
     <circle cx="30" cy="450" r="150" style="fill:rgb(123,84,255);fill-opacity:0.12;"/>
     <circle cx="960" cy="990" r="120" style="fill:rgb(47,139,255);fill-opacity:0.1;"/>
-    <g>
-        <g transform="matrix(1,0,0,1,96,222)">
-            <text x="0px" y="0px" style="font-family:'Space Grotesk', sans-serif;font-weight:700;font-size:84px;fill:rgb(28,20,48);">C<tspan x="58.982px 108.613px " y="0px 0px ">os</tspan></text>
-        </g>
-        <g transform="matrix(1.07534,0,0,1,-19.437799,13)">
-            <path d="M386,148L386,200C386,213.246 375.999,224 363.681,224L280.319,224C268.001,224 258,213.246 258,200L258,148C258,134.754 268.001,124 280.319,124L363.681,124C375.999,124 386,134.754 386,148Z" style="fill:none;stroke:rgb(28,20,48);stroke-width:7px;"/>
-        </g>
-        <g transform="matrix(1,0,0,1,326,222)">
-            <text x="-53.669px" y="0px" style="font-family:'Space Grotesk', sans-serif;font-weight:700;font-size:84px;fill:rgb(28,20,48);">PL</text>
-        </g>
-    </g>
+    <!-- brand:logo --><g><g transform="translate(140.1 192.6) scale(1.242) translate(-46 -50)"><path class="mk-c" d="M72 30A30 30 0 1 0 72 70" fill="none" stroke="#7b54ff" stroke-width="11" stroke-linecap="round"/><circle class="mk-dot" cx="52" cy="50" r="11" fill="#ff7a2f"/></g><text x="207.72" y="222" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="84" letter-spacing="-0.02em" fill="#1c1430">CosPL</text></g><!-- /brand:logo -->
     <g>
         <g transform="matrix(1,0,0,1,96,438)">
             <text x="0px" y="0px" style="font-family:'Zen Kaku Gothic New', sans-serif;font-weight:700;font-size:76px;fill:rgb(28,20,48);">撮<tspan x="75.62px 151.24px 226.86px 302.48px 378.1px " y="0px 0px 0px 0px 0px ">った写真の</tspan></text>

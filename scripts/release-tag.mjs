@@ -1,15 +1,14 @@
 // リリースタグの入口。判定は src/release/tag.ts が持ち、ここは引数を渡して結果を標準出力と終了コードへ写すだけにする。
-// src は拡張子なしの相対 import を持つため、regen-golden.mjs と同じく esbuild で bundle してから読み込む。
+// src は拡張子なしの相対 import を持つため、regen-golden.mjs と同じく esbuild で bundle してから読み込む（scripts/lib/load-ts.mjs）。
 //
 //   check <タグ> <license|site>  タグを検証し、そのリリースが前提とする条文のタグ（cospl-v<VERSION>）を出す
 //   license-tag                  現行の VERSION の条文のタグを出す
 //   next-site <YYYY-MM-DD>       標準入力の既存タグ（1 行 1 つ）から、次に打つサイトのタグを出す
 
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import esbuild from "esbuild";
+import { loadTs } from "./lib/load-ts.mjs";
 
 const usage = () => {
   console.error(
@@ -19,20 +18,15 @@ const usage = () => {
 };
 
 const src = resolve(dirname(fileURLToPath(import.meta.url)), "../src");
-const built = await esbuild.build({
-  stdin: {
-    contents: `export { nextSiteTag, parseReleaseTag } from "./release/tag";\nexport { VERSION } from "./license/version";\n`,
-    resolveDir: src,
-    loader: "ts",
+const { nextSiteTag, parseReleaseTag, VERSION } = await loadTs(
+  {
+    stdin: {
+      contents: `export { nextSiteTag, parseReleaseTag } from "./release/tag";\nexport { VERSION } from "./license/version";\n`,
+      resolveDir: src,
+    },
   },
-  bundle: true,
-  format: "esm",
-  platform: "node",
-  write: false,
-});
-const tmpFile = join(mkdtempSync(join(tmpdir(), "cospl-")), "release-tag.mjs");
-writeFileSync(tmpFile, built.outputFiles[0].text);
-const { nextSiteTag, parseReleaseTag, VERSION } = await import(tmpFile);
+  "release-tag",
+);
 
 const exitOnFail = (result) => {
   if (!result.success) {

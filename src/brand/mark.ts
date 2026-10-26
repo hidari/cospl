@@ -1,6 +1,8 @@
 // CosPL のマーク（C のレンズと中の点）の形・比率・色の唯一の定義。
 // アイコン・ロゴ・OGP はここから SVG を生成し、同じ比率に揃える。座標は 100 四方の系。
 
+import { fail, type Result, success } from "../types/result";
+
 export type MarkColors = { c: string; dot: string };
 
 // 弧: 中心 (50, 50)・半径 30・線幅 11。点: 中心 (52, 50)・半径 11。
@@ -23,6 +25,21 @@ export const OGP_LOGO = {
   "ogp-landscape": { x: 84, baseline: 152, fontSize: 64 },
   "ogp-square": { x: 96, baseline: 222, fontSize: 84 },
 } as const;
+
+// OGP の SVG でロゴを差し込む範囲を示す目印。
+export const LOGO_MARKS = { start: "<!-- brand:logo -->", end: "<!-- /brand:logo -->" } as const;
+
+// 目印に挟まれた範囲 [from, to)。目印がちょうど 1 組でなければ失敗を返す。
+export const logoMarkSpan = (svg: string): Result<{ from: number; to: number }, string> => {
+  const count = (m: string) => svg.split(m).length - 1;
+  if (count(LOGO_MARKS.start) !== 1 || count(LOGO_MARKS.end) !== 1) {
+    return fail("OGP SVG に brand:logo の目印がちょうど 1 組ありません");
+  }
+  return success({
+    from: svg.indexOf(LOGO_MARKS.start) + LOGO_MARKS.start.length,
+    to: svg.indexOf(LOGO_MARKS.end),
+  });
+};
 
 export const PALETTE = {
   iconLight: { bg: "#7b54ff", c: "#ffffff", dot: "#ffb37a" },
@@ -60,7 +77,7 @@ const placeMark = (cx: number, cy: number, scale: number, colors: MarkColors): s
 
 type IconOpts = { bg: string; colors: MarkColors; cornerRadius: number; ratio: number };
 
-const iconSvgWith = (opts: IconOpts, style: string): string => {
+export const iconSvg = (opts: IconOpts, style = ""): string => {
   const scale = (opts.ratio * 100) / BOX.size;
   const rx = opts.cornerRadius > 0 ? ` rx="${fmt(opts.cornerRadius)}"` : "";
   return (
@@ -70,8 +87,6 @@ const iconSvgWith = (opts: IconOpts, style: string): string => {
     `</svg>`
   );
 };
-
-export const iconSvg = (opts: IconOpts): string => iconSvgWith(opts, "");
 
 const lightIcon = (cornerRadius: number, ratio: number): IconOpts => ({
   bg: PALETTE.iconLight.bg,
@@ -86,7 +101,7 @@ export const faviconSvg = (): string => {
     `<style>@media (prefers-color-scheme: dark){` +
     `.mk-bg{fill:${d.bg}}.mk-c{stroke:${d.c}}.mk-dot{fill:${d.dot}}` +
     `}</style>`;
-  return iconSvgWith(lightIcon(24, ICON_MARK_RATIO), style);
+  return iconSvg(lightIcon(24, ICON_MARK_RATIO), style);
 };
 
 // 外形が安全円に収まる最大の倍率（出力の小数 3 桁に切り下げて、丸めで円を越えないようにする）。

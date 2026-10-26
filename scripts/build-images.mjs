@@ -11,38 +11,20 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import esbuild from "esbuild";
 import { chromium } from "playwright-core";
+import { loadTs } from "./lib/load-ts.mjs";
 
 const run = promisify(execFile);
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pub = join(root, "public");
 
-// src/brand/mark.ts を bundle して読み込む（regen-golden.mjs と同じ手順）。
-async function loadMark(tmp) {
-  const built = await esbuild.build({
-    entryPoints: [join(root, "src", "brand", "mark.ts")],
-    bundle: true,
-    format: "esm",
-    platform: "node",
-    write: false,
-  });
-  const file = join(tmp, "mark.mjs");
-  await writeFile(file, built.outputFiles[0].text);
-  return import(file);
-}
-
-const LOGO_START = "<!-- brand:logo -->";
-const LOGO_END = "<!-- /brand:logo -->";
-
 // 目印の間をロゴで置き換えた SVG を返す。目印が 1 組でなければ失敗する。
-function withLogo(svg, logo) {
-  const count = (m) => svg.split(m).length - 1;
-  if (count(LOGO_START) !== 1 || count(LOGO_END) !== 1) {
-    throw new Error("OGP SVG に brand:logo の目印がちょうど 1 組ありません");
+function withLogo(mark, svg, logo) {
+  const span = mark.logoMarkSpan(svg);
+  if (!span.success) {
+    throw new Error(span.error);
   }
-  const from = svg.indexOf(LOGO_START) + LOGO_START.length;
-  return svg.slice(0, from) + logo + svg.slice(svg.indexOf(LOGO_END));
+  return svg.slice(0, span.data.from) + logo + svg.slice(span.data.to);
 }
 
 // 自己ホスト欧文フォントを data URI 化（setContent はベース URL を持たないため）
@@ -61,7 +43,15 @@ async function latinFaces() {
 }
 
 // SVG を実寸ビューポートで描画して PNG 1枚に焼く
-async function renderSvg(browser, faces, svgPath, width, height, outPng, { transparent }) {
+async function renderSvg(
+  browser,
+  faces,
+  svgPath,
+  width,
+  height,
+  outPng,
+  { transparent } = { transparent: false },
+) {
   const svg = await readFile(svgPath, "utf8");
   // 和文 Zen Kaku Gothic New はビルド時に CDN から取得し出力へ焼き込む
   const html = `<!doctype html><html><head><meta charset="utf-8">
@@ -101,7 +91,7 @@ async function main() {
   const tmp = await mkdtemp(join(tmpdir(), "cospl-img-"));
   try {
     const faces = await latinFaces();
-    const mark = await loadMark(tmp);
+    const mark = await loadTs({ entryPoint: join(root, "src", "brand", "mark.ts") }, "mark");
 
     // --- マスター SVG をマークの定義から書き出す ---
     const favSvg = join(pub, "favicon.svg");
@@ -121,9 +111,7 @@ async function main() {
     }
     await run("magick", [...icoPngs, join(pub, "favicon.ico")]);
     // apple-touch は OS が角を丸めるため全面ベタ塗り。
-    await renderSvg(browser, faces, appleSvg, 180, 180, join(pub, "apple-touch-icon.png"), {
-      transparent: false,
-    });
+    await renderSvg(browser, faces, appleSvg, 180, 180, join(pub, "apple-touch-icon.png"));
     console.log("favicon: favicon.ico (16/32/48) + apple-touch-icon.png (180)");
 
     // --- PWA アイコン（manifest 用。any は丸角透過、maskable は全面ベタ塗り）---
@@ -140,7 +128,6 @@ async function main() {
       512,
       512,
       join(pub, "icons", "icon-512-maskable.png"),
-      { transparent: false },
     );
     console.log("pwa icons: icon-192 / icon-512 / icon-512-maskable");
 
@@ -153,9 +140,9 @@ async function main() {
       const svg = join(pub, "ogp", `${name}.svg`);
       const { x, baseline, fontSize } = mark.OGP_LOGO[name];
       const logo = mark.logoGroup(x, baseline, fontSize, mark.PALETTE.logoLight);
-      await writeFile(svg, withLogo(await readFile(svg, "utf8"), logo));
+      await writeFile(svg, withLogo(mark, await readFile(svg, "utf8"), logo));
       const png = join(pub, "ogp", `${name}.png`);
-      await renderSvg(browser, faces, svg, w, h, png, { transparent: false });
+      await renderSvg(browser, faces, svg, w, h, png);
       await toWebp(png, join(pub, "ogp", `${name}.webp`), 90);
       await toJpeg(png, join(pub, "ogp", `${name}.jpg`), 92);
       console.log(`ogp: ${name} ${w}x${h} -> png + webp + jpg`);

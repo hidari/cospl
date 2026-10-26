@@ -1,11 +1,14 @@
 import { describe, expect, test } from "vitest";
 import {
   appleTouchSvg,
+  BOX,
   faviconSvg,
   ICON_MARK_RATIO,
   iconSvg,
   LOGO,
+  LOGO_MARKS,
   logoGroup,
+  logoMarkSpan,
   MASKABLE_SAFE_RADIUS,
   markExtentRadius,
   markShapes,
@@ -13,8 +16,8 @@ import {
   PALETTE,
 } from "../../src/brand/mark";
 
-// マーク座標系で外形の枠は 71 四方（10.5 14.5 71 71）。
-const BOX = 71;
+// 枠の中心。
+const CENTER = { x: BOX.x + BOX.size / 2, y: BOX.y + BOX.size / 2 };
 
 const numbers = (svg: string, pattern: RegExp): number[] => {
   const m = svg.match(pattern);
@@ -53,16 +56,17 @@ describe("マークの形", () => {
 describe("アイコン", () => {
   test("マークの高さは一辺 100 の 75%", () => {
     expect(ICON_MARK_RATIO).toBe(0.75);
-    expect(scaleOf(iconSvg(iconOpts)) * BOX).toBeCloseTo(75, 1);
+    expect(scaleOf(iconSvg(iconOpts)) * BOX.size).toBeCloseTo(75, 1);
   });
 
   test("ratio を変えると同じ割合でマークの高さが変わる", () => {
     const svg = iconSvg({ ...iconOpts, ratio: 0.5 });
-    expect(scaleOf(svg) * BOX).toBeCloseTo(50, 1);
+    expect(scaleOf(svg) * BOX.size).toBeCloseTo(50, 1);
   });
 
-  test("枠の中心 (46, 50) を (50, 50) に置く", () => {
-    expect(iconSvg(iconOpts)).toMatch(/translate\(50 50\) scale\([\d.]+\) translate\(-46 -50\)/);
+  test("枠の中心を (50, 50) に置く", () => {
+    expect(iconSvg(iconOpts)).toContain(`translate(50 50) scale(`);
+    expect(iconSvg(iconOpts)).toContain(`) translate(${-CENTER.x} ${-CENTER.y})`);
   });
 
   test("地は指定した角丸と色で viewBox 全面に敷く", () => {
@@ -81,25 +85,32 @@ describe("アイコン", () => {
 });
 
 describe("マークの外形", () => {
-  // 描かれる外形（弧の外周、両端の丸い線端、点）を実際に標本化し、枠の中心 (46, 50) からの最遠距離を求める。
+  // 描かれる外形（弧の外周、両端の丸い線端、点）を実際に標本化し、枠の中心からの最遠距離を求める。
   // markExtentRadius の実装（端点と線幅からの閉形式）とは独立に、図形の定義だけから導く。
   const farthestSampled = (): number => {
-    const center = { x: 46, y: 50 };
-    const dist = (x: number, y: number) => Math.hypot(x - center.x, y - center.y);
-    const steps = 7200;
-    const circle = (cx: number, cy: number, r: number) =>
-      Array.from({ length: steps }, (_, i) => {
+    const dist = (x: number, y: number) => Math.hypot(x - CENTER.x, y - CENTER.y);
+    const steps = 720;
+    let farthest = 0;
+    const visit = (x: number, y: number) => {
+      farthest = Math.max(farthest, dist(x, y));
+    };
+    const circle = (cx: number, cy: number, r: number) => {
+      for (let i = 0; i < steps; i++) {
         const a = (2 * Math.PI * i) / steps;
-        return dist(cx + r * Math.cos(a), cy + r * Math.sin(a));
-      });
+        visit(cx + r * Math.cos(a), cy + r * Math.sin(a));
+      }
+    };
     // 半径 30 の弧が (72, 30)-(72, 70) を結ぶので、中心は (72 - sqrt(30^2 - 20^2), 50)。
     const arcCx = 72 - Math.sqrt(30 * 30 - 20 * 20);
     const edge = Math.atan2(20, 72 - arcCx);
-    const ring = Array.from({ length: steps }, (_, i) => {
+    for (let i = 0; i < steps; i++) {
       const a = edge + ((2 * Math.PI - 2 * edge) * i) / (steps - 1);
-      return dist(arcCx + 35.5 * Math.cos(a), 50 + 35.5 * Math.sin(a));
-    });
-    return Math.max(...ring, ...circle(72, 30, 5.5), ...circle(72, 70, 5.5), ...circle(52, 50, 11));
+      visit(arcCx + 35.5 * Math.cos(a), 50 + 35.5 * Math.sin(a));
+    }
+    circle(72, 30, 5.5);
+    circle(72, 70, 5.5);
+    circle(52, 50, 11);
+    return farthest;
   };
 
   test("外形の最遠点は枠の中心から約 38.3（端の丸い線端の外側）", () => {
@@ -128,11 +139,12 @@ describe("apple-touch-icon", () => {
   test("地の rect に角丸が無い", () => {
     expect(appleTouchSvg()).toMatch(/<rect [^>]*class="mk-bg"/);
     expect(appleTouchSvg()).not.toContain("rx=");
+    expect(appleTouchSvg()).not.toContain("<style>");
   });
 
   test("マークの高さは一辺の 75% で配色はライト", () => {
     const svg = appleTouchSvg();
-    expect(scaleOf(svg) * BOX).toBeCloseTo(75, 1);
+    expect(scaleOf(svg) * BOX.size).toBeCloseTo(75, 1);
     expect(svg).toContain(PALETTE.iconLight.bg);
   });
 });
@@ -152,7 +164,7 @@ describe("favicon.svg", () => {
 
   test("角丸 24 でマークの高さは 75%", () => {
     expect(svg).toContain('rx="24"');
-    expect(scaleOf(svg) * BOX).toBeCloseTo(75, 1);
+    expect(scaleOf(svg) * BOX.size).toBeCloseTo(75, 1);
   });
 });
 
@@ -161,17 +173,17 @@ describe("ロゴ", () => {
   const group = logoGroup(0, 100, fontSize, PALETTE.logoLight);
   const scale = scaleOf(group);
   const markCx = numbers(group, /translate\(([\d.-]+) [\d.-]+\) scale/)[0] ?? Number.NaN;
-  const markX = markCx - (scale * BOX) / 2;
+  const markX = markCx - (scale * BOX.size) / 2;
 
   test("マークの高さは文字の大きさの 1.05 倍", () => {
     expect(LOGO.markEm).toBe(1.05);
-    expect(scale * BOX).toBeCloseTo(fontSize * 1.05, 1);
+    expect(scale * BOX.size).toBeCloseTo(fontSize * 1.05, 1);
   });
 
   test("文字の x はマークの右端 + 文字の大きさの 28%", () => {
     expect(LOGO.gapEm).toBe(0.28);
     const textX = numbers(group, /<text x="([\d.-]+)"/)[0] ?? Number.NaN;
-    expect(textX).toBeCloseTo(markX + scale * BOX + fontSize * 0.28, 1);
+    expect(textX).toBeCloseTo(markX + scale * BOX.size + fontSize * 0.28, 1);
   });
 
   test("字間は -0.02em で文字は CosPL、基線と大きさ・太さを持つ", () => {
@@ -213,5 +225,24 @@ describe("配色", () => {
       logoLight: { c: "#7b54ff", dot: "#ff7a2f", text: "#1c1430" },
       logoDark: { c: "#a98bff", dot: "#ff9e5c", text: "#ffffff" },
     });
+  });
+});
+
+describe("OGP のロゴの目印", () => {
+  const { start, end } = LOGO_MARKS;
+
+  test("ちょうど 1 組なら間の範囲を返す", () => {
+    const svg = `<svg>${start}旧${end}</svg>`;
+    const span = logoMarkSpan(svg);
+    expect(span.success && svg.slice(span.data.from, span.data.to)).toBe("旧");
+  });
+
+  test.each([
+    ["目印が無い", "<svg></svg>"],
+    ["開始だけ", `<svg>${start}</svg>`],
+    ["終了だけ", `<svg>${end}</svg>`],
+    ["2 組ある", `<svg>${start}${end}${start}${end}</svg>`],
+  ])("%s と失敗する", (_label, svg) => {
+    expect(logoMarkSpan(svg).success).toBe(false);
   });
 });

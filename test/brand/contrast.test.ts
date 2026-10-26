@@ -102,6 +102,13 @@ const PAIRS: ReadonlyArray<readonly [string, string, number]> = [
   ["--code-ink", "--surface", 4.5],
   ["--muted", "--accent-soft", 4.5],
   ["--accent", "--surface", 3],
+  // コピー完了。ボタンは塗りの地に白文字、補助ボタンは card の地に緑の文字。
+  ["--on-accent", "--ok-fill", 4.5],
+  ["--ok-ink", "--card", 4.5],
+  ["--ok-ink", "--paper", 4.5],
+  // タグのアイコンは UI 部品として 3:1。チップの地（card）と hover の地（paper-tint）に載る。
+  ["--faint", "--card", 3],
+  ["--faint", "--paper-tint", 3],
 ];
 
 describe.each([

@@ -91,7 +91,8 @@ export function humanMD(
     }
   }
   L.push("## 連絡先", ...doc.contacts.map((contact) => `- ${contact}`), "");
-  L.push("----", `適用: ${id} ／ 文責: ${doc.photographer}`);
+  // Markdown では改行 1 つだと同じ段落につながるため、空行で 2 段落に分ける。
+  L.push("----", `適用: ${id}`, "", `文責: ${doc.photographer}`);
   return L.join("\n");
 }
 

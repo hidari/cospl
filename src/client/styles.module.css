@@ -37,7 +37,7 @@
   --surface: #faf9fc;
 
   --muted: #6b6580;
-  --faint: #9a93b0;
+  --faint: #8a83a3;
   --ghost: #b3adc4;
   --code-ink: #3a3357;
 
@@ -58,6 +58,9 @@
 
   --blue: #2f8bff;
   --ok: #22c08a;
+  /* コピー完了の濃い緑。--ok は白地で 2.3:1 のため、文字は --ok-ink、白文字を載せる地は --ok-fill を使う。 */
+  --ok-ink: #0b7a52;
+  --ok-fill: #0b7a52;
 
   /* 面の役割。ライトでは値が同じでも用途が違うので別名にしておく（ダークで別々に動く）。 */
   --card: #fff;
@@ -98,6 +101,8 @@
     --link: #a98bff;
 
     --warm-ink: #ff9e5c;
+    /* 暗い地では文字に明るい緑が要る。白文字を載せる --ok-fill は両モードで同じ濃い緑のまま。 */
+    --ok-ink: #22c08a;
 
     --card: #241b3d;
     --overlay: rgba(28, 20, 48, 0.82);
@@ -423,6 +428,27 @@
 :global(.inputs > summary:focus-visible) {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+/* 開いたとき、summary 以外の中身だけが現れる（閉じるときは即時）。
+   高さの補間（interpolate-size / calc-size）は Chrome 系のみなので、全ブラウザで効く
+   不透明度と transform で見せる。keyframes 名と animation の参照は CSS Modules が同じ名前に改名する。 */
+@keyframes inputs-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+:global(.inputs[open] > :not(summary)) {
+  animation: inputs-reveal 200ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  :global(.inputs[open] > :not(summary)) {
+    animation: none;
+  }
 }
 :global(.inputs .hint) {
   margin: 0 16px;
@@ -755,7 +781,7 @@
   filter: brightness(1.06);
 }
 :global(button.copy.done) {
-  background: var(--ok);
+  background: var(--ok-fill);
 }
 
 /* エンドポイント・補助ボタン ------------------------------------------- */
@@ -802,8 +828,8 @@
   cursor: pointer;
 }
 :global(.ghost.done) {
-  border-color: var(--ok);
-  color: var(--ok);
+  border-color: var(--ok-ink);
+  color: var(--ok-ink);
 }
 /* サイト共有ディスクロージャ（ヒーロー右下）。ネイティブ <details> で開閉・キーボード・
    フォーカス・展開状態の公開を賄い、Escape / 外側クリックでの閉じだけを main.ts で補う。
@@ -877,8 +903,18 @@
 :global(.links) {
   display: flex;
   flex-wrap: wrap;
-  gap: 18px;
-  margin: 0 0 22px;
+  gap: 8px 18px;
+  margin: 22px 0 18px;
+}
+/* X のロゴ。文字色（currentColor）に追従し、文字の大きさに合わせる。 */
+:global(.x-logo) {
+  width: 0.9em;
+  height: 0.9em;
+  margin-right: 0.4em;
+  vertical-align: -0.1em;
+}
+:global(.copyright) {
+  margin: 0;
 }
 
 /* スクリーンリーダー専用（視覚的には隠すが読み上げ対象に残す）ユーティリティ。 */

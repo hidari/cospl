@@ -69,7 +69,7 @@ describe("GET /license.md", () => {
     const res = await call("/license.md?tags=none");
     expect(res.status).toBe(200);
     const body = await res.text();
-    expect(body).toContain("適用: CosPL 2.0 ／");
+    expect(body).toContain("適用: CosPL 2.0\n");
   });
 
   test("view=ai は AI 向け宣言を返す", async () => {

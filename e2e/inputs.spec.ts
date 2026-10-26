@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { MAX_EXTENSIONS } from "../src/core";
 import { expect, test } from "./fixtures";
 
@@ -160,4 +161,24 @@ test("データの内容物を書くと冒頭の章に本README文書が先頭�
     "## データの内容物\n- 本README文書\n- 現像済みデータ\n- RAWはご相談ください",
   );
   await expect(licensePage.ident).not.toContainText("+");
+});
+
+// CSS Modules が keyframes 名と animation の参照を別名にしてしまうと、ソースの検査が緑でも動かない。
+// 実際に解決された名前で、開いた中身にアニメーションが付き、reduced-motion では付かないことを見る。
+const revealAnimationName = (page: Page) =>
+  page
+    .locator("#inputs > :not(summary)")
+    .first()
+    .evaluate((el) => getComputedStyle(el).animationName);
+
+test("任意入力を開くと中身にアニメーションが付き、reduced-motion では付かない", async ({
+  licensePage,
+  page,
+}) => {
+  await licensePage.goto();
+  await licensePage.openInputs();
+  expect(await revealAnimationName(page)).not.toBe("none");
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  expect(await revealAnimationName(page)).toBe("none");
 });

@@ -71,4 +71,6 @@ export default defineConfig({
   plugins: [cloudflare(), serviceWorkerPlugin()],
   // 既定の 5173 はローカルで並走させる別プロジェクトと衝突するため固定する。
   server: { port: 5210 },
+  // JS は 1 ファイルで先読みする相手が無く、modulepreload は主要ブラウザが対応済みなので polyfill を入れない。
+  build: { modulePreload: { polyfill: false } },
 });

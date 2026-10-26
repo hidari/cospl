@@ -9,7 +9,20 @@ test("フッターの関連リンクが決められた順で並ぶ", async ({ li
     "リポジトリ",
     "Discussion",
     "X @Hidari0415",
+    "謝辞",
   ]);
+});
+
+test("謝辞は自己ホストしているフォントのライセンス文を指し、その文書が配信されている", async ({
+  licensePage,
+  page,
+}) => {
+  await licensePage.goto();
+  const thanks = licensePage.footerLinks.last();
+  await expect(thanks).toHaveAttribute("href", "/fonts/OFL.txt");
+  const res = await page.request.get("/fonts/OFL.txt");
+  expect(res.status()).toBe(200);
+  expect(await res.text()).toContain("SIL Open Font License");
 });
 
 test("X のリンクは x.com の本人のページを指し、ロゴは読み上げに含まれない", async ({

@@ -27,10 +27,17 @@ function withLogo(mark, svg, logo) {
   return svg.slice(0, span.data.from) + logo + svg.slice(span.data.to);
 }
 
+// フォントの拡張子（data URI の MIME の subtype）と @font-face の format() の対応
+const FONT_FORMATS = { woff2: "woff2", ttf: "truetype" };
+
 // フォントを data URI 化する（setContent はベース URL を持たないため）
 async function fontFace(family, weight, path, format) {
+  const fontFormat = FONT_FORMATS[format];
+  if (fontFormat === undefined) {
+    throw new Error(`未対応のフォント形式: ${format}`);
+  }
   const b64 = await readFile(path).then((b) => b.toString("base64"));
-  return `@font-face{font-family:'${family}';font-weight:${weight};font-display:block;src:url(data:font/${format};base64,${b64}) format('${format === "ttf" ? "truetype" : format}');}`;
+  return `@font-face{font-family:'${family}';font-weight:${weight};font-display:block;src:url(data:font/${format};base64,${b64}) format('${fontFormat}');}`;
 }
 
 // 描画に使う @font-face を一度だけ組み立てる。欧文はサイトと同じ public/fonts、

@@ -1,4 +1,4 @@
-// リリースタグの厳格パース。CI の deploy / release-license が scripts/check-release-tag.mjs 経由で使う。
+// リリースタグの厳格パースと次のタグの決定。CI と just の release 系 recipe が scripts/release-tag.mjs 経由で使う。
 
 import { fail, type Result, success } from "../types/result";
 
@@ -33,4 +33,30 @@ export function parseReleaseTag(tag: string, licenseVersion: string): Result<Rel
     return success({ kind: "site", version: site[1] });
   }
   return fail(`${tag} は cospl-v<版> でも site-vYYYY.MM.DD[.N] でもない`);
+}
+
+const ISO_DATE = /^([0-9]{4})-([0-9]{2})-([0-9]{2})$/;
+
+// 次に打つサイトのタグを決める。date は YYYY-MM-DD、existing は既存のタグ名の一覧。
+// その日のタグが無ければ連番なし、あれば既存の最大の連番 + 1（連番なしを 0 とみなす）。
+export function nextSiteTag(date: string, existing: readonly string[]): Result<string, string> {
+  const m = ISO_DATE.exec(date);
+  if (m === null || !isRealDate(Number(m[1]), Number(m[2]), Number(m[3]))) {
+    return fail(`日付 ${date} は YYYY-MM-DD の実在する日付ではない`);
+  }
+  const base = `site-v${m[1]}.${m[2]}.${m[3]}`;
+  const sameDay = existing.flatMap((tag) => {
+    const parsed = parseReleaseTag(tag, "");
+    if (!parsed.success || parsed.data.kind !== "site") {
+      return [];
+    }
+    if (tag === base) {
+      return [0];
+    }
+    return tag.startsWith(`${base}.`) ? [Number(tag.slice(base.length + 1))] : [];
+  });
+  if (sameDay.length === 0) {
+    return success(base);
+  }
+  return success(`${base}.${Math.max(...sameDay) + 1}`);
 }

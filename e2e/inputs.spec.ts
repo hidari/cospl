@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { MAX_EXTENSIONS } from "../src/core";
 import { expect, test } from "./fixtures";
 
@@ -160,4 +161,24 @@ test("データの内容物を書くと冒頭の章に本README文書が先頭�
     "## データの内容物\n- 本README文書\n- 現像済みデータ\n- RAWはご相談ください",
   );
   await expect(licensePage.ident).not.toContainText("+");
+});
+
+// 動いているアニメーション（getAnimations）で見る。computed の animationName は対応する
+// keyframes が無くても宣言した名前を返すため、名前の食い違いを検出できない。
+const revealAnimations = (page: Page) =>
+  page
+    .locator("#inputs > :not(summary)")
+    .first()
+    .evaluate((el) => el.getAnimations().length);
+
+test("任意入力を開くと中身のアニメーションが動き、reduced-motion では動かない", async ({
+  licensePage,
+  page,
+}) => {
+  await licensePage.goto();
+  await licensePage.openInputs();
+  await expect.poll(() => revealAnimations(page)).toBeGreaterThan(0);
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  expect(await revealAnimations(page)).toBe(0);
 });

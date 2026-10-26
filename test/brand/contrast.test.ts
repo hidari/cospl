@@ -16,10 +16,15 @@ const splitModes = (css: string): { light: Tokens; dark: Tokens } => {
 };
 
 // 無いトークンは黙って既定値で通さず、名前を付けて失敗させる。
-const token = (tokens: Tokens, name: string): string => {
+// 値が var(--other) の参照なら同じモードのトークンを辿って実際の色にする。
+const token = (tokens: Tokens, name: string, seen: readonly string[] = []): string => {
   const value = tokens[name];
   if (value === undefined) throw new Error(`${name} が定義されていない`);
-  return value;
+  const ref = /^var\((--[\w-]+)\)$/.exec(value);
+  if (ref === null) return value;
+  const next = ref[1] ?? "";
+  if (seen.includes(next)) throw new Error(`${name} の var() が循環している`);
+  return token(tokens, next, [...seen, name]);
 };
 
 const channel = (c: number): number => {
@@ -102,6 +107,13 @@ const PAIRS: ReadonlyArray<readonly [string, string, number]> = [
   ["--code-ink", "--surface", 4.5],
   ["--muted", "--accent-soft", 4.5],
   ["--accent", "--surface", 3],
+  // コピー完了。ボタンは塗りの地に白文字、補助ボタンは card の地に緑の文字。
+  ["--on-accent", "--ok-fill", 4.5],
+  ["--ok-ink", "--card", 4.5],
+  ["--ok-ink", "--paper", 4.5],
+  // タグのアイコンは UI 部品として 3:1。チップの地（card）と hover の地（paper-tint）に載る。
+  ["--faint", "--card", 3],
+  ["--faint", "--paper-tint", 3],
 ];
 
 describe.each([

@@ -23,6 +23,10 @@ export class LicensePage {
   readonly aiTab: Locator;
   readonly creditGroup: Locator;
   readonly creditAny: Locator;
+  readonly footerLinks: Locator;
+  readonly footerX: Locator;
+  readonly footerCopyright: Locator;
+  readonly footer: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -45,6 +49,10 @@ export class LicensePage {
     // クレジットの選択肢は fieldset + legend の radiogroup として取得する。
     this.creditGroup = page.getByRole("group", { name: "クレジットのお願いの仕方" });
     this.creditAny = page.getByRole("radio", { name: "方法は問わない" });
+    this.footer = page.getByRole("contentinfo");
+    this.footerLinks = page.getByRole("navigation", { name: "関連リンク" }).getByRole("link");
+    this.footerX = page.getByRole("link", { name: "X @Hidari0415" });
+    this.footerCopyright = this.footer.getByText("© 2026 Hidari");
   }
 
   // hash は "#tags=BY-NC" の形（先頭 # 含む）。未指定は素のトップ。

@@ -1,9 +1,9 @@
 ---
-name: deploy
+name: release
 description: cospl をタグ駆動でリリースする。サイトは site-v タグで Cloudflare Workers (cospl.org) へデプロイし、条文は cospl-v タグで GitHub Release を作る。「デプロイして」「本番反映して」「cospl.org に出して」「リリースして」と指示された時に使う。ローカルから wrangler deploy せずタグを push し、結論と health check まで確認する。
 ---
 
-# cospl Release / Deploy
+# cospl Release
 
 リリースはタグの push だけで行う。ローカルからの `wrangler deploy` は禁止。
 

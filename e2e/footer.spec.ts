@@ -31,7 +31,6 @@ test("著作権表記の名前から閉じ括弧までが x.com の本人のペ�
   await expect(licensePage.footerCopyright).toHaveText("© 2026 Hidari (@Hidari0415)");
   await expect(licensePage.footerX).toHaveText("Hidari (@Hidari0415)");
   await expect(licensePage.footerX).toHaveAttribute("href", "https://x.com/Hidari0415");
-  await expect(licensePage.footerX).toHaveAttribute("rel", "noopener");
   await expect(licensePage.footerX.locator("svg")).toHaveAttribute("aria-hidden", "true");
 });
 

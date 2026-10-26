@@ -191,36 +191,22 @@
   opacity: 0.16;
 }
 
-:global(.wordmark) {
+/* ロゴ。大きさと隙間は src/brand/mark.ts の LOGO と同じ値を em で書く。 */
+:global(.logo) {
   display: inline-flex;
-  /* 「Cos」のベースラインと PL のテキストベースラインを揃える基準。
-     ここから .pl の translateY で PL ボックスの縦位置を微調整する。 */
-  align-items: baseline;
-  gap: 5px;
+  align-items: center;
+  gap: 0.28em;
   margin: 0 0 16px;
   font-family: var(--display), sans-serif;
   font-weight: 700;
   font-size: 2rem;
   line-height: 1;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   color: var(--ink);
 }
-:global(.wordmark .pl) {
-  display: inline-flex;
-  align-items: center;
-  border: 3px solid currentColor;
-  border-radius: 9px;
-  padding: 0 9px;
-  line-height: 1.18;
-  /* ▼ 微調整ノブ その1：PL ボックス全体（枠＋中の文字）の縦位置。
-     負で上へ、正で下へ。Cos に対する箱の位置を合わせる。 */
-  transform: translateY(-5px);
-}
-:global(.wordmark .pl .pl-t) {
-  display: inline-block;
-  /* ▼ 微調整ノブ その2：箱は動かさず、中の「PL」テキストだけを上下する。
-     負で上へ、正で下へ。0 で枠の中央。 */
-  transform: translateY(2px);
+:global(.logo svg) {
+  width: 1.05em;
+  height: 1.05em;
 }
 :global(.kicker) {
   font-family: var(--mono), monospace;

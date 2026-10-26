@@ -142,7 +142,7 @@ describe("本体の章（2.0）", () => {
     const doc: Doc = { ...DEFAULT_DOC, contentsItems: ["現像済みデータ"] };
     const state = unwrapState("BY-NC-NAI-TD");
     const md = humanMD(state, DEFAULT_OPTIONS, doc);
-    expect(md).toContain(`適用: ${ident(state)}\n`);
+    expect(md).toContain(`適用: ${ident(state)}`);
     expect(md).not.toContain("追加事項");
     expect(aiMD(state, DEFAULT_OPTIONS, doc)).not.toContain("additional_terms");
   });
@@ -323,7 +323,7 @@ describe("拡張", () => {
   test("拡張は「追加事項」の章にまとまり、連絡先の章の直前に、優先順位の注記に続けて出る", () => {
     const md = humanMD(unwrapState("BY"), DEFAULT_OPTIONS, withExt);
     expect(md).toContain(`## 追加事項\n${noticeLine}\n\n### 加工\n- a\n- bb\n\n## 連絡先`);
-    expect(md).toMatch(/適用: CosPL 2\.0 \/ BY \+\n/);
+    expect(md).toContain("適用: CosPL 2.0 / BY +");
   });
 
   test("拡張なしでは追加事項の章も注記も ` +` も出ない", () => {

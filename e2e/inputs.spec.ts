@@ -163,22 +163,22 @@ test("データの内容物を書くと冒頭の章に本README文書が先頭�
   await expect(licensePage.ident).not.toContainText("+");
 });
 
-// CSS Modules が keyframes 名と animation の参照を別名にしてしまうと、ソースの検査が緑でも動かない。
-// 実際に解決された名前で、開いた中身にアニメーションが付き、reduced-motion では付かないことを見る。
-const revealAnimationName = (page: Page) =>
+// 動いているアニメーション（getAnimations）で見る。computed の animationName は対応する
+// keyframes が無くても宣言した名前を返すため、名前の食い違いを検出できない。
+const revealAnimations = (page: Page) =>
   page
     .locator("#inputs > :not(summary)")
     .first()
-    .evaluate((el) => getComputedStyle(el).animationName);
+    .evaluate((el) => el.getAnimations().length);
 
-test("任意入力を開くと中身にアニメーションが付き、reduced-motion では付かない", async ({
+test("任意入力を開くと中身のアニメーションが動き、reduced-motion では動かない", async ({
   licensePage,
   page,
 }) => {
   await licensePage.goto();
   await licensePage.openInputs();
-  expect(await revealAnimationName(page)).not.toBe("none");
+  await expect.poll(() => revealAnimations(page)).toBeGreaterThan(0);
 
   await page.emulateMedia({ reducedMotion: "reduce" });
-  expect(await revealAnimationName(page)).toBe("none");
+  expect(await revealAnimations(page)).toBe(0);
 });

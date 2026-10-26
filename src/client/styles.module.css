@@ -58,9 +58,10 @@
 
   --blue: #2f8bff;
   --ok: #22c08a;
-  /* コピー完了の濃い緑。--ok は白地で 2.3:1 のため、文字は --ok-ink、白文字を載せる地は --ok-fill を使う。 */
-  --ok-ink: #0b7a52;
-  --ok-fill: #0b7a52;
+  /* --ok は白地で 2.3:1 のため、文字（--ok-ink）と白文字を載せる地（--ok-fill）は濃い緑から導く。 */
+  --ok-deep: #0b7a52;
+  --ok-ink: var(--ok-deep);
+  --ok-fill: var(--ok-deep);
 
   /* 面の役割。ライトでは値が同じでも用途が違うので別名にしておく（ダークで別々に動く）。 */
   --card: #fff;
@@ -101,8 +102,8 @@
     --link: #a98bff;
 
     --warm-ink: #ff9e5c;
-    /* 暗い地では文字に明るい緑が要る。白文字を載せる --ok-fill は両モードで同じ濃い緑のまま。 */
-    --ok-ink: #22c08a;
+    /* 暗い地の文字は明るい緑。--ok-fill は濃い緑のまま。 */
+    --ok-ink: var(--ok);
 
     --card: #241b3d;
     --overlay: rgba(28, 20, 48, 0.82);
@@ -442,12 +443,10 @@
     transform: none;
   }
 }
-:global(.inputs[open] > :not(summary)) {
-  animation: inputs-reveal 200ms ease-out;
-}
-@media (prefers-reduced-motion: reduce) {
+/* 動きを減らす設定のときは付けない。 */
+@media (prefers-reduced-motion: no-preference) {
   :global(.inputs[open] > :not(summary)) {
-    animation: none;
+    animation: inputs-reveal 200ms ease-out;
   }
 }
 :global(.inputs .hint) {

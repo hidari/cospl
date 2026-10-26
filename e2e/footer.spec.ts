@@ -23,11 +23,10 @@ test("X のリンクは x.com の本人のページを指し、ロゴは読み�
 
 test("著作権表記が関連リンクの下に見える", async ({ licensePage }) => {
   await licensePage.goto();
-  const copyright = licensePage.footer.getByText("© 2026 Hidari");
-  await expect(copyright).toBeVisible();
-  const [nav, text] = await Promise.all([
-    licensePage.footerLinks.last().boundingBox(),
-    copyright.boundingBox(),
-  ]);
-  expect(text?.y ?? 0).toBeGreaterThan((nav?.y ?? 0) + (nav?.height ?? 0));
+  await expect(licensePage.footerCopyright).toBeVisible();
+  const nav = await licensePage.footerLinks.last().boundingBox();
+  const text = await licensePage.footerCopyright.boundingBox();
+  expect(nav, "最後のリンクの位置が取れる").not.toBeNull();
+  expect(text, "著作権表記の位置が取れる").not.toBeNull();
+  expect(text?.y).toBeGreaterThan((nav?.y ?? Infinity) + (nav?.height ?? Infinity));
 });

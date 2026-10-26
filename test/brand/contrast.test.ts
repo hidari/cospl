@@ -16,10 +16,15 @@ const splitModes = (css: string): { light: Tokens; dark: Tokens } => {
 };
 
 // 無いトークンは黙って既定値で通さず、名前を付けて失敗させる。
-const token = (tokens: Tokens, name: string): string => {
+// 値が var(--other) の参照なら同じモードのトークンを辿って実際の色にする。
+const token = (tokens: Tokens, name: string, seen: readonly string[] = []): string => {
   const value = tokens[name];
   if (value === undefined) throw new Error(`${name} が定義されていない`);
-  return value;
+  const ref = /^var\((--[\w-]+)\)$/.exec(value);
+  if (ref === null) return value;
+  const next = ref[1] ?? "";
+  if (seen.includes(next)) throw new Error(`${name} の var() が循環している`);
+  return token(tokens, next, [...seen, name]);
 };
 
 const channel = (c: number): number => {

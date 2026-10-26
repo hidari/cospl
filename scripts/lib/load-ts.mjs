@@ -6,7 +6,7 @@
 //   { stdin: { contents, resolveDir } }                  re-export の文字列を入口にする
 // name は一時ファイルの名前（拡張子なし）。
 
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import esbuild from "esbuild";
@@ -21,7 +21,13 @@ export async function loadTs(entry, name) {
     platform: "node",
     write: false,
   });
-  const file = join(await mkdtemp(join(tmpdir(), "cospl-")), `${name}.mjs`);
-  await writeFile(file, built.outputFiles[0].text);
-  return import(file);
+  const dir = await mkdtemp(join(tmpdir(), "cospl-"));
+  const file = join(dir, `${name}.mjs`);
+  // import が済めばモジュールはメモリにあるので、一時ディレクトリは成否によらず消す
+  try {
+    await writeFile(file, built.outputFiles[0].text);
+    return await import(file);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 }

@@ -32,7 +32,7 @@ main の健全性は「main のツリーが Merge Gate 緑の PR head のツリ�
 
 ### 2. 条文を改定したとき（VERSION を上げたとき）だけ: 条文のタグ
 
-サイトの `TERMS_URL` は `cospl-v<VERSION>` のタグを指すので、サイトより先に打つ。
+サイトの `TERMS_URL` は `cospl-v<VERSION>` のタグを指すので、サイトより先に打つ。条文のタグが無いままサイトのタグを打つと `release-check` が止める。
 
 ```bash
 git tag cospl-v<VERSION> && just release-check cospl-v<VERSION> license && git push origin cospl-v<VERSION>

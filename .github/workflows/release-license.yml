@@ -44,9 +44,10 @@ jobs:
           # gh はイメージに無いので REST API を直接呼ぶ。JSON は node で組んでクォートの崩れを避ける。
           payload=$(node -e 'const [tag, version, url] = process.argv.slice(1); console.log(JSON.stringify({ tag_name: tag, name: `CosPL ${version}`, body: `CosPL ${version} の条文: ${url}` }))' \
             "${GITHUB_REF_NAME}" "${version}" "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/${terms}")
-          curl -fsS -X POST \
+          # 失敗時（同名の Release が既にある 422 など）に理由をログへ残すため本文ごと出す
+          curl -sS --fail-with-body -X POST \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/releases" \
-            -d "${payload}" -o /dev/null
+            -d "${payload}"
           echo "released CosPL ${version}"

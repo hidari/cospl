@@ -18,11 +18,11 @@ status: open
 
 ## タスク
 
-- [ ] タグの判定を `src/release/tag.ts` に置き、`just release-check` からタグの形式と main への包含を検査する
-- [ ] deploy.yml を `site-v*` タグの push で起動し、手動起動を廃止する
-- [ ] release-license.yml を追加し、`cospl-v*` タグの push で Release を作る
-- [ ] `TERMS_URL` と index.html / llms.txt のリンクを条文のタグの時点に向ける
-- [ ] deploy skill の手順をタグ駆動にする
+- [x] タグの判定を `src/release/tag.ts` に置き、`just release-check` からタグの形式と main への包含、サイトでは条文のタグが先にあることを検査する
+- [x] deploy.yml を `site-v*` タグの push で起動し、手動起動を廃止する
+- [x] release-license.yml を追加し、`cospl-v*` タグの push で Release を作る
+- [x] `TERMS_URL` と index.html / llms.txt のリンクを条文のタグの時点に向ける
+- [x] deploy skill の手順をタグ駆動にする
 - [ ] マージ後: production environment のデプロイ許可を `site-v*` タグにし、タグの ruleset を作り、`cospl-v2.0` と最初のサイトのタグを打つ
 
 ## 関連

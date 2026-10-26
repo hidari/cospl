@@ -1,4 +1,5 @@
 // リリースタグを検証する CI の入口。`node scripts/check-release-tag.mjs <タグ> <license|site>`。
+// 成功すると、そのリリースが前提とする条文のタグ（cospl-v<VERSION>）を標準出力へ出す。
 // 判定は src/release/tag.ts が持ち、ここは引数を渡して結果を終了コードへ写すだけにする。
 // src は拡張子なしの相対 import を持つため、regen-golden.mjs と同じく esbuild で bundle してから読み込む。
 
@@ -41,4 +42,5 @@ if (result.data.kind !== expectedKind) {
   );
   process.exit(1);
 }
-console.log(`${result.data.kind} ${result.data.version}`);
+// 標準出力にはリリースが前提とする条文のタグだけを出す（just release-check が存在を確かめる）。
+console.log(`cospl-v${VERSION}`);

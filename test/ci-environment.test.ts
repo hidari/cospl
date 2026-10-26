@@ -69,7 +69,7 @@ describe("CI の実行環境の固定", () => {
       expect(linesOf(raw, "node-version-file")).toEqual(
         Array(playwrightJobs).fill(".node-version"),
       );
-      expect(raw.match(/uses: actions\/setup-node@/g)?.length ?? 0).toBe(playwrightJobs);
+      expect(raw.match(/^ +- uses: actions\/setup-node@/gm)?.length ?? 0).toBe(playwrightJobs);
     },
   );
 

@@ -51,8 +51,8 @@ export class LicensePage {
     this.creditAny = page.getByRole("radio", { name: "方法は問わない" });
     this.footer = page.getByRole("contentinfo");
     this.footerLinks = page.getByRole("navigation", { name: "関連リンク" }).getByRole("link");
-    this.footerX = page.getByRole("link", { name: "X @Hidari0415" });
-    this.footerCopyright = this.footer.getByText("© 2026 Hidari");
+    this.footerCopyright = this.footer.locator(".copyright");
+    this.footerX = this.footerCopyright.getByRole("link");
   }
 
   // hash は "#tags=BY-NC" の形（先頭 # 含む）。未指定は素のトップ。

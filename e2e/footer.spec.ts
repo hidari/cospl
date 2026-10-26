@@ -8,7 +8,6 @@ test("フッターの関連リンクが決められた順で並ぶ", async ({ li
     "llms.txt",
     "リポジトリ",
     "Discussion",
-    "X @Hidari0415",
     "謝辞",
   ]);
 });
@@ -25,10 +24,12 @@ test("謝辞は自己ホストしているフォントのライセンス文を�
   expect(await res.text()).toContain("SIL Open Font License");
 });
 
-test("X のリンクは x.com の本人のページを指し、ロゴは読み上げに含まれない", async ({
+test("著作権表記の名前から閉じ括弧までが x.com の本人のページを指し、ロゴは読み上げに含まれない", async ({
   licensePage,
 }) => {
   await licensePage.goto();
+  await expect(licensePage.footerCopyright).toHaveText("© 2026 Hidari (@Hidari0415)");
+  await expect(licensePage.footerX).toHaveText("Hidari (@Hidari0415)");
   await expect(licensePage.footerX).toHaveAttribute("href", "https://x.com/Hidari0415");
   await expect(licensePage.footerX).toHaveAttribute("rel", "noopener");
   await expect(licensePage.footerX.locator("svg")).toHaveAttribute("aria-hidden", "true");

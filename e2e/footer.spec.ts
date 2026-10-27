@@ -28,10 +28,50 @@ test("著作権表記の名前から閉じ括弧までが x.com の本人のペ�
   licensePage,
 }) => {
   await licensePage.goto();
-  await expect(licensePage.footerCopyright).toHaveText("© 2026 Hidari (@Hidari0415)");
-  await expect(licensePage.footerX).toHaveText("Hidari (@Hidari0415)");
+  await expect(licensePage.footerCopyright).toHaveText("© 2026 Hidari ( @Hidari0415 )");
+  await expect(licensePage.footerX).toHaveText("Hidari ( @Hidari0415 )");
   await expect(licensePage.footerX).toHaveAttribute("href", "https://x.com/Hidari0415");
   await expect(licensePage.footerX.locator("svg")).toHaveAttribute("aria-hidden", "true");
+});
+
+// 比べる色は同じフッターの中に置いた var(--link) の要素から読む（モードごとの値に追従させる）。
+test.describe("フッターのリンクの見た目", () => {
+  for (const which of ["footerLinks", "footerX"] as const) {
+    test(`${which} は下線を持たずリンク色で、ホバーとキーボードのフォーカスで下線が伸びる`, async ({
+      licensePage,
+      page,
+    }) => {
+      await licensePage.goto();
+      const link = licensePage[which].first();
+      const linkColor = await licensePage.footer.evaluate((footer) => {
+        const probe = document.createElement("span");
+        probe.style.color = "var(--link)";
+        footer.append(probe);
+        const color = getComputedStyle(probe).color;
+        probe.remove();
+        return color;
+      });
+
+      await expect(link).toHaveCSS("text-decoration-line", "none");
+      await expect(link).toHaveCSS("color", linkColor);
+      await expect(link).toHaveCSS("background-size", "0% 1px");
+
+      await link.hover();
+      await expect(link).toHaveCSS("text-decoration-line", "none");
+      await expect(link).toHaveCSS("background-size", "100% 1px");
+      await expect(link).not.toHaveCSS("color", linkColor);
+
+      await page.mouse.move(0, 0);
+      await expect(link).toHaveCSS("background-size", "0% 1px");
+
+      await link.focus();
+      await expect(link).toHaveCSS("background-size", "100% 1px");
+      await expect(link).not.toHaveCSS("color", linkColor);
+
+      await link.blur();
+      await expect(link).toHaveCSS("background-size", "0% 1px");
+    });
+  }
 });
 
 test("著作権表記が関連リンクの下に見える", async ({ licensePage }) => {

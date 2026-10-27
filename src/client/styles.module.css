@@ -895,9 +895,24 @@
   color: var(--muted);
   font-size: 0.86rem;
 }
+/* 下線の代わりに背景の 1px の線を持ち、ホバーとフォーカスで左から伸ばす。
+   背景なので折り返したリンクでも各行に引かれる。 */
 :global(footer a) {
-  color: var(--ink);
   font-weight: 500;
+  text-decoration: none;
+  background: linear-gradient(currentColor, currentColor) left bottom / 0% 1px no-repeat;
+}
+:global(footer a:hover),
+:global(footer a:focus-visible) {
+  color: var(--accent-ink);
+  background-size: 100% 1px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  :global(footer a) {
+    transition:
+      background-size 0.2s ease-out,
+      color 0.2s;
+  }
 }
 :global(.links) {
   display: flex;
@@ -909,7 +924,7 @@
 :global(.x-logo) {
   width: 0.9em;
   height: 0.9em;
-  margin-right: 0.4em;
+  margin-right: calc(0.4em - 2px);
   vertical-align: -0.1em;
 }
 :global(.copyright) {

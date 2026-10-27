@@ -12,7 +12,12 @@ import { fail, mapResult, type Result, success } from "../types/result";
 export type ViewBox = { x: number; y: number; width: number; height: number };
 export type BrandMaster = { file: string; ratio: number; copyTo?: string };
 
-export const BRAND_MASTERS: readonly BrandMaster[] = [];
+// copyTo は public/ からの相対パス。
+export const BRAND_MASTERS: readonly BrandMaster[] = [
+  { file: "icon.svg", ratio: 1, copyTo: "favicon.svg" },
+  { file: "icon-full.svg", ratio: 1 },
+  { file: "icon-maskable.svg", ratio: 1 },
+];
 
 // 宣言してよい名前空間。XHTML や MathML の要素（img の src など、href 以外で外部を読むもの）を
 // 混ぜられなくする。

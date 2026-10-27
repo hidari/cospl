@@ -4,7 +4,8 @@
 //
 // 検査は正規表現で、文書全体の文字列に対して行う。要素や属性の構造を読み取ってから判定すると、
 // 読み取れなかった箇所が検査から漏れるので、危険な字句は現れる場所を問わず拒否する。
-// 過剰に拒否しても困らない（マスターは Affinity の書き出しで、該当する書き方をしない）。
+// 過剰に拒否しても困らない想定（マスターは Affinity の書き出しで、該当する書き方をしないと見ている。
+// 実際の書き出しで落ちたら、その書き方を見てから許可リストを広げる）。
 
 import { fromNullable, mapOption, none, type Option, some } from "../types/option";
 import { fail, mapResult, type Result, success } from "../types/result";
@@ -119,10 +120,16 @@ const CHECKS: readonly Check[] = [
   backslash,
 ];
 
-// 内部サブセットの実体は展開後に <script> などを作れ、生の文字列の検査をすり抜ける。
-const INTERNAL_SUBSET = /<!DOCTYPE[^>]*\[|<!ENTITY/i;
+// 内部サブセットの実体は展開後に <script> などを作れ、属性の既定値（ATTLIST）は onload や href を
+// 要素に書かずに付けられるので、どちらも生の文字列の検査をすり抜ける。
+const INTERNAL_SUBSET = /<!DOCTYPE[^>]*\[|<!(?:ENTITY|ATTLIST|ELEMENT|NOTATION)/i;
+// 読み飛ばしてよい DOCTYPE。XML のシステム識別子は > を含めるので、> までを DOCTYPE と見なすと
+// 識別子の中の <!-- や <? で内部サブセットをコメント・処理命令に見せかけられる。識別子に
+// < > [ ] を許さない形だけ読み飛ばし、それ以外の DOCTYPE はルート要素として読めずに落とす。
+const LITERAL = String.raw`"[^"<>[\]]*"`;
+const DOCTYPE = String.raw`<!DOCTYPE\s+svg(?:\s+PUBLIC\s+${LITERAL}\s+${LITERAL}|\s+SYSTEM\s+${LITERAL})?\s*>`;
 // XML 宣言・処理命令・コメント・DOCTYPE・空白。この後の最初の要素をルートとする。
-const PROLOG = /^(?:\s+|<\?[\s\S]*?\?>|<!--[\s\S]*?-->|<!DOCTYPE[^>]*>)*/i;
+const PROLOG = new RegExp(String.raw`^(?:\s+|<\?[\s\S]*?\?>|<!--[\s\S]*?-->|${DOCTYPE})*`, "i");
 // 属性が name="value" / name='value' の並びである svg の開始タグ。引用符の中の > で切れないよう
 // 属性単位で読む。
 const ROOT_SVG = /^<svg((?:\s+[^\s=/>]+\s*=\s*(?:"[^"]*"|'[^']*'))*)\s*\/?>/;

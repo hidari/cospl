@@ -127,12 +127,15 @@ async function toJpeg(png, jpg, quality) {
 async function main() {
   const masters = await loadTs({ entryPoint: join(root, "src", "brand", "masters.ts") }, "masters");
   // 描画や書き込みより先に全マスターを検査し、1 枚でも通らなければ何も書かずに止める。
+  // process.exit() は stderr がパイプのとき書き出しを待たずに終わり、メッセージが消えることがあるので
+  // 終了コードだけ立てて自然に終わらせる。
   const { loaded, failures } = await readMasters(masters);
   if (failures.length > 0) {
     for (const { file, error } of failures) {
       console.error(`brand/${file}: ${error}`);
     }
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
   const master = (file) => {
     const found = loaded.find((m) => m.file === file);
@@ -222,5 +225,5 @@ async function main() {
 
 main().catch((err) => {
   console.error(err);
-  process.exit(1);
+  process.exitCode = 1;
 });

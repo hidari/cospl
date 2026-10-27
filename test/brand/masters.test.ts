@@ -78,7 +78,6 @@ describe("inspectMaster", () => {
     ["style 要素の @import", wrap('<style>@import "x.css";</style>')],
     ["style 要素の url() が外部（id 付き）", wrap("<style>.a{fill:url(http://e/#g)}</style>")],
     ["text 要素", wrap("<text>CosPL</text>")],
-    ["DOCTYPE の空の内部サブセット", `<!DOCTYPE svg []>${wrap("<rect/>")}`],
     ["ルートが html", `<html viewBox="0 0 100 100"><svg ${SVG_NS} viewBox="0 0 100 100"/></html>`],
     ["viewBox が無い", `<svg ${SVG_NS}><rect/></svg>`],
     ["viewBox の数が 4 つでない", `<svg ${SVG_NS} viewBox="0 0 100"><rect/></svg>`],
@@ -109,6 +108,34 @@ describe("inspectMaster", () => {
       "DOCTYPE の内部サブセット",
       `<!DOCTYPE svg [<!ENTITY e "x">]>${wrap("<rect/>")}`,
       "内部サブセット",
+    ],
+    ["DOCTYPE の空の内部サブセット", `<!DOCTYPE svg []>${wrap("<rect/>")}`, "内部サブセット"],
+    [
+      "DOCTYPE の内部サブセットの ATTLIST（属性の既定値で onload を付ける）",
+      `<!DOCTYPE svg [<!ATTLIST svg onload CDATA "x">]>${wrap("<rect/>")}`,
+      "内部サブセット",
+    ],
+    // XML のシステム識別子は > を含めるので、> までを DOCTYPE とみなす読み方は XML の読み方とずれる。
+    // 識別子の中の <!-- や <?x で内部サブセットをコメント・処理命令に見せかける形。
+    [
+      "システム識別子の <!-- で内部サブセットをコメントに見せかける",
+      `<!DOCTYPE svg SYSTEM "a><!--" [<!ATTLIST svg onload CDATA "x">]><!-- -->${wrap("<rect/>")}`,
+      "内部サブセット",
+    ],
+    [
+      "システム識別子の <?x で内部サブセットを処理命令に見せかける",
+      `<!DOCTYPE svg SYSTEM "a><?x" [<!ATTLIST svg onload CDATA "x">]><?y ?>${wrap("<rect/>")}`,
+      "内部サブセット",
+    ],
+    [
+      "見せかけた内部サブセットの ATTLIST で image の xlink:href の既定値を外部にする",
+      `<!DOCTYPE svg SYSTEM "a><!--" [<!ATTLIST image xlink:href CDATA "https://e/x.svg">]><!-- -->${wrap("<image/>", ` ${XLINK_NS}`)}`,
+      "内部サブセット",
+    ],
+    [
+      "システム識別子の <!-- で空の内部サブセットをコメントに見せかける（許可する形の DOCTYPE でない）",
+      `<!DOCTYPE svg SYSTEM "a><!--" [ ]><!-- -->${wrap("<rect/>")}`,
+      "ルート要素が svg でない",
     ],
     [
       "style 要素の image-set() が引用符だけの外部",

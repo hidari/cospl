@@ -87,6 +87,12 @@ const cssUrls: Check = (svg) =>
 // 文書内を指す @import は無いので丸ごと拒否する。
 const cssImport: Check = (svg) => (/@import/i.test(svg) ? some("@import を含む") : none());
 
+// url() 以外で画像を読む CSS の関数。image-set() などは引用符だけの文字列で外部を指せるので、
+// url() の許可リストに掛からない。文書内を指す使い道は無いので丸ごと拒否する。
+const CSS_IMAGE_FUNCTION = /((?:-webkit-)?image-set|image|src|cross-fade)\(/i;
+const cssImageFunctions: Check = (svg) =>
+  mapOption(fromNullable(svg.match(CSS_IMAGE_FUNCTION)), (m) => `CSS の ${m[1]}( を含む`);
+
 // 数値文字参照は XML の読み込みで文字に戻るので、u&#114;l( のように CSS の字句を検査から隠せる。
 // マスターは UTF-8 で直接書けるので要らず、丸ごと拒否する。
 const charRefs: Check = (svg) => (svg.includes("&#") ? some("数値文字参照を含む") : none());
@@ -103,6 +109,7 @@ const CHECKS: readonly Check[] = [
   hrefs,
   cssUrls,
   cssImport,
+  cssImageFunctions,
   charRefs,
   backslash,
 ];

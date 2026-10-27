@@ -70,10 +70,6 @@ describe("inspectMaster", () => {
     ["大文字・単引用符の ONCLICK 属性", wrap("<rect ONCLICK='x'/>")],
     ["a の href が https", wrap('<a href="https://example.com"><rect/></a>')],
     ["href がスキーム相対", wrap('<use href="//example.com/x.svg"/>')],
-    [
-      "href が文字参照で符号化した javascript:",
-      wrap('<a href="java&#115;cript:alert(1)"><rect/></a>'),
-    ],
     ["href の id の前に空白", wrap('<use href=" #a"/>')],
     ["image の href が SVG の data URL", wrap('<image href="data:image/svg+xml;base64,AAAA"/>')],
     ["set が href を書き換える", wrap('<set attributeName="href" to="#a"/>')],
@@ -82,7 +78,6 @@ describe("inspectMaster", () => {
     ["style 要素の @import", wrap('<style>@import "x.css";</style>')],
     ["style 要素の url() が外部（id 付き）", wrap("<style>.a{fill:url(http://e/#g)}</style>")],
     ["text 要素", wrap("<text>CosPL</text>")],
-    ["DOCTYPE の内部サブセット", `<!DOCTYPE svg [<!ENTITY e "x">]>${wrap("<rect/>")}`],
     ["DOCTYPE の空の内部サブセット", `<!DOCTYPE svg []>${wrap("<rect/>")}`],
     ["ルートが html", `<html viewBox="0 0 100 100"><svg ${SVG_NS} viewBox="0 0 100 100"/></html>`],
     ["viewBox が無い", `<svg ${SVG_NS}><rect/></svg>`],
@@ -101,6 +96,41 @@ describe("inspectMaster", () => {
     ["CSS のエスケープで url( を隠す", wrap('<rect style="fill:u\\72l(https://e/x)"/>')],
   ])("%s なら拒否する", (_label, svg) => {
     expect(inspectMaster(svg).success).toBe(false);
+  });
+
+  // 狙った検査を外しても別の検査で落ちうる入力は、狙った検査のメッセージで落ちることまで固定する。
+  test.each([
+    [
+      "href が文字参照で符号化した javascript:",
+      wrap('<a href="java&#115;cript:alert(1)"><rect/></a>'),
+      "許可しない href",
+    ],
+    [
+      "DOCTYPE の内部サブセット",
+      `<!DOCTYPE svg [<!ENTITY e "x">]>${wrap("<rect/>")}`,
+      "内部サブセット",
+    ],
+    [
+      "style 要素の image-set() が引用符だけの外部",
+      wrap('<style>rect{mask-image:image-set("https://e/x" 1x)}</style>'),
+      "image-set(",
+    ],
+    [
+      "style 属性の -webkit-image-set()",
+      wrap(`<rect style="mask-image:-webkit-image-set('https://e/x' 1x)"/>`),
+      "-webkit-image-set(",
+    ],
+    ["style 要素の src()", wrap('<style>rect{mask-image:src("https://e/x")}</style>'), "src("],
+    ["style 属性の image()", wrap(`<rect style="mask-image:image('https://e/x')"/>`), "image("],
+    [
+      "style 要素の cross-fade()",
+      wrap('<style>rect{mask-image:cross-fade("https://e/x")}</style>'),
+      "cross-fade(",
+    ],
+  ])("%s は狙った検査のメッセージで拒否する", (_label, svg, message) => {
+    const result = inspectMaster(svg);
+    expect(result.success).toBe(false);
+    expect(!result.success && result.error).toContain(message);
   });
 });
 

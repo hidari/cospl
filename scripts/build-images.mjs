@@ -187,14 +187,6 @@ async function main() {
     );
     console.log("pwa icons: icon-192 / icon-512 / icon-512-maskable");
 
-    // 写しはマスターと同じバイト列にする（テストが文字列の完全一致で見張る）。
-    for (const m of loaded) {
-      if (m.copyTo !== undefined) {
-        await writeFile(join(pub, m.copyTo), m.svg);
-      }
-    }
-    await writeGenerated(masters, loaded);
-
     // --- OGP（白地・PNG マスター → WebP + JPEG）---
     const ogps = [
       { name: "ogp-landscape", w: 1200, h: 630 },
@@ -212,6 +204,16 @@ async function main() {
       await toJpeg(png, join(pub, "ogp", `${name}.jpg`), 92);
       console.log(`ogp: ${name} ${w}x${h} -> png + webp + jpg`);
     }
+
+    // generated.json は「最後まで描き終えた」印なので、全部の描画が済んでから書く。途中で失敗したら
+    // 古いハッシュのままになり、テストが just images のやり直しを求める。
+    // 写しはマスターと同じバイト列にする（テストが文字列の完全一致で見張る）。
+    for (const m of loaded) {
+      if (m.copyTo !== undefined) {
+        await writeFile(join(pub, m.copyTo), m.svg);
+      }
+    }
+    await writeGenerated(masters, loaded);
   } finally {
     await browser.close();
     await rm(tmp, { recursive: true, force: true });

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { inspectMaster, sha256Hex } from "../../src/brand/masters";
+import { generatedJson, inspectMaster, sha256Hex } from "../../src/brand/masters";
 
 const SVG_NS = 'xmlns="http://www.w3.org/2000/svg"';
 const XLINK_NS = 'xmlns:xlink="http://www.w3.org/1999/xlink"';
@@ -74,6 +74,10 @@ describe("inspectMaster", () => {
     ["image の href が SVG の data URL", wrap('<image href="data:image/svg+xml;base64,AAAA"/>')],
     ["set が href を書き換える", wrap('<set attributeName="href" to="#a"/>')],
     ["animate が xlink:href を書き換える", wrap('<animate attributeName="xlink:href"/>')],
+    [
+      "前後に空白を付けた attributeName で href を書き換える",
+      wrap('<set attributeName=" href " to="#a"/>'),
+    ],
     ["style 属性の url() が外部", wrap('<rect style="fill:url(https://e/x)"/>')],
     ["style 要素の @import", wrap('<style>@import "x.css";</style>')],
     ["style 要素の url() が外部（id 付き）", wrap("<style>.a{fill:url(http://e/#g)}</style>")],
@@ -169,5 +173,24 @@ describe("sha256Hex", () => {
     ["あ", "dc5a4d3d82f7e15792959dc661538ae0e541ce66494516f5c9cfd9cd3308494d"],
   ])("%j の SHA-256 を小文字 16 進で返す", async (text, hex) => {
     await expect(sha256Hex(text)).resolves.toBe(hex);
+  });
+});
+
+describe("generatedJson", () => {
+  test("各マスターの SHA-256 を与えた順に、2 字下げの JSON と末尾の改行で返す", async () => {
+    await expect(
+      generatedJson([
+        { file: "b.svg", svg: "abc" },
+        { file: "a.svg", svg: "" },
+      ]),
+    ).resolves.toBe(
+      [
+        "{",
+        '  "b.svg": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",',
+        '  "a.svg": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"',
+        "}",
+        "",
+      ].join("\n"),
+    );
   });
 });

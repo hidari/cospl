@@ -36,17 +36,6 @@ async function readMasters(masters) {
   return { loaded, failures };
 }
 
-// generated.json はマスターの今の本文のハッシュを BRAND_MASTERS の順で持つ。
-async function writeGenerated(masters, loaded) {
-  const entries = await Promise.all(
-    loaded.map(async (m) => [m.file, await masters.sha256Hex(m.svg)]),
-  );
-  await writeFile(
-    join(brand, "generated.json"),
-    `${JSON.stringify(Object.fromEntries(entries), null, 2)}\n`,
-  );
-}
-
 // 目印の間をロゴで置き換えた SVG を返す。目印が 1 組でなければ失敗する。
 function withLogo(mark, svg, logo) {
   const span = mark.logoMarkSpan(svg);
@@ -55,6 +44,9 @@ function withLogo(mark, svg, logo) {
   }
   return svg.slice(0, span.data.from) + logo + svg.slice(span.data.to);
 }
+
+// アイコンのマスターは文字を持たない（inspectMaster が text を拒否する）ので、フォントを読み込まずに描く。
+const NO_FONTS = "";
 
 // フォントの拡張子（data URI の MIME の subtype）と @font-face の format() の対応
 const FONT_FORMATS = { woff2: "woff2", ttf: "truetype" };
@@ -148,7 +140,6 @@ async function main() {
   const browser = await chromium.launch({ channel: "chrome" });
   const tmp = await mkdtemp(join(tmpdir(), "cospl-img-"));
   try {
-    const faces = await fontFaces();
     const mark = await loadTs({ entryPoint: join(root, "src", "brand", "mark.ts") }, "mark");
 
     const iconSvg = master("icon.svg");
@@ -158,14 +149,14 @@ async function main() {
     const icoPngs = [];
     for (const s of icoSizes) {
       const p = join(tmp, `favicon-${s}.png`);
-      await renderSvg(browser, faces, iconSvg, s, s, p, { transparent: true });
+      await renderSvg(browser, NO_FONTS, iconSvg, s, s, p, { transparent: true });
       icoPngs.push(p);
     }
     await run("magick", [...icoPngs, join(pub, "favicon.ico")]);
     // apple-touch は OS が角を丸めるため全面ベタ塗り。
     await renderSvg(
       browser,
-      faces,
+      NO_FONTS,
       master("icon-full.svg"),
       180,
       180,
@@ -174,15 +165,15 @@ async function main() {
     console.log("favicon: favicon.ico (16/32/48) + apple-touch-icon.png (180)");
 
     // --- PWA アイコン（manifest 用。any は丸角透過、maskable は全面ベタ塗り）---
-    await renderSvg(browser, faces, iconSvg, 192, 192, join(pub, "icons", "icon-192.png"), {
+    await renderSvg(browser, NO_FONTS, iconSvg, 192, 192, join(pub, "icons", "icon-192.png"), {
       transparent: true,
     });
-    await renderSvg(browser, faces, iconSvg, 512, 512, join(pub, "icons", "icon-512.png"), {
+    await renderSvg(browser, NO_FONTS, iconSvg, 512, 512, join(pub, "icons", "icon-512.png"), {
       transparent: true,
     });
     await renderSvg(
       browser,
-      faces,
+      NO_FONTS,
       master("icon-maskable.svg"),
       512,
       512,
@@ -191,6 +182,7 @@ async function main() {
     console.log("pwa icons: icon-192 / icon-512 / icon-512-maskable");
 
     // --- OGP（白地・PNG マスター → WebP + JPEG）---
+    const faces = await fontFaces();
     const ogps = [
       { name: "ogp-landscape", w: 1200, h: 630 },
       { name: "ogp-square", w: 1200, h: 1200 },
@@ -216,7 +208,7 @@ async function main() {
         await writeFile(join(pub, m.copyTo), m.svg);
       }
     }
-    await writeGenerated(masters, loaded);
+    await writeFile(join(brand, "generated.json"), await masters.generatedJson(loaded));
   } finally {
     await browser.close();
     await rm(tmp, { recursive: true, force: true });

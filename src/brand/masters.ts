@@ -58,11 +58,16 @@ type Check = (svg: string) => Option<string>;
 const firstBad = (values: readonly string[], allowed: (v: string) => boolean): Option<string> =>
   fromNullable(values.find((v) => !allowed(v)));
 
-const namespaces: Check = (svg) =>
-  mapOption(
-    firstBad(Array.from(svg.matchAll(XMLNS), attributeValue), (v) => NAMESPACES.includes(v)),
-    (v) => `許可しない名前空間: ${v}`,
-  );
+// re が拾った値のうち、allowed に当たらない最初のものを label 付きで返す。
+const allowOnly =
+  (re: RegExp, allowed: (v: string) => boolean, label: string): Check =>
+  (svg) =>
+    mapOption(
+      firstBad(Array.from(svg.matchAll(re), attributeValue), allowed),
+      (v) => `${label}: ${v}`,
+    );
+
+const namespaces = allowOnly(XMLNS, (v) => NAMESPACES.includes(v), "許可しない名前空間");
 
 const forbiddenElement: Check = (svg) =>
   mapOption(fromNullable(svg.match(ELEMENT)), (m) => `${m[1]} 要素を含む`);
@@ -71,24 +76,13 @@ const eventAttribute: Check = (svg) =>
   mapOption(fromNullable(svg.match(EVENT_ATTRIBUTE)), (m) => `イベント属性 ${m[1]} を含む`);
 
 const hrefAnimation: Check = (svg) =>
-  Array.from(svg.matchAll(ATTRIBUTE_NAME), attributeValue).some((v) => ANIMATED_HREF.test(v))
+  Array.from(svg.matchAll(ATTRIBUTE_NAME), attributeValue).some((v) => ANIMATED_HREF.test(v.trim()))
     ? some("href を書き換える animate / set を含む")
     : none();
 
-const hrefs: Check = (svg) =>
-  mapOption(
-    firstBad(
-      Array.from(svg.matchAll(HREF), attributeValue),
-      (v) => ID_REF.test(v) || RASTER_DATA_URL.test(v),
-    ),
-    (v) => `許可しない href: ${v}`,
-  );
+const hrefs = allowOnly(HREF, (v) => ID_REF.test(v) || RASTER_DATA_URL.test(v), "許可しない href");
 
-const cssUrls: Check = (svg) =>
-  mapOption(
-    firstBad(Array.from(svg.matchAll(CSS_URL), attributeValue), (v) => ID_REF.test(v)),
-    (v) => `許可しない url(): ${v}`,
-  );
+const cssUrls = allowOnly(CSS_URL, (v) => ID_REF.test(v), "許可しない url()");
 
 // 文書内を指す @import は無いので丸ごと拒否する。
 const cssImport: Check = (svg) => (/@import/i.test(svg) ? some("@import を含む") : none());
@@ -175,4 +169,12 @@ export const inspectMaster = (svg: string): Result<{ viewBox: ViewBox }, string>
 export const sha256Hex = async (text: string): Promise<string> => {
   const digest = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+};
+
+// brand/generated.json の本文。just images が書き、テストがコミット済みのものと比べる。
+export const generatedJson = async (
+  masters: readonly { file: string; svg: string }[],
+): Promise<string> => {
+  const entries = await Promise.all(masters.map(async (m) => [m.file, await sha256Hex(m.svg)]));
+  return `${JSON.stringify(Object.fromEntries(entries), null, 2)}\n`;
 };

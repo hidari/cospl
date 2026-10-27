@@ -6,11 +6,10 @@ import { fail, type Result, success } from "../types/result";
 
 export type MarkColors = { c: string; dot: string };
 
-// 弧: 中心 (50, 50)・半径 30・線幅 11。点: 中心 (52, 50)・半径 11。
 const ARC = { from: [72, 30], to: [72, 70], radius: 30, width: 11 } as const;
 const DOT = { cx: 52, cy: 50, r: 11 } as const;
 
-// C の外形に見た目の中心を寄せた 71 四方の枠 `10.5 14.5 71 71`。
+// C の外形に見た目の中心を寄せた枠（viewBox にそのまま使う）。
 export const BOX = { x: 10.5, y: 14.5, size: 71 } as const;
 const BOX_CENTER = { x: BOX.x + BOX.size / 2, y: BOX.y + BOX.size / 2 } as const;
 
@@ -19,7 +18,7 @@ const LOGO_CENTER_ABOVE_BASELINE_EM = 0.35;
 
 export const LOGO = { markEm: 1.05, gapEm: 0.28, letterSpacingEm: -0.02 };
 
-// OGP に差し込むロゴの位置。旧ワードマークの基線 x / y と文字サイズに合わせる。
+// OGP に差し込むロゴの基線の位置 x / y と文字サイズ（px）。
 export const OGP_LOGO = {
   "ogp-landscape": { x: 84, baseline: 152, fontSize: 64 },
   "ogp-square": { x: 96, baseline: 222, fontSize: 84 },

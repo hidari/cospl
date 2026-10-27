@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 // workerd では node:fs が使えないため Vite の ?raw で本文を文字列として埋め込む。
 import generatedRaw from "../../brand/generated.json?raw";
-import { BRAND_MASTERS, inspectMaster, sha256Hex } from "../../src/brand/masters";
+import { BRAND_MASTERS, generatedJson, inspectMaster } from "../../src/brand/masters";
 
 // brand/ の SVG を全部読む。BRAND_MASTERS に登録し忘れたマスターもキーに現れる。
 const masters = import.meta.glob("../../brand/*.svg", {
@@ -43,9 +43,7 @@ describe("brand/ のマスター", () => {
 // マスターを変えたのに `just images` を実行し忘れた状態を捕まえる。
 describe("brand/generated.json", () => {
   test("BRAND_MASTERS の順に各マスターの SHA-256 を持つ", async () => {
-    const entries = await Promise.all(
-      BRAND_MASTERS.map(async (m) => [m.file, await sha256Hex(master(m.file) ?? "")] as const),
-    );
-    expect(generatedRaw).toBe(`${JSON.stringify(Object.fromEntries(entries), null, 2)}\n`);
+    const current = BRAND_MASTERS.map((m) => ({ file: m.file, svg: master(m.file) ?? "" }));
+    expect(generatedRaw).toBe(await generatedJson(current));
   });
 });

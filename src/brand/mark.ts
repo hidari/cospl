@@ -1,4 +1,5 @@
-// CosPL のマーク（C のレンズと中の点）の形と、ヘッダーと OGP に差し込むロゴの定義。座標は 100 四方の系。
+// CosPL のマーク（C のレンズと中の点）の形と、OGP に差し込むロゴの定義。座標は 100 四方の系。
+// ヘッダーのマークは index.html にインラインで置かれ、その形と CSS がここの定義と一致することをテストで確かめる。OGP のロゴは `just images` が差し込む。
 // アイコンは brand/ の SVG マスターから作るため、ここでは扱わない。
 
 import { fail, type Result, success } from "../types/result";

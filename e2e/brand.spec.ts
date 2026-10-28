@@ -1,47 +1,40 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 
-test("ヘッダーのロゴが名前「CosPL」の画像として見える", async ({ licensePage, page }) => {
-  await licensePage.goto();
-  await expect(page.getByRole("img", { name: "CosPL" })).toBeVisible();
-});
+const logo = (page: Page) => page.getByRole("img", { name: "CosPL" });
 
-// 描画された computed の値を直接読む。SVG の表示属性に書いた var() がエンジンで解決されないと、
-// C が消えるか黒く塗られる。
-const readPaint = (page: Page) =>
-  page.evaluate(() => {
-    const computed = (selector: string) => {
-      const el = document.querySelector(selector);
-      return el ? getComputedStyle(el) : undefined;
-    };
-    return {
-      bodyBg: getComputedStyle(document.body).backgroundColor,
-      logoColor: computed(".logo")?.color ?? "",
-      stroke: computed(".logo .mk-c")?.stroke ?? "",
-      fill: computed(".logo .mk-dot")?.fill ?? "",
-    };
-  });
+// 表示中の画像（picture が選んだ方）と、それが読み込めて描かれたかを読む。
+// 切り替えの途中は currentSrc が空になるので、そのときは空のまま返して poll に待たせる。
+const shown = (page: Page) =>
+  logo(page).evaluate((img: HTMLImageElement) => ({
+    src: img.currentSrc === "" ? "" : new URL(img.currentSrc).pathname,
+    loaded: img.complete && img.naturalWidth > 0,
+  }));
 
-const RGB = /^rgb\(\d+, \d+, \d+\)$/;
-
-test("ライトとダークの両方でロゴの C と点が色で塗られ、ダークは地もマークも違う", async ({
+test("ヘッダーのロゴが名前「CosPL」の画像として見え、高さが決まっている", async ({
   licensePage,
   page,
 }) => {
   await licensePage.goto();
-  await expect(page.getByRole("img", { name: "CosPL" })).toBeVisible();
+  await expect(logo(page)).toBeVisible();
+  const box = await logo(page).boundingBox();
+  expect(box?.height).toBeGreaterThan(20);
+  // 幅は画像の縦横比で決まる（width / height 属性の比と同じ）。
+  const ratio = await logo(page).evaluate(
+    (img: HTMLImageElement) =>
+      Number(img.getAttribute("width")) / Number(img.getAttribute("height")),
+  );
+  expect((box?.width ?? 0) / (box?.height ?? 1)).toBeCloseTo(ratio, 1);
+});
 
+test("ライトではライト版、ダークではダーク版のロゴが読み込まれて表示される", async ({
+  licensePage,
+  page,
+}) => {
   await page.emulateMedia({ colorScheme: "light" });
-  const light = await readPaint(page);
-  await page.emulateMedia({ colorScheme: "dark" });
-  const dark = await readPaint(page);
+  await licensePage.goto();
+  await expect.poll(() => shown(page)).toEqual({ src: "/icons/logo-light.svg", loaded: true });
 
-  for (const paint of [light, dark]) {
-    expect(paint.stroke).toMatch(RGB);
-    expect(paint.fill).toMatch(RGB);
-  }
-  expect(dark.bodyBg).not.toBe(light.bodyBg);
-  expect(dark.logoColor).not.toBe(dark.bodyBg);
-  expect(dark.stroke).not.toBe(light.stroke);
-  expect(dark.fill).not.toBe(light.fill);
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect.poll(() => shown(page)).toEqual({ src: "/icons/logo-dark.svg", loaded: true });
 });

@@ -1,4 +1,6 @@
 // SVG マスターからブランド画像（ファビコン / OGP）を生成する。
+// アイコンは brand/ のマスター（src/brand/masters.ts の BRAND_MASTERS）から描き、
+// 配信する写しと brand/generated.json も書く。
 // playwright-core + システム Chrome で SVG を実寸描画し PNG 化、
 // cwebp / ImageMagick(magick) で WebP・JPEG・ICO へ変換する。
 //
@@ -17,6 +19,22 @@ import { loadTs } from "./lib/load-ts.mjs";
 const run = promisify(execFile);
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pub = join(root, "public");
+const brand = join(root, "brand");
+
+// 全マスターを読み、検査に通らなかったものを { file, error } で返す。
+async function readMasters(masters) {
+  const loaded = await Promise.all(
+    masters.BRAND_MASTERS.map(async (m) => ({
+      ...m,
+      svg: await readFile(join(brand, m.file), "utf8"),
+    })),
+  );
+  const failures = loaded.flatMap((m) => {
+    const inspected = masters.inspectMaster(m.svg);
+    return inspected.success ? [] : [{ file: m.file, error: inspected.error }];
+  });
+  return { loaded, failures };
+}
 
 // 目印の間をロゴで置き換えた SVG を返す。目印が 1 組でなければ失敗する。
 function withLogo(mark, svg, logo) {
@@ -26,6 +44,9 @@ function withLogo(mark, svg, logo) {
   }
   return svg.slice(0, span.data.from) + logo + svg.slice(span.data.to);
 }
+
+// アイコンのマスターは文字を持たない（inspectMaster が text を拒否する）ので、フォントを読み込まずに描く。
+const NO_FONTS = "";
 
 // フォントの拡張子（data URI の MIME の subtype）と @font-face の format() の対応
 const FONT_FORMATS = { woff2: "woff2", ttf: "truetype" };
@@ -54,23 +75,22 @@ async function fontFaces() {
   ].join("");
 }
 
-// SVG を実寸ビューポートで描画して PNG 1枚に焼く
+// SVG の本文を実寸ビューポートで描画して PNG 1枚に焼く
 async function renderSvg(
   browser,
   faces,
-  svgPath,
+  svg,
   width,
   height,
   outPng,
   { transparent } = { transparent: false },
 ) {
-  const svg = await readFile(svgPath, "utf8");
   const html = `<!doctype html><html><head><meta charset="utf-8">
 <style>${faces}*{margin:0;padding:0}html,body{width:${width}px;height:${height}px}svg{display:block}</style>
 </head><body>${svg}</body></html>`;
 
   const page = await browser.newPage({
-    // favicon.svg はダーク用の @media を持つため、既定値に頼らずライトで描く。
+    // SVG が prefers-color-scheme を持っても、既定値に頼らずライトで描く。
     colorScheme: "light",
     viewport: { width, height },
     deviceScaleFactor: 1,
@@ -97,44 +117,64 @@ async function toJpeg(png, jpg, quality) {
 }
 
 async function main() {
+  const masters = await loadTs({ entryPoint: join(root, "src", "brand", "masters.ts") }, "masters");
+  // 描画や書き込みより先に全マスターを検査し、1 枚でも通らなければ何も書かずに止める。
+  // process.exit() は stderr がパイプのとき書き出しを待たずに終わり、メッセージが消えることがあるので
+  // 終了コードだけ立てて自然に終わらせる。
+  const { loaded, failures } = await readMasters(masters);
+  if (failures.length > 0) {
+    for (const { file, error } of failures) {
+      console.error(`brand/${file}: ${error}`);
+    }
+    process.exitCode = 1;
+    return;
+  }
+  const master = (file) => {
+    const found = loaded.find((m) => m.file === file);
+    if (found === undefined) {
+      throw new Error(`BRAND_MASTERS に無いマスター: ${file}`);
+    }
+    return found.svg;
+  };
+
   const browser = await chromium.launch({ channel: "chrome" });
   const tmp = await mkdtemp(join(tmpdir(), "cospl-img-"));
   try {
-    const faces = await fontFaces();
     const mark = await loadTs({ entryPoint: join(root, "src", "brand", "mark.ts") }, "mark");
 
-    // --- マスター SVG をマークの定義から書き出す ---
-    const favSvg = join(pub, "favicon.svg");
-    const maskableSvg = join(pub, "icons", "maskable.svg");
-    const appleSvg = join(tmp, "apple-touch.svg");
-    await writeFile(favSvg, `${mark.faviconSvg()}\n`);
-    await writeFile(maskableSvg, `${mark.maskableSvg()}\n`);
-    await writeFile(appleSvg, mark.appleTouchSvg());
+    const iconSvg = master("icon.svg");
 
     // --- ファビコン（透明角丸）---
     const icoSizes = [16, 32, 48];
     const icoPngs = [];
     for (const s of icoSizes) {
       const p = join(tmp, `favicon-${s}.png`);
-      await renderSvg(browser, faces, favSvg, s, s, p, { transparent: true });
+      await renderSvg(browser, NO_FONTS, iconSvg, s, s, p, { transparent: true });
       icoPngs.push(p);
     }
     await run("magick", [...icoPngs, join(pub, "favicon.ico")]);
     // apple-touch は OS が角を丸めるため全面ベタ塗り。
-    await renderSvg(browser, faces, appleSvg, 180, 180, join(pub, "apple-touch-icon.png"));
+    await renderSvg(
+      browser,
+      NO_FONTS,
+      master("icon-full.svg"),
+      180,
+      180,
+      join(pub, "apple-touch-icon.png"),
+    );
     console.log("favicon: favicon.ico (16/32/48) + apple-touch-icon.png (180)");
 
     // --- PWA アイコン（manifest 用。any は丸角透過、maskable は全面ベタ塗り）---
-    await renderSvg(browser, faces, favSvg, 192, 192, join(pub, "icons", "icon-192.png"), {
+    await renderSvg(browser, NO_FONTS, iconSvg, 192, 192, join(pub, "icons", "icon-192.png"), {
       transparent: true,
     });
-    await renderSvg(browser, faces, favSvg, 512, 512, join(pub, "icons", "icon-512.png"), {
+    await renderSvg(browser, NO_FONTS, iconSvg, 512, 512, join(pub, "icons", "icon-512.png"), {
       transparent: true,
     });
     await renderSvg(
       browser,
-      faces,
-      maskableSvg,
+      NO_FONTS,
+      master("icon-maskable.svg"),
       512,
       512,
       join(pub, "icons", "icon-512-maskable.png"),
@@ -142,6 +182,7 @@ async function main() {
     console.log("pwa icons: icon-192 / icon-512 / icon-512-maskable");
 
     // --- OGP（白地・PNG マスター → WebP + JPEG）---
+    const faces = await fontFaces();
     const ogps = [
       { name: "ogp-landscape", w: 1200, h: 630 },
       { name: "ogp-square", w: 1200, h: 1200 },
@@ -150,13 +191,24 @@ async function main() {
       const svg = join(pub, "ogp", `${name}.svg`);
       const { x, baseline, fontSize } = mark.OGP_LOGO[name];
       const logo = mark.logoGroup(x, baseline, fontSize, mark.PALETTE.logoLight);
-      await writeFile(svg, withLogo(mark, await readFile(svg, "utf8"), logo));
+      const spliced = withLogo(mark, await readFile(svg, "utf8"), logo);
+      await writeFile(svg, spliced);
       const png = join(pub, "ogp", `${name}.png`);
-      await renderSvg(browser, faces, svg, w, h, png);
+      await renderSvg(browser, faces, spliced, w, h, png);
       await toWebp(png, join(pub, "ogp", `${name}.webp`), 90);
       await toJpeg(png, join(pub, "ogp", `${name}.jpg`), 92);
       console.log(`ogp: ${name} ${w}x${h} -> png + webp + jpg`);
     }
+
+    // generated.json は「最後まで描き終えた」印なので、全部の描画が済んでから書く。途中で失敗したら
+    // 古いハッシュのままになり、テストが just images のやり直しを求める。
+    // 写しはマスターと同じバイト列にする（テストが文字列の完全一致で見張る）。
+    for (const m of loaded) {
+      if (m.copyTo !== undefined) {
+        await writeFile(join(pub, m.copyTo), m.svg);
+      }
+    }
+    await writeFile(join(brand, "generated.json"), await masters.generatedJson(loaded));
   } finally {
     await browser.close();
     await rm(tmp, { recursive: true, force: true });
@@ -165,5 +217,5 @@ async function main() {
 
 main().catch((err) => {
   console.error(err);
-  process.exit(1);
+  process.exitCode = 1;
 });

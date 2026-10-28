@@ -163,22 +163,26 @@ test("データの内容物を書くと冒頭の章に本README文書が先頭�
   await expect(licensePage.ident).not.toContainText("+");
 });
 
-// 動いているアニメーション（getAnimations）で見る。computed の animationName は対応する
-// keyframes が無くても宣言した名前を返すため、名前の食い違いを検出できない。
-const revealAnimations = (page: Page) =>
-  page
-    .locator("#inputs > :not(summary)")
-    .first()
-    .evaluate((el) => el.getAnimations().length);
+// 開いた直後のアニメーション（getAnimations）を、開くのと同じ同期処理の中で数える。
+// 短いアニメーションは終わると getAnimations から消え、別の呼び出しでは観測が間に合わない。
+// computed の animationName は対応する keyframes が無くても宣言した名前を返すため使わない。
+const animationsRightAfterOpen = (page: Page) =>
+  page.locator("#inputs").evaluate((inputs) => {
+    if (!(inputs instanceof HTMLDetailsElement)) throw new Error("#inputs は details");
+    inputs.open = false;
+    // 閉じた状態のスタイルを確定させる。挟まないと再計算が一度で済み、開き直しにならない。
+    void getComputedStyle(inputs).display;
+    inputs.open = true;
+    return inputs.querySelector(":scope > :not(summary)")?.getAnimations().length ?? -1;
+  });
 
 test("任意入力を開くと中身のアニメーションが動き、reduced-motion では動かない", async ({
   licensePage,
   page,
 }) => {
   await licensePage.goto();
-  await licensePage.openInputs();
-  await expect.poll(() => revealAnimations(page)).toBeGreaterThan(0);
+  expect(await animationsRightAfterOpen(page)).toBeGreaterThan(0);
 
   await page.emulateMedia({ reducedMotion: "reduce" });
-  expect(await revealAnimations(page)).toBe(0);
+  expect(await animationsRightAfterOpen(page)).toBe(0);
 });

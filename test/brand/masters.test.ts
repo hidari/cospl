@@ -93,8 +93,10 @@ describe("inspectMaster", () => {
       "XHTML の名前空間を宣言する",
       wrap('<h:img src="https://e/x.png"/>', ' xmlns:h="http://www.w3.org/1999/xhtml"'),
     ],
-    // 新しい Affinity は affinity.studio の名前空間で書き出す。旧版の serif の名前空間はもう要らない。
-    ["serif の名前空間を宣言する", wrap("<rect/>", ' xmlns:serif="http://www.serif.com/"')],
+    [
+      "許可リストに無い serif の名前空間を宣言する",
+      wrap("<rect/>", ' xmlns:serif="http://www.serif.com/"'),
+    ],
     ["数値文字参照で url( を隠す", wrap('<rect style="fill:u&#114;l(https://e/x)"/>')],
     ["CSS のエスケープで url( を隠す", wrap('<rect style="fill:u\\72l(https://e/x)"/>')],
   ])("%s なら拒否する", (_label, svg) => {

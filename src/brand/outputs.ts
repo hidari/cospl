@@ -1,11 +1,8 @@
-// マスターから作る、写し以外の生成物の定義。ロゴのダーク版と、index.html に書き込む値。
+// マスターから作る、写しと描画以外の生成物。ロゴのダーク版と、index.html に書き込む値。
 // vitest（workerd）と scripts/build-images.mjs（loadTs で bundle した Node）の両方が読む。
 
 import { fail, type Result, success } from "../types/result";
-
-// ダーク版はマスターにせず、ライト版の色を置き換えて作る（Affinity での上書きと書き出し忘れを無くす）。
-// to は public/ からの相対パス。
-export const LOGO_DARK = { from: "logo-light.svg", to: "icons/logo-dark.svg" } as const;
+import { LOGO, OGP_LANDSCAPE } from "./masters";
 
 // ライト版で使ってよい色と、ダーク版での色。ダークの文字色はサイトのダークの --ink に揃える。
 export const LOGO_DARK_COLORS: Readonly<Record<string, string>> = {
@@ -20,6 +17,8 @@ const PAINT =
   /(?<![\w-])(fill|stroke|stop-color|flood-color|lighting-color|color)(\s*[:=]\s*["']?)([^;"'<>}]+)/gi;
 // 色を持たない値。url() は文書内の id だけ（外部は inspectMaster が拒否する）。
 const NOT_A_COLOR = /^(?:none|transparent|url\(\s*#[^)]*\))$/i;
+// animate / set の values・to が持つ色は PAINT で拾えない。
+const ANIMATION = /<(?:[\w.-]+:)?(animate|set)\b/i;
 
 const normalizeHex = (value: string): string | undefined => {
   const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value);
@@ -28,8 +27,10 @@ const normalizeHex = (value: string): string | undefined => {
   return `#${hex.length === 3 ? [...hex].map((c) => c + c).join("") : hex}`;
 };
 
-// 対応表に無い色を含むと、どの値かを挙げて失敗する。黙って残すとダーク版の一部がライトの色になる。
+// 対応表で置き換えられない色を含むと失敗する。黙って残すとダーク版の一部がライトの色になる。
 export const darkLogo = (svg: string): Result<string, string> => {
+  const animation = svg.match(ANIMATION);
+  if (animation !== null) return fail(`ダーク版を作れない ${animation[1]} 要素を含む`);
   const unknown: string[] = [];
   const dark = svg.replace(PAINT, (whole, name: string, sep: string, raw: string) => {
     const value = raw.trim();
@@ -46,22 +47,35 @@ export const darkLogo = (svg: string): Result<string, string> => {
     : fail(`ダーク版の対応表に無い色: ${[...new Set(unknown)].join(", ")}`);
 };
 
-// og:image / twitter:image の ?v= を作るマスター。中身が変われば X のカードキャッシュを外せる。
-export const OGP_VERSION_FROM = "ogp-landscape.svg";
-
+// og:image / twitter:image の ?v= はマスターのハッシュから作る。中身が変われば X のカードキャッシュを外せる。
 export const ogpVersion = (sha256: string): string => sha256.slice(0, 8);
 
-const OGP_QUERY = /(\/ogp\/ogp-landscape\.(?:jpg|png|webp)\?v=)[^"&]*/g;
-const LOGO_IMG = /<img\b[^>]*\bsrc="\/icons\/logo-light\.svg"[^>]*>/g;
+const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const OGP_QUERY = new RegExp(
+  `(<meta (?:property="og:image"|name="twitter:image") content="[^"]*/${escapeRegExp(OGP_LANDSCAPE.raster.to)}\\.(?:jpg|png|webp)\\?v=)[^"]*`,
+  "g",
+);
+const OGP_SIZE = /(<meta property="og:image:(width|height)" content=")[^"]*/g;
+const LOGO_IMG = new RegExp(`<img\\b[^>]*\\bsrc="/${escapeRegExp(LOGO.light)}"[^>]*>`, "g");
 const SIZE = /\b(width|height)="[^"]*"/g;
 
+type Size = { width: number; height: number };
+const round = (size: Size): Size => ({
+  width: Math.round(size.width),
+  height: Math.round(size.height),
+});
+
 // just images が index.html に書く値。テストは書き換えても変わらない（不動点である）ことを確かめる。
+// 目印が欠けたまま成功すると、書き換えたつもりで古い値が配信されるので、欠けたら失敗する。
 export const syncIndexHtml = (
   html: string,
-  expected: { ogpVersion: string; logo: { width: number; height: number } },
+  expected: { ogpVersion: string; logo: Size },
 ): Result<string, string> => {
-  if ((html.match(OGP_QUERY) ?? []).length === 0) {
-    return fail("index.html に ogp-landscape の ?v= が無い");
+  if ((html.match(OGP_QUERY) ?? []).length !== 2) {
+    return fail("index.html の og:image と twitter:image の両方に ?v= が無い");
+  }
+  if ((html.match(OGP_SIZE) ?? []).length !== 2) {
+    return fail("index.html に og:image:width と og:image:height が無い");
   }
   const imgs = html.match(LOGO_IMG) ?? [];
   if (imgs.length !== 1) return fail(`index.html のロゴの img が 1 つでない: ${imgs.length}`);
@@ -70,10 +84,13 @@ export const syncIndexHtml = (
   if (!attrs.includes("width") || !attrs.includes("height")) {
     return fail("index.html のロゴの img に width と height が無い");
   }
-  const size = { width: Math.round(expected.logo.width), height: Math.round(expected.logo.height) };
-  const resized = img.replace(
-    SIZE,
-    (_whole, name: "width" | "height") => `${name}="${size[name]}"`,
+  const logo = round(expected.logo);
+  const ogp = OGP_LANDSCAPE.raster;
+  const resized = img.replace(SIZE, (_whole, name: keyof Size) => `${name}="${logo[name]}"`);
+  return success(
+    html
+      .replace(OGP_QUERY, `$1${expected.ogpVersion}`)
+      .replace(OGP_SIZE, (_whole, head: string, name: keyof Size) => `${head}${ogp[name]}`)
+      .replace(img, () => resized),
   );
-  return success(html.replace(OGP_QUERY, `$1${expected.ogpVersion}`).replace(img, () => resized));
 };

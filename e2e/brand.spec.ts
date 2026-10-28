@@ -4,9 +4,10 @@ import { expect, test } from "./fixtures";
 const logo = (page: Page) => page.getByRole("img", { name: "CosPL" });
 
 // 表示中の画像（picture が選んだ方）と、それが読み込めて描かれたかを読む。
+// 切り替えの途中は currentSrc が空になるので、そのときは空のまま返して poll に待たせる。
 const shown = (page: Page) =>
   logo(page).evaluate((img: HTMLImageElement) => ({
-    src: new URL(img.currentSrc).pathname,
+    src: img.currentSrc === "" ? "" : new URL(img.currentSrc).pathname,
     loaded: img.complete && img.naturalWidth > 0,
   }));
 

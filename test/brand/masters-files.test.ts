@@ -7,15 +7,11 @@ import {
   checkMaster,
   generatedJson,
   inspectMaster,
+  LOGO,
+  OGP_LANDSCAPE,
   sha256Hex,
 } from "../../src/brand/masters";
-import {
-  darkLogo,
-  LOGO_DARK,
-  OGP_VERSION_FROM,
-  ogpVersion,
-  syncIndexHtml,
-} from "../../src/brand/outputs";
+import { darkLogo, ogpVersion, syncIndexHtml } from "../../src/brand/outputs";
 
 // brand/ の SVG を全部読む。BRAND_MASTERS に登録し忘れたマスターもキーに現れる。
 const masters = import.meta.glob("../../brand/*.svg", {
@@ -42,6 +38,12 @@ describe("brand/ のマスター", () => {
     expect(checkMaster(m, master(m.file)).success).toBe(true);
   });
 
+  // 登録しただけで何も作らないマスターは、書き出しても配信に反映されない。
+  test.each(BRAND_MASTERS)("$file から配信物を少なくとも 1 つ作る", (m) => {
+    const made = (m.copyTo === undefined ? 0 : 1) + (m.rasters ?? []).length;
+    expect(made).toBeGreaterThan(0);
+  });
+
   test.each(BRAND_MASTERS.filter((m) => m.copyTo !== undefined))(
     "$file の写し public/$copyTo はマスターと完全一致する",
     (m) => {
@@ -49,12 +51,13 @@ describe("brand/ のマスター", () => {
     },
   );
 
-  test(`public/${LOGO_DARK.to} は ${LOGO_DARK.from} の色を対応表で置き換えたものと完全一致する`, () => {
-    const dark = darkLogo(master(LOGO_DARK.from));
+  test(`public/${LOGO.dark} は ${LOGO.file} の色を対応表で置き換えたものと完全一致する`, () => {
+    const dark = darkLogo(master(LOGO.file));
     expect(dark.success).toBe(true);
+    if (!dark.success) return;
     // ダーク版も同一オリジンで配信するので、マスターと同じ検査を通ることまで確かめる。
-    expect(dark.success && inspectMaster(dark.data).success).toBe(true);
-    expect(published[`/public/${LOGO_DARK.to}`]).toBe(dark.success ? dark.data : undefined);
+    expect(inspectMaster(dark.data).success).toBe(true);
+    expect(published[`/public/${LOGO.dark}`]).toBe(dark.data);
   });
 });
 
@@ -67,12 +70,12 @@ describe("brand/generated.json", () => {
 });
 
 describe("index.html", () => {
-  test("OGP の ?v= とロゴの width / height は just images が書いた値のまま", async () => {
-    const logo = checkMaster({ file: LOGO_DARK.from }, master(LOGO_DARK.from));
+  test("OGP の ?v= と寸法、ロゴの width / height は just images が書いた値のまま", async () => {
+    const logo = inspectMaster(master(LOGO.file));
     expect(logo.success).toBe(true);
     if (!logo.success) return;
     const expected = {
-      ogpVersion: ogpVersion(await sha256Hex(master(OGP_VERSION_FROM))),
+      ogpVersion: ogpVersion(await sha256Hex(master(OGP_LANDSCAPE.file))),
       logo: logo.data.viewBox,
     };
     expect(syncIndexHtml(indexRaw, expected)).toEqual({ success: true, data: indexRaw });

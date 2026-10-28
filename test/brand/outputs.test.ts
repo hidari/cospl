@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { inspectMaster } from "../../src/brand/masters";
+import { inspectMaster, OGP_LANDSCAPE } from "../../src/brand/masters";
 import { darkLogo, LOGO_DARK_COLORS, ogpVersion, syncIndexHtml } from "../../src/brand/outputs";
 
 const SVG_NS = 'xmlns="http://www.w3.org/2000/svg"';
@@ -68,6 +68,19 @@ describe("darkLogo", () => {
     expect(!result.success && result.error).toContain(value);
   });
 
+  // animate / set の値の色は対応表で置き換えないので、ライトの色のまま動いてしまう。
+  test.each([
+    [
+      "animate",
+      '<rect fill="#7b54ff"><animate attributeName="fill" values="#7b54ff;#ff7a2f"/></rect>',
+    ],
+    ["set", '<rect fill="#7b54ff"><set attributeName="fill" to="#ff7a2f"/></rect>'],
+  ])("%s を含むと失敗する", (name, body) => {
+    const result = darkLogo(svgOf(body));
+    expect(result.success).toBe(false);
+    expect(!result.success && result.error).toContain(name);
+  });
+
   test("ダーク版は検査を通り、ライト版の 3 色を含まない", () => {
     const light = svgOf('<path style="fill:none;stroke:#7b54ff;"/><circle fill="#ff7a2f"/>');
     const dark = darkLogo(light);
@@ -85,16 +98,18 @@ describe("ogpVersion", () => {
 });
 
 describe("syncIndexHtml", () => {
-  const html = (v: string, width: string, height: string): string =>
+  const html = (v: string, width: string, height: string, ogp = ["1200", "630"]): string =>
     [
       `<meta property="og:image" content="https://cospl.org/ogp/ogp-landscape.jpg?v=${v}">`,
+      `<meta property="og:image:width" content="${ogp[0]}">`,
+      `<meta property="og:image:height" content="${ogp[1]}">`,
       `<meta name="twitter:image" content="https://cospl.org/ogp/ogp-landscape.jpg?v=${v}">`,
       `<p class="logo"><picture><source srcset="/icons/logo-dark.svg" media="(prefers-color-scheme: dark)"><img src="/icons/logo-light.svg" alt="CosPL" width="${width}" height="${height}"></picture></p>`,
     ].join("\n");
   const expected = { ogpVersion: "abcd1234", logo: { width: 940, height: 330 } };
 
-  test("OGP の ?v= とロゴの width / height を書き換える", () => {
-    expect(syncIndexHtml(html("old", "1", "2"), expected)).toEqual({
+  test("OGP の ?v= と寸法、ロゴの width / height を書き換える", () => {
+    expect(syncIndexHtml(html("old", "1", "2", ["1", "2"]), expected)).toEqual({
       success: true,
       data: html("abcd1234", "940", "330"),
     });
@@ -103,6 +118,16 @@ describe("syncIndexHtml", () => {
   test("書き換え済みなら何も変えない（テストはこの不動点で古い index.html を見つける）", () => {
     const current = html("abcd1234", "940", "330");
     expect(syncIndexHtml(current, expected)).toEqual({ success: true, data: current });
+  });
+
+  test("OGP の寸法は横長の OGP マスターの描画の寸法", () => {
+    const result = syncIndexHtml(html("v", "1", "2", ["1", "2"]), expected);
+    expect(result.success && result.data).toContain(
+      `<meta property="og:image:width" content="${OGP_LANDSCAPE.raster.width}">`,
+    );
+    expect(result.success && result.data).toContain(
+      `<meta property="og:image:height" content="${OGP_LANDSCAPE.raster.height}">`,
+    );
   });
 
   test("viewBox が小数なら width / height は四捨五入した整数にする", () => {
@@ -116,6 +141,17 @@ describe("syncIndexHtml", () => {
   // 目印が見つからないまま成功すると、書き換えたつもりで古い値が配信される。
   test.each([
     ["og:image の ?v= が無い", html("v", "1", "2").replace(/ogp-landscape\.jpg\?v=v/g, "x.jpg")],
+    [
+      "twitter:image だけ ?v= が無い",
+      html("v", "1", "2").replace(
+        'twitter:image" content="https://cospl.org/ogp/ogp-landscape.jpg?v=v"',
+        'twitter:image" content="https://cospl.org/ogp/ogp-landscape.jpg"',
+      ),
+    ],
+    [
+      "og:image:height が無い",
+      html("v", "1", "2").replace('<meta property="og:image:height" content="630">', ""),
+    ],
     ["ロゴの img が無い", html("v", "1", "2").replace("/icons/logo-light.svg", "/icons/x.svg")],
     [
       "ロゴの img が 2 つある",

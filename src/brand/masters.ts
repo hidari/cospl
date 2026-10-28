@@ -11,17 +11,71 @@ import { fromNullable, mapOption, none, type Option, some } from "../types/optio
 import { fail, mapResult, type Result, success } from "../types/result";
 
 export type ViewBox = { x: number; y: number; width: number; height: number };
-// ratio は viewBox の幅 / 高さ。ロゴのように縦横比をデザインに任せるものは持たない。
-export type BrandMaster = { file: string; ratio?: number; copyTo?: string };
 
+// マスターを描画して作るラスタ画像。to は public/ からの相対パス。
+// ogp は to に .png・.webp・.jpg を付けた 3 つを作る。
+export type Raster =
+  | { kind: "ico"; to: string; sizes: readonly number[] }
+  | { kind: "png"; to: string; size: number; transparent: boolean }
+  | { kind: "ogp"; to: string; width: number; height: number };
+
+// ratio は viewBox の幅 / 高さ。ロゴのように縦横比をデザインに任せるものは持たない。
 // copyTo は public/ からの相対パス。
+export type BrandMaster = {
+  file: string;
+  ratio?: number;
+  copyTo?: string;
+  rasters?: readonly Raster[];
+};
+
+// ロゴはライト版だけがマスターで、ダーク版は src/brand/outputs.ts の darkLogo が作る。
+export const LOGO = {
+  file: "logo-light.svg",
+  light: "icons/logo-light.svg",
+  dark: "icons/logo-dark.svg",
+} as const;
+
+// 横長の OGP は index.html の og:image で、寸法と ?v= を just images が書く。
+export const OGP_LANDSCAPE = {
+  file: "ogp-landscape.svg",
+  raster: { kind: "ogp", to: "ogp/ogp-landscape", width: 1200, height: 630 },
+} as const;
+const OGP_SQUARE = {
+  file: "ogp-square.svg",
+  raster: { kind: "ogp", to: "ogp/ogp-square", width: 1200, height: 1200 },
+} as const;
+const ogpMaster = ({ file, raster }: typeof OGP_LANDSCAPE | typeof OGP_SQUARE): BrandMaster => ({
+  file,
+  ratio: raster.width / raster.height,
+  rasters: [raster],
+});
+
 export const BRAND_MASTERS: readonly BrandMaster[] = [
-  { file: "icon.svg", ratio: 1, copyTo: "favicon.svg" },
-  { file: "icon-full.svg", ratio: 1 },
-  { file: "icon-maskable.svg", ratio: 1 },
-  { file: "logo-light.svg", copyTo: "icons/logo-light.svg" },
-  { file: "ogp-landscape.svg", ratio: 1200 / 630 },
-  { file: "ogp-square.svg", ratio: 1 },
+  {
+    file: "icon.svg",
+    ratio: 1,
+    copyTo: "favicon.svg",
+    // favicon とPWA の any は角丸の外を透過させる。
+    rasters: [
+      { kind: "ico", to: "favicon.ico", sizes: [16, 32, 48] },
+      { kind: "png", to: "icons/icon-192.png", size: 192, transparent: true },
+      { kind: "png", to: "icons/icon-512.png", size: 512, transparent: true },
+    ],
+  },
+  // apple-touch は OS が角を丸めるので全面ベタ塗り。
+  {
+    file: "icon-full.svg",
+    ratio: 1,
+    rasters: [{ kind: "png", to: "apple-touch-icon.png", size: 180, transparent: false }],
+  },
+  {
+    file: "icon-maskable.svg",
+    ratio: 1,
+    rasters: [{ kind: "png", to: "icons/icon-512-maskable.png", size: 512, transparent: false }],
+  },
+  { file: LOGO.file, copyTo: LOGO.light },
+  ogpMaster(OGP_LANDSCAPE),
+  ogpMaster(OGP_SQUARE),
 ];
 
 // 宣言してよい名前空間。XHTML や MathML の要素（img の src など、href 以外で外部を読むもの）を

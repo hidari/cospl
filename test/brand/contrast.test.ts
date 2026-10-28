@@ -1,12 +1,8 @@
 import { describe, expect, test } from "vitest";
 import indexHtml from "../../index.html?raw";
-import { PALETTE } from "../../src/brand/mark";
 import { DARK_MEDIA, rootTokens, splitByDarkMedia, stylesCss, type Tokens } from "./css";
 
-// 対象外: マークの色（--logo-c / --logo-dot とアイコン・OGP の色）のコントラスト比。
-// マークは装飾図形で本文ではなく、ブランド色そのものを保つため比率の基準を課さない
-// （代わりに PALETTE との一致を下で固定する）。
-// ロゴの文字は --ink を使うので、下の (--ink, --paper) の検査に含まれる。
+// 対象外: ロゴ・アイコン・OGP の色。brand/ の画像が持ち、CSS のトークンには無い。
 
 const splitModes = (css: string): { light: Tokens; dark: Tokens } => {
   const parts = splitByDarkMedia(css);
@@ -75,14 +71,6 @@ describe("ダークモードのトークン", () => {
     const panel = luminance(token(dark, "--panel"));
     expect(panel).toBeGreaterThan(luminance(token(dark, "--paper")));
     expect(panel).toBeLessThan(0.05);
-  });
-  // マークの色は mark.ts の PALETTE が唯一の定義で、CSS の変数はその値を写す。
-  test.each([
-    ["--logo-c", "c"],
-    ["--logo-dot", "dot"],
-  ] as const)("%s は mark.ts の PALETTE のロゴ色と両モードで一致する", (name, key) => {
-    expect(token(light, name)).toBe(PALETTE.logoLight[key]);
-    expect(token(dark, name)).toBe(PALETTE.logoDark[key]);
   });
 });
 

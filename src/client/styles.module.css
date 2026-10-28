@@ -72,10 +72,6 @@
   --shadow-strong: rgba(28, 20, 48, 0.22);
   --shadow-soft: rgba(28, 20, 48, 0.18);
 
-  /* ロゴのマーク色（コントラスト検査の対象外）。文字は --ink を使う。 */
-  --logo-c: #7b54ff;
-  --logo-dot: #ff7a2f;
-
   --mono: "Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Noto Sans Mono CJK JP";
   --sans: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP";
   --display: "Space Grotesk", var(--sans);
@@ -110,9 +106,6 @@
     --panel: #2e2352;
     --shadow-strong: rgba(0, 0, 0, 0.55);
     --shadow-soft: rgba(0, 0, 0, 0.45);
-
-    --logo-c: #a98bff;
-    --logo-dot: #ff9e5c;
   }
 }
 :global(*) {
@@ -197,22 +190,14 @@
   opacity: 0.16;
 }
 
-/* ロゴ。大きさと隙間は src/brand/mark.ts の LOGO と同じ値を em で書く。 */
+/* ロゴは画像。高さだけ決め、幅は画像の縦横比に任せる（img の width / height は just images が書く）。 */
 :global(.logo) {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.28em;
   margin: 0 0 16px;
-  font-family: var(--display), sans-serif;
-  font-weight: 700;
-  font-size: 2rem;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  color: var(--ink);
 }
-:global(.logo svg) {
-  width: 1.05em;
-  height: 1.05em;
+:global(.logo img) {
+  display: block;
+  height: 2.1rem;
+  width: auto;
 }
 :global(.kicker) {
   font-family: var(--mono), monospace;

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { generatedJson, inspectMaster, sha256Hex } from "../../src/brand/masters";
+import { checkMaster, generatedJson, inspectMaster, sha256Hex } from "../../src/brand/masters";
 
 const SVG_NS = 'xmlns="http://www.w3.org/2000/svg"';
 const XLINK_NS = 'xmlns:xlink="http://www.w3.org/1999/xlink"';
@@ -8,18 +8,16 @@ const XLINK_NS = 'xmlns:xlink="http://www.w3.org/1999/xlink"';
 const wrap = (body: string, rootAttrs = ""): string =>
   `<svg ${SVG_NS}${rootAttrs} viewBox="0 0 100 100">${body}</svg>`;
 
-// Affinity Designer の書き出しと同じ形（public/ogp/ogp-landscape.svg の先頭に合わせる）。
+// Affinity の書き出しと同じ形（brand/ogp-landscape.svg の先頭に合わせる）。
 const AFFINITY = [
   '<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
   '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">',
-  "<!-- Affinity Designer -->",
-  `<svg width="100%" height="100%" viewBox="0 0 1200 630" version="1.1" ${SVG_NS} ${XLINK_NS} xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;">`,
-  '    <rect x="0" y="0" width="1200" height="630" style="fill:white;"/>',
-  '    <circle cx="870" cy="70" r="220" style="fill:rgb(255,122,47);fill-opacity:0.12;"/>',
-  '    <g serif:id="Mark"><path d="M72 30A30 30 0 1 0 72 70" style="fill:none;stroke:rgb(123,84,255);stroke-width:11px;"/></g>',
+  `<svg width="100%" height="100%" viewBox="0 0 1200 630" version="1.1" ${SVG_NS} ${XLINK_NS} xml:space="preserve" xmlns:affinity="https://www.affinity.studio/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;">`,
+  '<rect id="ogp-landscape" x="0" y="0" width="1200" height="630" style="fill:none;"/>',
+  '<clipPath id="_clip1"><rect x="0" y="0" width="1200" height="630"/></clipPath>',
+  '<g clip-path="url(#_clip1)"><g id="logo-master" affinity:id="logo master"><path d="M72 30A30 30 0 1 0 72 70" style="fill:none;stroke:#7b54ff;stroke-width:11px;"/></g></g>',
   "</svg>",
-  "",
-].join("\n");
+].join("");
 
 describe("inspectMaster", () => {
   test("最小の SVG を通し、viewBox を数で返す", () => {
@@ -30,7 +28,7 @@ describe("inspectMaster", () => {
     });
   });
 
-  test("Affinity の書き出し（XML 宣言・外部 DTD・コメント・serif の名前空間・style 属性）を通す", () => {
+  test("Affinity の書き出し（XML 宣言・外部 DTD・affinity の名前空間・clipPath・style 属性）を通す", () => {
     expect(inspectMaster(AFFINITY)).toEqual({
       success: true,
       data: { viewBox: { x: 0, y: 0, width: 1200, height: 630 } },
@@ -95,6 +93,8 @@ describe("inspectMaster", () => {
       "XHTML の名前空間を宣言する",
       wrap('<h:img src="https://e/x.png"/>', ' xmlns:h="http://www.w3.org/1999/xhtml"'),
     ],
+    // 新しい Affinity は affinity.studio の名前空間で書き出す。旧版の serif の名前空間はもう要らない。
+    ["serif の名前空間を宣言する", wrap("<rect/>", ' xmlns:serif="http://www.serif.com/"')],
     ["数値文字参照で url( を隠す", wrap('<rect style="fill:u&#114;l(https://e/x)"/>')],
     ["CSS のエスケープで url( を隠す", wrap('<rect style="fill:u\\72l(https://e/x)"/>')],
   ])("%s なら拒否する", (_label, svg) => {
@@ -162,6 +162,34 @@ describe("inspectMaster", () => {
     const result = inspectMaster(svg);
     expect(result.success).toBe(false);
     expect(!result.success && result.error).toContain(message);
+  });
+});
+
+describe("checkMaster", () => {
+  const svg = (w: number, h: number): string =>
+    `<svg ${SVG_NS} viewBox="0 0 ${w} ${h}"><rect/></svg>`;
+
+  test("検査を通り、viewBox の縦横比が ratio と一致すれば viewBox を返す", () => {
+    expect(checkMaster({ file: "a.svg", ratio: 1200 / 630 }, svg(1200, 630))).toEqual({
+      success: true,
+      data: { viewBox: { x: 0, y: 0, width: 1200, height: 630 } },
+    });
+  });
+
+  // 1px の違いで落ちることまで固定する（OGP を描き直したときの寸法違いを just images で止める）。
+  test("縦横比が ratio と違えば、比を挙げて失敗する", () => {
+    const result = checkMaster({ file: "a.svg", ratio: 1200 / 630 }, svg(1200, 631));
+    expect(result.success).toBe(false);
+    expect(!result.success && result.error).toContain("縦横比");
+  });
+
+  test("ratio を持たないマスターは縦横比を問わない", () => {
+    expect(checkMaster({ file: "a.svg" }, svg(940, 330)).success).toBe(true);
+  });
+
+  test("検査に通らなければ、検査のメッセージで失敗する", () => {
+    const result = checkMaster({ file: "a.svg", ratio: 1 }, wrap("<script/>"));
+    expect(!result.success && result.error).toContain("script");
   });
 });
 

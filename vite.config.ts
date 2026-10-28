@@ -11,6 +11,8 @@ const STABLE_PRECACHE: readonly string[] = [
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/icons/icon-512-maskable.png",
+  "/icons/logo-light.svg",
+  "/icons/logo-dark.svg",
   "/icons/by.svg",
   "/icons/nc.svg",
   "/icons/nai.svg",

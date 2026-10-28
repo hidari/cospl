@@ -11,21 +11,25 @@ import { fromNullable, mapOption, none, type Option, some } from "../types/optio
 import { fail, mapResult, type Result, success } from "../types/result";
 
 export type ViewBox = { x: number; y: number; width: number; height: number };
-export type BrandMaster = { file: string; ratio: number; copyTo?: string };
+// ratio は viewBox の幅 / 高さ。ロゴのように縦横比をデザインに任せるものは持たない。
+export type BrandMaster = { file: string; ratio?: number; copyTo?: string };
 
 // copyTo は public/ からの相対パス。
 export const BRAND_MASTERS: readonly BrandMaster[] = [
   { file: "icon.svg", ratio: 1, copyTo: "favicon.svg" },
   { file: "icon-full.svg", ratio: 1 },
   { file: "icon-maskable.svg", ratio: 1 },
+  { file: "logo-light.svg", copyTo: "icons/logo-light.svg" },
+  { file: "ogp-landscape.svg", ratio: 1200 / 630 },
+  { file: "ogp-square.svg", ratio: 1 },
 ];
 
 // 宣言してよい名前空間。XHTML や MathML の要素（img の src など、href 以外で外部を読むもの）を
-// 混ぜられなくする。
+// 混ぜられなくする。affinity は Affinity が要素の名前などを書く属性だけに使う。
 const NAMESPACES: readonly string[] = [
   "http://www.w3.org/2000/svg",
   "http://www.w3.org/1999/xlink",
-  "http://www.serif.com/",
+  "https://www.affinity.studio/",
 ];
 
 // href と url() が指してよい先。文書内の id か、埋め込みのラスタ画像だけ。
@@ -163,6 +167,22 @@ export const inspectMaster = (svg: string): Result<{ viewBox: ViewBox }, string>
     if (violation.some) return fail(violation.value);
   }
   return mapResult(viewBoxOf(root.data), (viewBox) => ({ viewBox }));
+};
+
+// 比の誤差の許容。OGP で 1px 違えば 1e-3 程度ずれるので、それより十分小さくする。
+const RATIO_TOLERANCE = 1e-6;
+
+// 配信してよい中身かの検査に加え、ratio を持つマスターは viewBox の縦横比も確かめる。
+export const checkMaster = (
+  master: BrandMaster,
+  svg: string,
+): Result<{ viewBox: ViewBox }, string> => {
+  const inspected = inspectMaster(svg);
+  if (!inspected.success || master.ratio === undefined) return inspected;
+  const { width, height } = inspected.data.viewBox;
+  return Math.abs(width / height - master.ratio) <= RATIO_TOLERANCE * master.ratio
+    ? inspected
+    : fail(`viewBox の縦横比が ${master.ratio} でない: ${width}x${height}`);
 };
 
 // UTF-8 に符号化してから SHA-256。小文字 16 進で返す。

@@ -52,12 +52,12 @@ describe("cacheVersion（SW キャッシュの版数）", () => {
     expect(await cacheVersion(input)).toMatch(/^[0-9a-f]{16}$/);
   });
 
-  test("入力の並び順に依存しない", async () => {
-    const shuffled = {
-      hashedAssets: [...input.hashedAssets].reverse(),
-      stable: [...input.stable].reverse(),
-    };
-    expect(await cacheVersion(shuffled)).toBe(await cacheVersion(input));
+  test("入力の並び順に依存しない（ハッシュ付きと安定名を別々に入れ替える）", async () => {
+    const base = await cacheVersion(input);
+    const hashedReversed = { ...input, hashedAssets: [...input.hashedAssets].reverse() };
+    const stableReversed = { ...input, stable: [...input.stable].reverse() };
+    expect(await cacheVersion(hashedReversed)).toBe(base);
+    expect(await cacheVersion(stableReversed)).toBe(base);
   });
 
   test("安定名ファイルの内容ハッシュが変わると版数が変わる", async () => {

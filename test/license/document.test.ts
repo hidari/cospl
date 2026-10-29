@@ -1,11 +1,11 @@
 import { describe, expect, test } from "vitest";
-import { aiMD, humanMD, humanText } from "../../src/license/document";
-import { DEFAULT_OPTIONS } from "../../src/license/options";
-import { DEFAULT_DOC, type Doc } from "../../src/license/sanitize";
-import { ident, tagsFrom } from "../../src/license/tags";
-import { TERMS_URL } from "../../src/license/version";
+import { aiMD, humanMD, humanText } from "../../src/license/document.ts";
+import { DEFAULT_OPTIONS } from "../../src/license/options.ts";
+import { DEFAULT_DOC, type Doc } from "../../src/license/sanitize.ts";
+import { ident, tagsFrom } from "../../src/license/tags.ts";
+import { TERMS_URL } from "../../src/license/version.ts";
 import golden from "../__fixtures__/golden.json";
-import { unwrapState } from "./helpers";
+import { unwrapState } from "./helpers.ts";
 
 // golden.json は現在の core 出力を固定した回帰用フィクスチャ。`just regen-golden` で更新する。
 type GoldenCase = {

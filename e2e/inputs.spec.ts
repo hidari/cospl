@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
-import { MAX_EXTENSIONS } from "../src/core";
-import { expect, test } from "./fixtures";
+import { MAX_EXTENSIONS } from "../src/core.ts";
+import { expect, test } from "./fixtures.ts";
 
 test("入力欄は既定で閉じていて、見出しを押すと開く", async ({ licensePage }) => {
   await licensePage.goto();

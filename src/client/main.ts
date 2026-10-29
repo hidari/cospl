@@ -35,11 +35,11 @@ import {
   type TextField,
   toDoc,
   type View,
-} from "../core";
-import { fromNullable, ifSome, type Option } from "../types/option";
-import { fail, type Result, success } from "../types/result";
+} from "../core.ts";
+import { fromNullable, ifSome, type Option } from "../types/option.ts";
+import { fail, type Result, success } from "../types/result.ts";
 import styles from "./styles.module.css";
-import { registerServiceWorker } from "./sw-register";
+import { registerServiceWorker } from "./sw-register.ts";
 
 // アプリ状態（タグ集合 + 文面オプション + 出力ビュー + 入力欄の生入力）。不変に扱う。
 type AppState = { tags: State; options: Options; view: View; draft: Draft };

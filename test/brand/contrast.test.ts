@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import indexHtml from "../../index.html?raw";
-import { DARK_MEDIA, rootTokens, splitByDarkMedia, stylesCss, type Tokens } from "./css";
+import { DARK_MEDIA, rootTokens, splitByDarkMedia, stylesCss, type Tokens } from "./css.ts";
 
 // 対象外: ロゴ・アイコン・OGP の色。brand/ の画像が持ち、CSS のトークンには無い。
 

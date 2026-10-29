@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
-import { licenseQuery, parseHash, serializeHash } from "../../src/license/hash";
-import { DEFAULT_OPTIONS } from "../../src/license/options";
-import { tagsFrom } from "../../src/license/tags";
-import { unwrapState } from "./helpers";
+import { licenseQuery, parseHash, serializeHash } from "../../src/license/hash.ts";
+import { DEFAULT_OPTIONS } from "../../src/license/options.ts";
+import { tagsFrom } from "../../src/license/tags.ts";
+import { unwrapState } from "./helpers.ts";
 
 describe("parseHash / serializeHash", () => {
   test("裸タグ hash は後方互換で読める", () => {

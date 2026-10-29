@@ -2,7 +2,7 @@
 // Service Worker 本体（副作用の薄い配線）。戦略判定は sw-strategy（純粋）に委譲する。
 // __PRECACHE__ / __CACHE_VERSION__ はビルド時に Vite プラグインが define で注入する。
 
-import { chooseStrategy, type Strategy } from "./sw-strategy";
+import { chooseStrategy, type Strategy } from "./sw-strategy.ts";
 
 declare const self: ServiceWorkerGlobalScope;
 declare const __PRECACHE__: readonly string[];

@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, test } from "./fixtures.ts";
 
 test("AI タブに切替えると aria-selected が移り、出力が AI 宣言・endpoint に view=ai が付く", async ({
   licensePage,

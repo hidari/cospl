@@ -5,9 +5,9 @@ import {
   removeExtension,
   setExtension,
   setTextField,
-} from "../../src/license/draft-edit";
-import { EXTENSION_PRESETS } from "../../src/license/presets";
-import { EMPTY_DRAFT, MAX_EXTENSIONS } from "../../src/license/sanitize";
+} from "../../src/license/draft-edit.ts";
+import { EXTENSION_PRESETS } from "../../src/license/presets.ts";
+import { EMPTY_DRAFT, MAX_EXTENSIONS } from "../../src/license/sanitize.ts";
 
 describe("setTextField", () => {
   test("指定した単一行欄だけを書き換える", () => {

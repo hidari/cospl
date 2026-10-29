@@ -1,5 +1,11 @@
 import { describe, expect, test } from "vitest";
-import { checkMaster, generatedJson, inspectMaster, sha256Hex } from "../../src/brand/masters";
+import {
+  checkMaster,
+  generatedJson,
+  inspectMaster,
+  sha256Hex,
+  sha256HexBytes,
+} from "../../src/brand/masters.ts";
 
 const SVG_NS = 'xmlns="http://www.w3.org/2000/svg"';
 const XLINK_NS = 'xmlns:xlink="http://www.w3.org/1999/xlink"';
@@ -203,6 +209,22 @@ describe("sha256Hex", () => {
     ["あ", "dc5a4d3d82f7e15792959dc661538ae0e541ce66494516f5c9cfd9cd3308494d"],
   ])("%j の SHA-256 を小文字 16 進で返す", async (text, hex) => {
     await expect(sha256Hex(text)).resolves.toBe(hex);
+  });
+});
+
+describe("sha256HexBytes", () => {
+  // OG 画像のように文字列でないファイルを、読んだバイト列のまま SHA-256 にする。
+  test("バイト列の SHA-256 を小文字 16 進で返す", async () => {
+    await expect(sha256HexBytes(new Uint8Array([0x61, 0x62, 0x63]))).resolves.toBe(
+      "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+    );
+  });
+
+  test("UTF-8 にしない値もそのまま計算する（0xff は 1 バイト）", async () => {
+    // 期待値は `printf '\xff' | shasum -a 256` で独立に求めた。
+    await expect(sha256HexBytes(new Uint8Array([0xff]))).resolves.toBe(
+      "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89",
+    );
   });
 });
 

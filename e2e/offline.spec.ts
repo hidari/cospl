@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, test } from "./fixtures.ts";
 
 // SW のオフライン検証は Chromium のみ安定（WebKit/Firefox は Playwright の SW/offline 対応が限定的）。
 test.skip(({ browserName }) => browserName !== "chromium", "SW オフライン検証は Chromium のみ安定");

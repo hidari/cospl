@@ -1,7 +1,7 @@
 // view / format クエリの厳格パース。
 
-import { invalidFormatError, invalidViewError, type ParseError } from "../types/errors";
-import { fail, type Result, success } from "../types/result";
+import { invalidFormatError, invalidViewError, type ParseError } from "../types/errors.ts";
+import { fail, type Result, success } from "../types/result.ts";
 
 export type View = "human" | "ai";
 export type Format = "markdown" | "text";

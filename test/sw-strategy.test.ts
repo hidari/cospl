@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { chooseStrategy, type RequestDescriptor } from "../src/client/sw-strategy";
+import { chooseStrategy, type RequestDescriptor } from "../src/client/sw-strategy.ts";
 
 // 既定値（GET・同一オリジン・非ナビゲーション）。各テストは差分だけ上書きする。
 const base: RequestDescriptor = {

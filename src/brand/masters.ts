@@ -7,8 +7,8 @@
 // 過剰に拒否しても困らない想定（マスターは Affinity の書き出しで、該当する書き方をしないと見ている。
 // 実際の書き出しで落ちたら、その書き方を見てから許可リストを広げる）。
 
-import { fromNullable, mapOption, none, type Option, some } from "../types/option";
-import { fail, mapResult, type Result, success } from "../types/result";
+import { fromNullable, mapOption, none, type Option, some } from "../types/option.ts";
+import { fail, mapResult, type Result, success } from "../types/result.ts";
 
 export type ViewBox = { x: number; y: number; width: number; height: number };
 
@@ -35,7 +35,7 @@ export const LOGO = {
   dark: "icons/logo-dark.svg",
 } as const;
 
-// 横長の OGP は index.html の og:image で、寸法と ?v= を just images が書く。
+// 横長の OGP は index.html の og:image で、寸法と ?v= はビルドが差し込む（src/brand/outputs.ts）。
 export const OGP_LANDSCAPE = {
   file: "ogp-landscape.svg",
   raster: { kind: "ogp", to: "ogp/ogp-landscape", width: 1200, height: 630 },
@@ -239,11 +239,15 @@ export const checkMaster = (
     : fail(`viewBox の縦横比が ${master.ratio} でない: ${width}x${height}`);
 };
 
-// UTF-8 に符号化してから SHA-256。小文字 16 進で返す。
-export const sha256Hex = async (text: string): Promise<string> => {
-  const digest = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+// バイト列の SHA-256。小文字 16 進で返す。
+export const sha256HexBytes = async (bytes: Uint8Array<ArrayBuffer>): Promise<string> => {
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 };
+
+// UTF-8 に符号化してから SHA-256。
+export const sha256Hex = (text: string): Promise<string> =>
+  sha256HexBytes(new TextEncoder().encode(text));
 
 // brand/generated.json の本文。just images が書き、テストがコミット済みのものと比べる。
 export const generatedJson = async (

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import worker, { buildCsp, DISCOVERY_ROUTES } from "../src/worker";
+import worker, { buildCsp, DISCOVERY_ROUTES } from "../src/worker.ts";
 // workerd ランタイムでは node:fs が使えないため、Vite の ?raw で内容を埋め込んで検査する。
 import wranglerToml from "../wrangler.toml?raw";
 

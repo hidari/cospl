@@ -1,7 +1,7 @@
 // タグ以外の文面オプション。いまはクレジット依頼の方法（BY の選択肢）だけ。
 
-import { invalidCreditError, type ParseError } from "../types/errors";
-import { fail, type Result, success } from "../types/result";
+import { invalidCreditError, type ParseError } from "../types/errors.ts";
+import { fail, type Result, success } from "../types/result.ts";
 
 export const CREDITS = ["sns", "any"] as const;
 export type CreditMethod = (typeof CREDITS)[number];

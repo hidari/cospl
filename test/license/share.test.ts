@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { SITE_URL, siteShareMessage, siteSharePayload } from "../../src/license/share";
+import { SITE_URL, siteShareMessage, siteSharePayload } from "../../src/license/share.ts";
 
 describe("サイト共有", () => {
   test("SITE_URL は cospl.org のルート", () => {

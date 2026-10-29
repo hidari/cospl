@@ -1,5 +1,5 @@
 import { test as base } from "@playwright/test";
-import { LicensePage } from "./pages/license-page";
+import { LicensePage } from "./pages/license-page.ts";
 
 // licensePage fixture を提供する拡張 test。全 spec はここから test / expect を import する。
 export const test = base.extend<{ licensePage: LicensePage }>({

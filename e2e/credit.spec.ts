@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, test } from "./fixtures.ts";
 
 test("「方法は問わない」を選ぶと出力と URL に反映される", async ({ licensePage, page }) => {
   await licensePage.goto();

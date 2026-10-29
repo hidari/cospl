@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, test } from "./fixtures.ts";
 
 test("トップが読め、既定の出力と識別子が描画される", async ({ licensePage }) => {
   await licensePage.goto();

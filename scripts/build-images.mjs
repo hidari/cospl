@@ -2,7 +2,7 @@
 // 何を作るかは BRAND_MASTERS の copyTo と rasters が決め、このスクリプトはそれを順に処理する。
 // playwright-core + システム Chrome で SVG を実寸描画し PNG 化、
 // cwebp / ImageMagick(magick) で WebP・JPEG・ICO へ変換する。
-// 配信する写しとロゴのダーク版、index.html の値、brand/generated.json も書く。
+// 配信する写しとロゴのダーク版、brand/generated.json も書く。index.html の値はビルドが差し込む（vite.config.ts）。
 //
 // 前提コマンド: Google Chrome（channel: 'chrome'）, cwebp, magick
 // 実行: just images
@@ -137,18 +137,8 @@ async function main() {
     }
     return found;
   };
-  // 書き込みの前に、ダーク版と index.html の値を作れることを確かめる。
-  const logo = master(masters.LOGO.file);
-  const logoDark = unwrap(outputs.darkLogo(logo.svg));
-  const indexPath = join(root, "index.html");
-  const index = unwrap(
-    outputs.syncIndexHtml(await readFile(indexPath, "utf8"), {
-      ogpVersion: outputs.ogpVersion(
-        await masters.sha256Hex(master(masters.OGP_LANDSCAPE.file).svg),
-      ),
-      logo: logo.viewBox,
-    }),
-  );
+  // 書き込みの前に、ダーク版を作れることを確かめる。
+  const logoDark = unwrap(outputs.darkLogo(master(masters.LOGO.file).svg));
 
   const browser = await chromium.launch({ channel: "chrome" });
   const tmp = await mkdtemp(join(tmpdir(), "cospl-img-"));
@@ -159,7 +149,7 @@ async function main() {
       }
     }
 
-    // 写し・ダーク版・index.html・generated.json は、全部の描画が済んでから書く。generated.json は
+    // 写し・ダーク版・generated.json は、全部の描画が済んでから書く。generated.json は
     // 「最後まで描き終えた」印なので最後に書く。途中で失敗したら古いハッシュのままになり、
     // テストが just images のやり直しを求める。写しはマスターと同じバイト列にする（テストが完全一致で見張る）。
     for (const m of loaded) {
@@ -168,8 +158,7 @@ async function main() {
       }
     }
     await writeFile(join(pub, masters.LOGO.dark), logoDark);
-    await writeFile(indexPath, index);
-    console.log(`${masters.LOGO.file} -> ${masters.LOGO.light} + ${masters.LOGO.dark}, index.html`);
+    console.log(`${masters.LOGO.file} -> ${masters.LOGO.light} + ${masters.LOGO.dark}`);
     await writeFile(join(brand, "generated.json"), await masters.generatedJson(loaded));
   } finally {
     await browser.close();

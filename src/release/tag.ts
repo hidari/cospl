@@ -1,6 +1,6 @@
 // リリースタグの厳格パースと次のタグの決定。CI と just の release 系 recipe が scripts/release-tag.mjs 経由で使う。
 
-import { fail, type Result, success } from "../types/result";
+import { fail, type Result, success } from "../types/result.ts";
 
 export type ReleaseTag = { kind: "license"; version: string } | { kind: "site"; version: string };
 

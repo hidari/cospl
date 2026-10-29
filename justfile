@@ -54,6 +54,40 @@ check: lint typecheck test
 images:
     node scripts/build-images.mjs
 
+# 配信する index.html の、ビルドが差し込んだブランドの値を確かめる（deploy.yml がデプロイの前後に使う）。
+# 引数はビルド出力のディレクトリ（dist/client）か配信元のオリジン。期待値は同じ配信元の応答から導く。
+# 寸法の正しさは e2e/head.spec.ts が画像をデコードして確かめるので、ここでは形だけを見る
+check-brand-html source:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    src="${1%/}"
+    fail() { echo "check-brand-html: ${src}: $1" >&2; exit 1; }
+    get() { case "${src}" in http*://*) curl -fsSL "${src}$1" ;; *) cat "${src}$1" ;; esac; }
+    sha8() { if command -v sha256sum >/dev/null; then sha256sum; else shasum -a 256; fi | cut -c1-8; }
+    # ちょうど 1 つある meta の content。0 個や 2 個以上なら失敗する
+    one() {
+      values=$(grep -oE "<meta $1 content=\"[^\"]*\"" <<<"${html}" | sed -E 's/.*content="([^"]*)"/\1/' || true)
+      [ "$(grep -c . <<<"${values}" || true)" = 1 ] || fail "$1 の meta が 1 つでない"
+      echo "${values}"
+    }
+    case "${src}" in http*://*) html=$(get /) ;; *) html=$(get /index.html) ;; esac
+    # トークンの形は src/brand/outputs.ts が正。}} だけでは数えない（Cloudflare のビーコンの JSON が持つ）
+    if grep -qE '\{\{|COSPL_|%[A-Z_]+%' <<<"${html}"; then fail "置き換え残しのトークンがある"; fi
+    og=$(one 'property="og:image"')
+    [ "$(one 'name="twitter:image"')" = "${og}" ] || fail "og:image と twitter:image が違う"
+    v=$(sed -nE 's/.*\?v=([0-9a-f]{8})$/\1/p' <<<"${og}")
+    [ -n "${v}" ] || fail "og:image の ?v= が 8 桁の小文字 16 進でない: ${og}"
+    served=$(get "$(sed -E 's#^https?://[^/]+##; s#\?.*##' <<<"${og}")" | sha8)
+    [ "${served}" = "${v}" ] || fail "?v=${v} が配信される画像の SHA-256 の先頭 ${served} と違う"
+    for key in og:image:width og:image:height; do
+      n=$(one "property=\"${key}\"")
+      [[ "${n}" =~ ^[1-9][0-9]*$ ]] || fail "${key} が正の整数でない: ${n}"
+    done
+    logo=$(grep -oE '<img [^>]*src="/icons/logo-light\.svg"[^>]*>' <<<"${html}" || true)
+    [ "$(grep -c . <<<"${logo}" || true)" = 1 ] || fail "ロゴの img が 1 つでない"
+    grep -qE ' width="[1-9][0-9]*" height="[1-9][0-9]*"' <<<"${logo}" || fail "ロゴの img に正の整数の width / height が無い"
+    echo "ok: ${src} (?v=${v})"
+
 # 文面変更後に golden フィクスチャを更新
 regen-golden:
     node scripts/regen-golden.mjs

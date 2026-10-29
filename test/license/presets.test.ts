@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { EXTENSION_PRESETS } from "../../src/license/presets";
+import { EXTENSION_PRESETS } from "../../src/license/presets.ts";
 
 describe("EXTENSION_PRESETS", () => {
   test("id は editing / photographer-use の 2 件", () => {

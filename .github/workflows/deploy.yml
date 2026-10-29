@@ -38,8 +38,13 @@ jobs:
           just-version: 1.59.0
       - run: pnpm install --frozen-lockfile
       - run: just release-check "${GITHUB_REF_NAME}" site
-      - name: Build & deploy
-        run: pnpm exec vite build && pnpm exec wrangler deploy
+      - name: Build
+        run: pnpm exec vite build
+      # ビルドが index.html に差し込んだブランドの値を、デプロイする前に確かめる。
+      - name: Check built HTML
+        run: just check-brand-html dist/client
+      - name: Deploy
+        run: pnpm exec wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -83,6 +88,17 @@ jobs:
             return 1
           }
           check_link_header || { echo "::error::health check failed: / に Link ヘッダが無い（run_worker_first に / があるか確認）"; exit 1; }
+
+          # 配信中の / が、ビルドの差し込んだブランドの値を持つことを確かめる（?v= は配信される画像のハッシュ）。
+          check_brand_html() {
+            for i in $(seq 1 5); do
+              echo "  / brand html attempt ${i}"
+              just check-brand-html "https://cospl.org" && return 0
+              sleep 10
+            done
+            return 1
+          }
+          check_brand_html || { echo "::error::health check failed: / のブランドの値が配信される画像と合わない"; exit 1; }
 
           check_markdown() {
             for i in $(seq 1 5); do

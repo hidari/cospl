@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, test } from "./fixtures.ts";
 
 test("hash 付きでロードするとタグ状態が復元される", async ({ licensePage }) => {
   // BY と NC のみ ON の hash でロードする。

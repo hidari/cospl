@@ -30,7 +30,7 @@ import {
   parseView,
   type State,
   type View,
-} from "./core";
+} from "./core.ts";
 import {
   apiCatalogJson,
   LINK_HEADER,
@@ -38,9 +38,9 @@ import {
   prefersMarkdown,
   robotsTxt,
   sitemapXml,
-} from "./discovery";
-import type { ParseError } from "./types/errors";
-import { flatMapResult, matchResult, type Result, success } from "./types/result";
+} from "./discovery.ts";
+import type { ParseError } from "./types/errors.ts";
+import { flatMapResult, matchResult, type Result, success } from "./types/result.ts";
 
 const LICENSE_PATH = "/license.md";
 const ROBOTS_PATH = "/robots.txt";

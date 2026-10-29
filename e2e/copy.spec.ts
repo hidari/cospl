@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, test } from "./fixtures.ts";
 
 test("コピーを押すと aria-live のフラッシュに『コピーしました』が出る", async ({ licensePage }) => {
   await licensePage.goto();

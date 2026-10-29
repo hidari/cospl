@@ -9,7 +9,7 @@ import {
   none,
   type Option,
   some,
-} from "../../src/types/option";
+} from "../../src/types/option.ts";
 
 describe("Option型ユーティリティ", () => {
   describe("some / none", () => {

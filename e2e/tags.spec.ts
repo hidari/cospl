@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, test } from "./fixtures.ts";
 
 test("タグをトグルすると aria-pressed・識別子・出力・endpoint・URL hash が一斉更新される", async ({
   licensePage,

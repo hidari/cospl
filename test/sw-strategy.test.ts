@@ -1,5 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { chooseStrategy, type RequestDescriptor } from "../src/client/sw-strategy.ts";
+import {
+  chooseStrategy,
+  isStablePrecache,
+  type RequestDescriptor,
+} from "../src/client/sw-strategy.ts";
 
 // 既定値（GET・同一オリジン・非ナビゲーション）。各テストは差分だけ上書きする。
 const base: RequestDescriptor = {
@@ -57,5 +61,33 @@ describe("chooseStrategy（キャッシュ戦略の判定）", () => {
 
   test("SW ファイル自体はキャッシュしない（passthrough）", () => {
     expect(chooseStrategy({ ...base, pathname: "/sw.js" })).toBe("passthrough");
+  });
+});
+
+describe("isStablePrecache（SW が事前キャッシュする安定名の公開ファイル）", () => {
+  test.each([
+    "/icons/nd.svg",
+    "/icons/sb.svg",
+    "/icons/logo-light.svg",
+    "/favicon.ico",
+    "/favicon.svg",
+    "/apple-touch-icon.png",
+    "/manifest.webmanifest",
+    "/fonts/SpaceMono-400-latin.woff2",
+  ])("%s は事前キャッシュする", (pathname) => {
+    expect(isStablePrecache(pathname)).toBe(true);
+  });
+
+  test.each([
+    "/fonts/OFL.txt",
+    "/ogp/ogp-landscape.jpg",
+    "/_headers",
+    "/llms.txt",
+    "/assets/index-abc.js",
+    "/",
+    "/icons/.DS_Store",
+    "/fonts/.hidden.woff2",
+  ])("%s は事前キャッシュしない", (pathname) => {
+    expect(isStablePrecache(pathname)).toBe(false);
   });
 });

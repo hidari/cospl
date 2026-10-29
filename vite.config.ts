@@ -1,38 +1,52 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { readdir, readFile } from "node:fs/promises";
+import { join, relative, sep } from "node:path";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { build as esbuild } from "esbuild";
 import { defineConfig, type Plugin } from "vite";
-import { LOGO } from "./src/brand/masters.ts";
+import { LOGO, sha256HexBytes } from "./src/brand/masters.ts";
 import { buildIndexHtml, OGP_IMAGE } from "./src/brand/outputs.ts";
+import { cacheVersion } from "./src/client/sw-precache.ts";
+import { isStablePrecache } from "./src/client/sw-strategy.ts";
 
-// precache する安定名アセット（ハッシュ無し）。ハッシュ付き JS/CSS は generateBundle から取得する。
-const STABLE_PRECACHE: readonly string[] = [
-  "/manifest.webmanifest",
-  "/favicon.svg",
-  "/favicon.ico",
-  "/apple-touch-icon.png",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
-  "/icons/icon-512-maskable.png",
-  "/icons/logo-light.svg",
-  "/icons/logo-dark.svg",
-  "/icons/by.svg",
-  "/icons/nc.svg",
-  "/icons/nai.svg",
-  "/icons/td.svg",
-  "/icons/mr.svg",
-  "/fonts/SpaceGrotesk-latin.woff2",
-  "/fonts/SpaceMono-400-latin.woff2",
-  "/fonts/SpaceMono-700-latin.woff2",
-];
+// transformIndexHtml は dev で throw の理由が本文にもターミナルにも出ないので、先にターミナルへ出してから止める。
+// build では理由が 2 回出るが無害。
+const rejector =
+  (scope: string) =>
+  (error: string): never => {
+    console.error(`${scope}: ${error}`);
+    throw new Error(`${scope}: ${error}`);
+  };
 
 // クライアントビルドの generateBundle で sw.ts を esbuild バンドルし precache を注入して /sw.js を emit。
 // vite build の一部なので、deploy.yml と E2E（vite build && preview）のどちらも同じ sw.js を使う。
+// 安定名アセットは public/ から isStablePrecache で選び、内容ハッシュを版数に畳み込む（差し替えが SW 更新になる）。
 function serviceWorkerPlugin(): Plugin {
+  let publicDir = "";
+  const reject = rejector("service worker");
+  // 読めないときも reject を通す（reject を挟まないと理由が消える）。
+  const readStable = (path: string): Promise<{ path: string; sha256: string }> =>
+    readFile(join(publicDir, path))
+      .catch((err: unknown) => reject(`${path} を読めない: ${String(err)}`))
+      .then(async (bytes) => ({ path, sha256: await sha256HexBytes(bytes) }));
+  const stablePaths = async (): Promise<string[]> => {
+    const entries = await readdir(publicDir, { recursive: true, withFileTypes: true }).catch(
+      (err: unknown) => reject(`${publicDir} を列挙できない: ${String(err)}`),
+    );
+    return entries
+      .filter((entry) => entry.isFile())
+      .map(
+        (entry) =>
+          `/${relative(publicDir, join(entry.parentPath, entry.name)).split(sep).join("/")}`,
+      )
+      .filter(isStablePrecache)
+      .sort();
+  };
   return {
     name: "cospl-service-worker",
     apply: "build",
+    configResolved(config) {
+      publicDir = config.publicDir;
+    },
     async generateBundle(_options, bundle) {
       // クライアントビルドは CSS アセットを bundle に含む（CF worker ビルドは含まない）ので、
       // これを client/worker ビルドのロバストな判別子にする。
@@ -42,14 +56,9 @@ function serviceWorkerPlugin(): Plugin {
       const hashed = Object.keys(bundle)
         .filter((name) => name.endsWith(".js") || name.endsWith(".css"))
         .map((name) => `/${name}`);
-      // キャッシュ版数は precache 対象のハッシュ付きアセット名全体から決定的に導出する。全件を
-      // ソートして連結するため、エントリ数や Object.values の列挙順に依存せず、内容が変われば必ず変わる。
-      const version =
-        hashed
-          .map((name) => name.replace(/[^a-z0-9]/gi, ""))
-          .sort()
-          .join("") || "dev";
-      const precache = ["/", ...hashed, ...STABLE_PRECACHE];
+      const stable = await Promise.all((await stablePaths()).map(readStable));
+      const precache = ["/", ...hashed, ...stable.map((file) => file.path)];
+      const version = await cacheVersion({ hashedAssets: hashed, stable });
       const result = await esbuild({
         entryPoints: ["src/client/sw.ts"],
         bundle: true,
@@ -64,7 +73,7 @@ function serviceWorkerPlugin(): Plugin {
       });
       const out = result.outputFiles?.[0];
       if (!out) {
-        throw new Error("service worker のビルド出力が空");
+        return reject("ビルド出力が空");
       }
       this.emitFile({ type: "asset", fileName: "sw.js", source: out.text });
     },
@@ -77,11 +86,7 @@ function serviceWorkerPlugin(): Plugin {
 // ファイルは毎回読む（dev で画像を描き直したら次の配信から反映する）。
 function brandIndexHtmlPlugin(): Plugin {
   let publicDir = "";
-  // dev では throw の理由が本文にもターミナルにも出ないので、先にターミナルへ出してから止める。
-  const reject = (error: string): never => {
-    console.error(`index.html: ${error}`);
-    throw new Error(`index.html: ${error}`);
-  };
+  const reject = rejector("index.html");
   // 読めないときも reject を通す（readFile の reject をそのまま投げると理由が消える）。
   const read = (file: string): Promise<Uint8Array<ArrayBuffer>> => {
     const path = join(publicDir, file);

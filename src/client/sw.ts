@@ -41,21 +41,27 @@ self.addEventListener("fetch", (event) => {
   if (strategy === "passthrough") {
     return;
   }
-  event.respondWith(handle(strategy, event.request));
+  event.respondWith(handle(strategy, event.request, event.waitUntil.bind(event)));
 });
 
-function handle(strategy: Exclude<Strategy, "passthrough">, request: Request): Promise<Response> {
+type WaitUntil = (promise: Promise<unknown>) => void;
+
+function handle(
+  strategy: Exclude<Strategy, "passthrough">,
+  request: Request,
+  waitUntil: WaitUntil,
+): Promise<Response> {
   switch (strategy) {
     case "cache-first":
       return cacheFirst(request);
     case "network-first":
       return networkFirst(request);
     case "swr":
-      return staleWhileRevalidate(request);
+      return staleWhileRevalidate(request, waitUntil);
   }
 }
 
-// 不変アセット: キャッシュ優先。未取得時のみネットワークから取得しキャッシュへ格納する。
+// ハッシュ付きアセットと、内容が SW の版数に入っている安定名アセット（フォント）: キャッシュ優先。未取得時のみネットワークから取得しキャッシュへ格納する。
 async function cacheFirst(request: Request): Promise<Response> {
   // Vite は <script type="module" crossorigin> を生成するため、ブラウザは cors モードでリクエストする。
   // caches.match はデフォルトで Vary/モードを考慮するため、同一 URL でもキャッシュ miss が起きる。
@@ -98,7 +104,9 @@ async function networkFirst(request: Request): Promise<Response> {
 }
 
 // シェル資産: キャッシュ即返し + 背景で再検証（失敗は握りつぶす）。
-async function staleWhileRevalidate(request: Request): Promise<Response> {
+// 裏の取得とキャッシュ書き込みは waitUntil に渡す。渡さないと応答を返した時点で SW が停止され得て、
+// 書き込みが完了せず「2 回目の表示で最新になる」保証が崩れる。waitUntil に渡す Promise は reject させない。
+async function staleWhileRevalidate(request: Request, waitUntil: WaitUntil): Promise<Response> {
   const cached = await caches.match(request, { ignoreVary: true });
   const network = fetch(request).then(async (response) => {
     if (response.ok) {
@@ -108,7 +116,7 @@ async function staleWhileRevalidate(request: Request): Promise<Response> {
     return response;
   });
   if (cached) {
-    network.catch(() => undefined);
+    waitUntil(network.catch(() => undefined));
     return cached;
   }
   return network;

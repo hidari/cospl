@@ -1,5 +1,5 @@
 ---
-status: in_progress
+status: closed
 ---
 
 # refactor(brand): index.html のブランド値をビルド時に差し込む
@@ -32,13 +32,13 @@ status: in_progress
 
 ## タスク
 
-- [ ] `index.html` をトークンだけにし、 純粋関数 `renderIndexHtml` とスロット表を `src/brand/outputs.ts` に置く
-- [ ] `vite.config.ts` に薄いプラグインを置き、 失敗の理由を出してから止める
-- [ ] `just images` が `index.html` に触らないようにする
-- [ ] config から import する連鎖に `.ts` 拡張子を付け、 lint で付け忘れを止める
-- [ ] vitest・E2E (`e2e/head.spec.ts`)・deploy の health check で 3 つの値を検査する
-- [ ] 変異注入で各検査が赤くなることを確かめる
-- [ ] 文書とメモリを新しい仕組みに合わせる
+- [x] `index.html` をトークンだけにし、 純粋関数 `renderIndexHtml` とスロット表を `src/brand/outputs.ts` に置く
+- [x] `vite.config.ts` に薄いプラグインを置き、 失敗の理由を出してから止める
+- [x] `just images` が `index.html` に触らないようにする
+- [x] config から import する連鎖に `.ts` 拡張子を付け、 lint で付け忘れを止める (レビューを受けて、 連鎖に限らずリポジトリ全体で必須にした)
+- [x] vitest・E2E (`e2e/head.spec.ts`)・deploy の health check で 3 つの値を検査する
+- [x] 変異注入で各検査が赤くなることを確かめる
+- [x] 文書とメモリを新しい仕組みに合わせる
 
 ## 関連
 

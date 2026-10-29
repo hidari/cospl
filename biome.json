@@ -29,5 +29,17 @@
     "formatter": {
       "quoteStyle": "double"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["src/brand/**", "src/types/**", "src/license/share.ts", "vite.config.ts"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useImportExtensions": "error"
+          }
+        }
+      }
+    }
+  ]
 }

@@ -1,8 +1,10 @@
-// マスターから作る、写しと描画以外の生成物。ロゴのダーク版と、index.html に書き込む値。
-// vitest（workerd）と scripts/build-images.mjs（loadTs で bundle した Node）の両方が読む。
+// マスターと配信物から作る、写しと描画以外の生成物。ロゴのダーク版と、index.html に差し込む値。
+// vitest（workerd）・scripts/build-images.mjs（loadTs で bundle した Node）・vite.config.ts が読む。
+// vite.config.ts から読むので、この連鎖の import には拡張子を付ける（biome.json の useImportExtensions）。
 
-import { fail, type Result, success } from "../types/result";
-import { LOGO, OGP_LANDSCAPE } from "./masters";
+import { SITE_URL } from "../license/share.ts";
+import { fail, type Result, success } from "../types/result.ts";
+import { inspectMaster, LOGO, OGP_LANDSCAPE, sha256HexBytes } from "./masters.ts";
 
 // ライト版で使ってよい色と、ダーク版での色。ダークの文字色はサイトのダークの --ink に揃える。
 export const LOGO_DARK_COLORS: Readonly<Record<string, string>> = {
@@ -47,50 +49,122 @@ export const darkLogo = (svg: string): Result<string, string> => {
     : fail(`ダーク版の対応表に無い色: ${[...new Set(unknown)].join(", ")}`);
 };
 
-// og:image / twitter:image の ?v= はマスターのハッシュから作る。中身が変われば X のカードキャッシュを外せる。
-export const ogpVersion = (sha256: string): string => sha256.slice(0, 8);
-
-const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const OGP_QUERY = new RegExp(
-  `(<meta (?:property="og:image"|name="twitter:image") content="[^"]*/${escapeRegExp(OGP_LANDSCAPE.raster.to)}\\.(?:jpg|png|webp)\\?v=)[^"]*`,
-  "g",
-);
-const OGP_SIZE = /(<meta property="og:image:(width|height)" content=")[^"]*/g;
-const LOGO_IMG = new RegExp(`<img\\b[^>]*\\bsrc="/${escapeRegExp(LOGO.light)}"[^>]*>`, "g");
-const SIZE = /\b(width|height)="[^"]*"/g;
+// og:image が指す画像（public/ からの相対）。?v= はこのファイルのバイト列のハッシュから作る。
+// X のカードキャッシュが見ているのは配信される中身なので、マスターが同じでも描き直して変われば ?v= も変わる。
+export const OGP_IMAGE = `${OGP_LANDSCAPE.raster.to}.jpg`;
 
 type Size = { width: number; height: number };
-const round = (size: Size): Size => ({
-  width: Math.round(size.width),
-  height: Math.round(size.height),
-});
+export type IndexHtmlValues = { ogpVersion: string; logo: Size };
 
-// just images が index.html に書く値。テストは書き換えても変わらない（不動点である）ことを確かめる。
-// 目印が欠けたまま成功すると、書き換えたつもりで古い値が配信されるので、欠けたら失敗する。
-export const syncIndexHtml = (
-  html: string,
-  expected: { ogpVersion: string; logo: Size },
-): Result<string, string> => {
-  if ((html.match(OGP_QUERY) ?? []).length !== 2) {
-    return fail("index.html の og:image と twitter:image の両方に ?v= が無い");
+// トークンを置いてよいタグ（トークンを含む < から > まで）と、差し込む値。
+type Slot = {
+  inTag: (tag: string, token: string) => boolean;
+  value: (values: IndexHtmlValues) => string;
+};
+
+const ogImageUrl = ({ ogpVersion }: IndexHtmlValues): string =>
+  `${SITE_URL}${OGP_IMAGE}?v=${ogpVersion}`;
+
+// 値を差し込む meta。どれも index.html にちょうど 1 つだけ置く。
+const METAS = [
+  { slot: "COSPL_OG_IMAGE", attr: "property", key: "og:image", value: ogImageUrl },
+  {
+    slot: "COSPL_OG_IMAGE_WIDTH",
+    attr: "property",
+    key: "og:image:width",
+    value: () => `${OGP_LANDSCAPE.raster.width}`,
+  },
+  {
+    slot: "COSPL_OG_IMAGE_HEIGHT",
+    attr: "property",
+    key: "og:image:height",
+    value: () => `${OGP_LANDSCAPE.raster.height}`,
+  },
+  { slot: "COSPL_TWITTER_IMAGE", attr: "name", key: "twitter:image", value: ogImageUrl },
+] as const;
+
+const isLogoImg = (tag: string): boolean =>
+  /^<img\s/.test(tag) && tag.includes(` src="/${LOGO.light}"`);
+
+export const INDEX_HTML_SLOTS: Readonly<Record<string, Slot>> = {
+  ...Object.fromEntries(
+    METAS.map(({ slot, attr, key, value }) => [
+      slot,
+      { inTag: (tag, token) => tag === `<meta ${attr}="${key}" content="${token}">`, value },
+    ]),
+  ),
+  COSPL_LOGO_WIDTH: { inTag: isLogoImg, value: ({ logo }) => `${logo.width}` },
+  COSPL_LOGO_HEIGHT: { inTag: isLogoImg, value: ({ logo }) => `${logo.height}` },
+};
+
+const TOKEN = /\{\{([A-Z_]+)\}\}/g;
+const VERSION = /^[0-9a-f]{8}$/;
+const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const count = (html: string, re: RegExp): number => (html.match(re) ?? []).length;
+const META_COUNTS = METAS.map(({ attr, key }) => ({
+  key,
+  re: new RegExp(`<meta\\b[^>]*\\s${attr}="${escapeRegExp(key)}"`, "g"),
+}));
+const LOGO_IMG = new RegExp(`<img\\b[^>]*\\ssrc="/${escapeRegExp(LOGO.light)}"`, "g");
+
+// トークンを含むタグ。トークンは属性値の中に置くので、直前の < から直後の > までを取る。
+const enclosingTag = (html: string, index: number): string =>
+  html.slice(html.lastIndexOf("<", index), html.indexOf(">", index) + 1);
+
+// テンプレートの形の検査。最初に見つけた問題を返す。手で足した meta や img も数えるので、
+// トークンのある 1 つとは別に値の書かれたタグが残っていれば失敗する。
+const templateProblem = (html: string): string | undefined => {
+  const tokens = Array.from(html.matchAll(TOKEN));
+  const unknown = tokens.find((m) => INDEX_HTML_SLOTS[m[1] ?? ""] === undefined);
+  if (unknown !== undefined) return `未知のトークン: ${unknown[0]}`;
+  if (/\{\{|\}\}/.test(html.replace(TOKEN, ""))) return "形の崩れたトークンがある";
+  const miscounted = Object.keys(INDEX_HTML_SLOTS)
+    .map((slot) => ({ slot, n: tokens.filter((m) => m[1] === slot).length }))
+    .find(({ n }) => n !== 1);
+  if (miscounted !== undefined) {
+    return `トークン {{${miscounted.slot}}} が ${miscounted.n} 個ある（1 個だけ置く）`;
   }
-  if ((html.match(OGP_SIZE) ?? []).length !== 2) {
-    return fail("index.html に og:image:width と og:image:height が無い");
-  }
-  const imgs = html.match(LOGO_IMG) ?? [];
-  if (imgs.length !== 1) return fail(`index.html のロゴの img が 1 つでない: ${imgs.length}`);
-  const img = imgs[0] ?? "";
-  const attrs = Array.from(img.matchAll(SIZE), (m) => m[1]);
-  if (!attrs.includes("width") || !attrs.includes("height")) {
-    return fail("index.html のロゴの img に width と height が無い");
-  }
-  const logo = round(expected.logo);
-  const ogp = OGP_LANDSCAPE.raster;
-  const resized = img.replace(SIZE, (_whole, name: keyof Size) => `${name}="${logo[name]}"`);
-  return success(
-    html
-      .replace(OGP_QUERY, `$1${expected.ogpVersion}`)
-      .replace(OGP_SIZE, (_whole, head: string, name: keyof Size) => `${head}${ogp[name]}`)
-      .replace(img, () => resized),
+  const misplaced = tokens.find(
+    (m) => !INDEX_HTML_SLOTS[m[1] ?? ""]?.inTag(enclosingTag(html, m.index), m[0]),
   );
+  if (misplaced !== undefined) {
+    return `${misplaced[0]} が置いてよいタグにない: ${enclosingTag(html, misplaced.index)}`;
+  }
+  const meta = META_COUNTS.map(({ key, re }) => ({ key, n: count(html, re) })).find(
+    ({ n }) => n !== 1,
+  );
+  if (meta !== undefined) return `${meta.key} の meta が ${meta.n} 個ある（1 個だけ置く）`;
+  const logos = count(html, LOGO_IMG);
+  if (logos !== 1) return `ロゴの img が ${logos} 個ある（1 個だけ置く）`;
+  return undefined;
+};
+
+// index.html のトークンを値で置き換える。目印が欠けたまま成功するとトークンの文字列や古い値が
+// 配信されるので、形が崩れていれば失敗する。
+export const renderIndexHtml = (html: string, values: IndexHtmlValues): Result<string, string> => {
+  const problem = templateProblem(html);
+  if (problem !== undefined) return fail(problem);
+  if (!VERSION.test(values.ogpVersion)) {
+    return fail(`?v= の値が 8 桁の小文字 16 進でない: ${values.ogpVersion}`);
+  }
+  const logo = { width: Math.round(values.logo.width), height: Math.round(values.logo.height) };
+  if (![logo.width, logo.height].every((n) => Number.isSafeInteger(n) && n > 0)) {
+    return fail(`ロゴの寸法が正の整数にならない: ${values.logo.width}x${values.logo.height}`);
+  }
+  const resolved = { ...values, logo };
+  return success(
+    html.replace(TOKEN, (token, slot: string) => INDEX_HTML_SLOTS[slot]?.value(resolved) ?? token),
+  );
+};
+
+// 配信するファイルの中身から値を作って差し込む。読むのは呼び出し側（vite.config.ts）。
+export const buildIndexHtml = async (
+  html: string,
+  files: { ogpJpg: Uint8Array<ArrayBuffer>; logoSvg: string },
+): Promise<Result<string, string>> => {
+  if (files.ogpJpg.length === 0) return fail("OG 画像が空");
+  const logo = inspectMaster(files.logoSvg);
+  if (!logo.success) return fail(`ロゴ: ${logo.error}`);
+  const ogpVersion = (await sha256HexBytes(files.ogpJpg)).slice(0, 8);
+  return renderIndexHtml(html, { ogpVersion, logo: logo.data.viewBox });
 };

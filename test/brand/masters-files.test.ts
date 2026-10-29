@@ -8,10 +8,8 @@ import {
   generatedJson,
   inspectMaster,
   LOGO,
-  OGP_LANDSCAPE,
-  sha256Hex,
 } from "../../src/brand/masters";
-import { darkLogo, ogpVersion, syncIndexHtml } from "../../src/brand/outputs";
+import { darkLogo, renderIndexHtml } from "../../src/brand/outputs";
 
 // brand/ の SVG を全部読む。BRAND_MASTERS に登録し忘れたマスターもキーに現れる。
 const masters = import.meta.glob("../../brand/*.svg", {
@@ -69,15 +67,19 @@ describe("brand/generated.json", () => {
   });
 });
 
+// 値はビルドが差し込む（vite.config.ts）。ここでは差し込める形のテンプレートであることを確かめる。
 describe("index.html", () => {
-  test("OGP の ?v= と寸法、ロゴの width / height は just images が書いた値のまま", async () => {
-    const logo = inspectMaster(master(LOGO.file));
-    expect(logo.success).toBe(true);
-    if (!logo.success) return;
-    const expected = {
-      ogpVersion: ogpVersion(await sha256Hex(master(OGP_LANDSCAPE.file))),
-      logo: logo.data.viewBox,
-    };
-    expect(syncIndexHtml(indexRaw, expected)).toEqual({ success: true, data: indexRaw });
+  test("生成する値の場所にトークンを置き、描画できる", () => {
+    const rendered = renderIndexHtml(indexRaw, {
+      ogpVersion: "0123abcd",
+      logo: { width: 1, height: 1 },
+    });
+    expect(rendered.success).toBe(true);
+  });
+
+  // 値をソースに残すと、ビルドが差し込む値と食い違ったまま読まれる。
+  test("?v= の値もロゴの数値の寸法も持たない", () => {
+    expect(indexRaw).not.toMatch(/\?v=[0-9a-f]/);
+    expect(indexRaw).not.toMatch(/logo-light\.svg"[^>]*\b(?:width|height)="\d/);
   });
 });

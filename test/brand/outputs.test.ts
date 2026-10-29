@@ -1,6 +1,14 @@
 import { describe, expect, test } from "vitest";
-import { inspectMaster, OGP_LANDSCAPE } from "../../src/brand/masters";
-import { darkLogo, LOGO_DARK_COLORS, ogpVersion, syncIndexHtml } from "../../src/brand/outputs";
+import { inspectMaster, LOGO, OGP_LANDSCAPE } from "../../src/brand/masters";
+import {
+  buildIndexHtml,
+  darkLogo,
+  INDEX_HTML_SLOTS,
+  LOGO_DARK_COLORS,
+  OGP_IMAGE,
+  renderIndexHtml,
+} from "../../src/brand/outputs";
+import { SITE_URL } from "../../src/license/share";
 
 const SVG_NS = 'xmlns="http://www.w3.org/2000/svg"';
 const svgOf = (body: string): string => `<svg ${SVG_NS} viewBox="0 0 10 10">${body}</svg>`;
@@ -91,74 +99,157 @@ describe("darkLogo", () => {
   });
 });
 
-describe("ogpVersion", () => {
-  test("マスターのハッシュの先頭 8 文字", () => {
-    expect(ogpVersion("0123456789abcdef")).toBe("01234567");
-  });
-});
+// index.html と同じ形のテンプレート。生成する値の場所にだけトークンを置く。
+const LOGO_IMG = (width: string, height: string): string =>
+  `<img src="/${LOGO.light}" alt="CosPL" width="${width}" height="${height}">`;
+const TEMPLATE = [
+  '<meta property="og:image" content="{{COSPL_OG_IMAGE}}">',
+  '<meta property="og:image:width" content="{{COSPL_OG_IMAGE_WIDTH}}">',
+  '<meta property="og:image:height" content="{{COSPL_OG_IMAGE_HEIGHT}}">',
+  '<meta property="og:image:alt" content="alt">',
+  '<meta name="twitter:image" content="{{COSPL_TWITTER_IMAGE}}">',
+  `<p class="logo"><picture>${LOGO_IMG("{{COSPL_LOGO_WIDTH}}", "{{COSPL_LOGO_HEIGHT}}")}</picture></p>`,
+].join("\n");
+const VALUES = { ogpVersion: "abcd1234", logo: { width: 940, height: 330 } };
+const SLOTS = Object.keys(INDEX_HTML_SLOTS);
 
-describe("syncIndexHtml", () => {
-  const html = (v: string, width: string, height: string, ogp = ["1200", "630"]): string =>
-    [
-      `<meta property="og:image" content="https://cospl.org/ogp/ogp-landscape.jpg?v=${v}">`,
-      `<meta property="og:image:width" content="${ogp[0]}">`,
-      `<meta property="og:image:height" content="${ogp[1]}">`,
-      `<meta name="twitter:image" content="https://cospl.org/ogp/ogp-landscape.jpg?v=${v}">`,
-      `<p class="logo"><picture><source srcset="/icons/logo-dark.svg" media="(prefers-color-scheme: dark)"><img src="/icons/logo-light.svg" alt="CosPL" width="${width}" height="${height}"></picture></p>`,
-    ].join("\n");
-  const expected = { ogpVersion: "abcd1234", logo: { width: 940, height: 330 } };
-
-  test("OGP の ?v= と寸法、ロゴの width / height を書き換える", () => {
-    expect(syncIndexHtml(html("old", "1", "2", ["1", "2"]), expected)).toEqual({
+describe("renderIndexHtml", () => {
+  test("トークンを値で置き換える。og:image と twitter:image は同じ URL を指す", () => {
+    const ogImage = `${SITE_URL}${OGP_IMAGE}?v=abcd1234`;
+    expect(renderIndexHtml(TEMPLATE, VALUES)).toEqual({
       success: true,
-      data: html("abcd1234", "940", "330"),
+      data: [
+        `<meta property="og:image" content="${ogImage}">`,
+        `<meta property="og:image:width" content="${OGP_LANDSCAPE.raster.width}">`,
+        `<meta property="og:image:height" content="${OGP_LANDSCAPE.raster.height}">`,
+        '<meta property="og:image:alt" content="alt">',
+        `<meta name="twitter:image" content="${ogImage}">`,
+        `<p class="logo"><picture>${LOGO_IMG("940", "330")}</picture></p>`,
+      ].join("\n"),
     });
   });
 
-  test("書き換え済みなら何も変えない（テストはこの不動点で古い index.html を見つける）", () => {
-    const current = html("abcd1234", "940", "330");
-    expect(syncIndexHtml(current, expected)).toEqual({ success: true, data: current });
-  });
-
-  test("OGP の寸法は横長の OGP マスターの描画の寸法", () => {
-    const result = syncIndexHtml(html("v", "1", "2", ["1", "2"]), expected);
+  // クローラが読む URL そのもの。定数を組み替えたときに公開 URL が変わったことを見せる。
+  test("og:image は https://cospl.org/ogp/ogp-landscape.jpg に ?v= を付けた URL", () => {
+    const result = renderIndexHtml(TEMPLATE, VALUES);
     expect(result.success && result.data).toContain(
-      `<meta property="og:image:width" content="${OGP_LANDSCAPE.raster.width}">`,
-    );
-    expect(result.success && result.data).toContain(
-      `<meta property="og:image:height" content="${OGP_LANDSCAPE.raster.height}">`,
+      'content="https://cospl.org/ogp/ogp-landscape.jpg?v=abcd1234"',
     );
   });
 
-  test("viewBox が小数なら width / height は四捨五入した整数にする", () => {
-    const result = syncIndexHtml(html("v", "1", "2"), {
-      ogpVersion: "v",
-      logo: { width: 940.4, height: 329.6 },
-    });
+  test("ロゴの寸法が小数なら四捨五入した整数にする", () => {
+    const result = renderIndexHtml(TEMPLATE, { ...VALUES, logo: { width: 940.4, height: 329.6 } });
     expect(result.success && result.data).toContain('width="940" height="330"');
   });
 
-  // 目印が見つからないまま成功すると、書き換えたつもりで古い値が配信される。
+  test("トークンは 6 つで、生成する値 1 つにつき 1 つ", () => {
+    expect(SLOTS.sort()).toEqual(
+      [
+        "COSPL_LOGO_HEIGHT",
+        "COSPL_LOGO_WIDTH",
+        "COSPL_OG_IMAGE",
+        "COSPL_OG_IMAGE_HEIGHT",
+        "COSPL_OG_IMAGE_WIDTH",
+        "COSPL_TWITTER_IMAGE",
+      ].sort(),
+    );
+  });
+
+  // 置き換え漏れのまま成功すると、トークンの文字列がそのまま配信される。
+  test.each(SLOTS)("%s が無いと失敗する", (slot) => {
+    const result = renderIndexHtml(TEMPLATE.replace(`{{${slot}}}`, "1"), VALUES);
+    expect(!result.success && result.error).toContain(`{{${slot}}} が 0 個`);
+  });
+
+  test.each(SLOTS)("%s が 2 つあると失敗する", (slot) => {
+    const result = renderIndexHtml(`${TEMPLATE}\n<meta name="x" content="{{${slot}}}">`, VALUES);
+    expect(!result.success && result.error).toContain(`{{${slot}}} が 2 個`);
+  });
+
+  // 検査の順に並べる。各行は狙った検査より手前の検査をすべて通る入力にする。
   test.each([
-    ["og:image の ?v= が無い", html("v", "1", "2").replace(/ogp-landscape\.jpg\?v=v/g, "x.jpg")],
+    ["未知のトークン", `${TEMPLATE}\n<meta name="x" content="{{COSPL_X}}">`, "未知のトークン"],
+    ["形の崩れたトークン", `${TEMPLATE}\n<meta name="x" content="{{cospl}}">`, "形の崩れた"],
     [
-      "twitter:image だけ ?v= が無い",
-      html("v", "1", "2").replace(
-        'twitter:image" content="https://cospl.org/ogp/ogp-landscape.jpg?v=v"',
-        'twitter:image" content="https://cospl.org/ogp/ogp-landscape.jpg"',
+      "og:image と twitter:image のトークンの入れ替え",
+      TEMPLATE.replace("{{COSPL_OG_IMAGE}}", "{{T}}")
+        .replace("{{COSPL_TWITTER_IMAGE}}", "{{COSPL_OG_IMAGE}}")
+        .replace("{{T}}", "{{COSPL_TWITTER_IMAGE}}"),
+      "置いてよいタグにない",
+    ],
+    [
+      "og:image が 2 つで twitter:image が無い",
+      TEMPLATE.replace(
+        '<meta name="twitter:image" content="{{COSPL_TWITTER_IMAGE}}">',
+        '<meta property="og:image" content="{{COSPL_TWITTER_IMAGE}}">',
       ),
+      "置いてよいタグにない",
     ],
     [
-      "og:image:height が無い",
-      html("v", "1", "2").replace('<meta property="og:image:height" content="630">', ""),
+      "ロゴのトークンが別の img にある",
+      TEMPLATE.replace(`src="/${LOGO.light}"`, 'src="/icons/x.svg"'),
+      "置いてよいタグにない",
     ],
-    ["ロゴの img が無い", html("v", "1", "2").replace("/icons/logo-light.svg", "/icons/x.svg")],
     [
-      "ロゴの img が 2 つある",
-      `${html("v", "1", "2")}<img src="/icons/logo-light.svg" width="1" height="2">`,
+      "手で書いた og:image:width の meta がもう 1 つある",
+      `${TEMPLATE}\n<meta property="og:image:width" content="999">`,
+      "og:image:width の meta が 2 個",
     ],
-    ["ロゴの img に height が無い", html("v", "1", "2").replace(' height="2"', "")],
-  ])("%s と失敗する", (_label, input) => {
-    expect(syncIndexHtml(input, expected).success).toBe(false);
+    [
+      "手で書いた twitter:image の meta がもう 1 つある",
+      `${TEMPLATE}\n<meta name="twitter:image" content="https://cospl.org/x.jpg">`,
+      "twitter:image の meta が 2 個",
+    ],
+    ["ロゴの img がもう 1 つある", `${TEMPLATE}\n${LOGO_IMG("1", "2")}`, "ロゴの img が 2 個"],
+  ])("%s と失敗する", (_label, template, message) => {
+    const result = renderIndexHtml(template, VALUES);
+    expect(!result.success && result.error).toContain(message);
+  });
+
+  test.each(["ABCD1234", "abc1234", "abcd12345", ""])(
+    "?v= の値 %j が 8 桁の小文字 16 進でないと失敗する",
+    (ogpVersion) => {
+      const result = renderIndexHtml(TEMPLATE, { ...VALUES, ogpVersion });
+      expect(!result.success && result.error).toContain("8 桁の小文字 16 進でない");
+    },
+  );
+
+  test("ロゴの寸法が四捨五入で 0 になると失敗する", () => {
+    const result = renderIndexHtml(TEMPLATE, { ...VALUES, logo: { width: 0.4, height: 330 } });
+    expect(!result.success && result.error).toContain("ロゴの寸法が正の整数にならない");
+  });
+});
+
+describe("buildIndexHtml", () => {
+  const logoSvg = `<svg ${SVG_NS} viewBox="0 0 940.4 329.6"></svg>`;
+  // "abc" の SHA-256 は ba7816bf…（test/brand/masters.test.ts の既知の値）。
+  const abc = new Uint8Array([0x61, 0x62, 0x63]);
+
+  test("?v= は配信する OG 画像のバイト列の SHA-256 の先頭 8 文字、ロゴの寸法は viewBox から作る", async () => {
+    const built = await buildIndexHtml(TEMPLATE, { ogpJpg: abc, logoSvg });
+    const expected = renderIndexHtml(TEMPLATE, {
+      ogpVersion: "ba7816bf",
+      logo: { width: 940, height: 330 },
+    });
+    expect(expected.success).toBe(true);
+    expect(built).toEqual(expected);
+  });
+
+  test("OG 画像が空なら失敗する", async () => {
+    const result = await buildIndexHtml(TEMPLATE, { ogpJpg: new Uint8Array(), logoSvg });
+    expect(!result.success && result.error).toContain("OG 画像が空");
+  });
+
+  test("ロゴが検査を通らなければ、その理由を付けて失敗する", async () => {
+    const result = await buildIndexHtml(TEMPLATE, {
+      ogpJpg: abc,
+      logoSvg: `<svg ${SVG_NS}></svg>`,
+    });
+    expect(!result.success && result.error).toContain("ロゴ: ルート要素に viewBox が無い");
+  });
+
+  test("テンプレートが壊れていれば失敗する", async () => {
+    const result = await buildIndexHtml("<p></p>", { ogpJpg: abc, logoSvg });
+    expect(result.success).toBe(false);
   });
 });

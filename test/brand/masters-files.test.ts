@@ -8,8 +8,8 @@ import {
   generatedJson,
   inspectMaster,
   LOGO,
-} from "../../src/brand/masters";
-import { darkLogo, renderIndexHtml } from "../../src/brand/outputs";
+} from "../../src/brand/masters.ts";
+import { darkLogo, renderIndexHtml } from "../../src/brand/outputs.ts";
 
 // brand/ の SVG を全部読む。BRAND_MASTERS に登録し忘れたマスターもキーに現れる。
 const masters = import.meta.glob("../../brand/*.svg", {

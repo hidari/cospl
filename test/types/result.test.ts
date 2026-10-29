@@ -9,7 +9,7 @@ import {
   mapResult,
   matchResult,
   success,
-} from "../../src/types/result";
+} from "../../src/types/result.ts";
 
 describe("Result型ユーティリティ", () => {
   describe("mapResult", () => {

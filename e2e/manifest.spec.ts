@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, test } from "./fixtures.ts";
 
 test("manifest が link され application/manifest+json で取得できる", async ({ page }) => {
   await page.goto("/");

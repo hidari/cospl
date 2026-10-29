@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { ident, ORDER, parseTag, parseTags, tagsFrom } from "../../src/license/tags";
-import { unwrapState } from "./helpers";
+import { ident, ORDER, parseTag, parseTags, tagsFrom } from "../../src/license/tags.ts";
+import { unwrapState } from "./helpers.ts";
 
 describe("parseTag", () => {
   test("既知タグは Some を返す", () => {

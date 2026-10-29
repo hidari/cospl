@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, test } from "./fixtures.ts";
 
 test("外部サイトへのリンクはすべて別タブで開き、サイト内のリンクは同じタブで開く", async ({
   licensePage,

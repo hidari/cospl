@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { inspectMaster, LOGO, OGP_LANDSCAPE } from "../../src/brand/masters";
+import { inspectMaster, LOGO, OGP_LANDSCAPE } from "../../src/brand/masters.ts";
 import {
   buildIndexHtml,
   darkLogo,
@@ -7,8 +7,8 @@ import {
   LOGO_DARK_COLORS,
   OGP_IMAGE,
   renderIndexHtml,
-} from "../../src/brand/outputs";
-import { SITE_URL } from "../../src/license/share";
+} from "../../src/brand/outputs.ts";
+import { SITE_URL } from "../../src/license/share.ts";
 
 const SVG_NS = 'xmlns="http://www.w3.org/2000/svg"';
 const svgOf = (body: string): string => `<svg ${SVG_NS} viewBox="0 0 10 10">${body}</svg>`;

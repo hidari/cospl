@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { ORDER } from "../src/core";
+import { ORDER } from "../src/core.ts";
 import {
   apiCatalogJson,
   LINK_HEADER,
@@ -7,7 +7,7 @@ import {
   prefersMarkdown,
   robotsTxt,
   sitemapXml,
-} from "../src/discovery";
+} from "../src/discovery.ts";
 
 const ORIGIN = "https://cospl.org";
 

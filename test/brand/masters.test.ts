@@ -5,7 +5,7 @@ import {
   inspectMaster,
   sha256Hex,
   sha256HexBytes,
-} from "../../src/brand/masters";
+} from "../../src/brand/masters.ts";
 
 const SVG_NS = 'xmlns="http://www.w3.org/2000/svg"';
 const XLINK_NS = 'xmlns:xlink="http://www.w3.org/1999/xlink"';

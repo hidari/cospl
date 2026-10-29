@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { parseFormat, parseView } from "../../src/license/query";
+import { parseFormat, parseView } from "../../src/license/query.ts";
 
 describe("parseView", () => {
   test("null と human は human", () => {

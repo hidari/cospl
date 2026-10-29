@@ -2,8 +2,8 @@ import { describe, expect, test } from "vitest";
 // workerd では node:fs が使えないため Vite の ?raw で本文を文字列として埋め込む。
 import indexHtml from "../../index.html?raw";
 import llmsTxt from "../../public/llms.txt?raw";
-import { ORDER } from "../../src/license/tags";
-import { TERMS_URL, VERSION } from "../../src/license/version";
+import { ORDER } from "../../src/license/tags.ts";
+import { TERMS_URL, VERSION } from "../../src/license/version.ts";
 import terms from "../../v2.0/CosPL-2.0.md?raw";
 
 describe("手書きの面が VERSION と ORDER から drift しない", () => {

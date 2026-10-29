@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { registerServiceWorker } from "../src/client/sw-register";
+import { registerServiceWorker } from "../src/client/sw-register.ts";
 
 describe("registerServiceWorker（SW 登録アダプタ）", () => {
   test("container が無ければ未対応として fail を返す（例外を投げない）", async () => {

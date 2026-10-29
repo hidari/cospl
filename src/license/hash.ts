@@ -1,8 +1,8 @@
 // URL hash とタグ状態の相互変換。hash は共有してよいタグだけを運び、個人情報（フィールド）は載せない。
 
-import { getOrElse } from "../types/result";
-import { creditParam, DEFAULT_OPTIONS, type Options, parseCredit } from "./options";
-import { DEFAULT_TAGS, defaultTagState, parseTags, type State, tagsFrom } from "./tags";
+import { getOrElse } from "../types/result.ts";
+import { creditParam, DEFAULT_OPTIONS, type Options, parseCredit } from "./options.ts";
+import { DEFAULT_TAGS, defaultTagState, parseTags, type State, tagsFrom } from "./tags.ts";
 
 // hash 文字列（先頭 # は任意）からタグ状態を復元する。
 // "=" を含まない hash は従来の裸タグ列とみなして後方互換に扱う。旧 URL に残る

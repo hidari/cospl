@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { Page } from "@playwright/test";
-import { expect, test } from "./fixtures";
+import { expect, test } from "./fixtures.ts";
 
 // ビルドが index.html に差し込んだ値（vite.config.ts）を、配信された応答だけから確かめる。
 // ローカルの preview と本番（E2E_BASE_URL）の両方で走る。期待値を checkout から読まないのは、

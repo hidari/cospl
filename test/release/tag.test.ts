@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { nextSiteTag, parseReleaseTag } from "../../src/release/tag";
+import { nextSiteTag, parseReleaseTag } from "../../src/release/tag.ts";
 
 // 次に打つサイトのタグは、その日の最初なら連番なし、以降は既存の最大の連番 + 1。
 describe("nextSiteTag", () => {

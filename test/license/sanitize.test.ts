@@ -1,14 +1,14 @@
 import { describe, expect, test } from "vitest";
-import { humanMD } from "../../src/license/document";
-import { DEFAULT_OPTIONS } from "../../src/license/options";
+import { humanMD } from "../../src/license/document.ts";
+import { DEFAULT_OPTIONS } from "../../src/license/options.ts";
 import {
   DEFAULT_DOC,
   type Draft,
   EMPTY_DRAFT,
   hasExtensions,
   toDoc,
-} from "../../src/license/sanitize";
-import { unwrapState } from "./helpers";
+} from "../../src/license/sanitize.ts";
+import { unwrapState } from "./helpers.ts";
 
 describe("toDoc", () => {
   const empty: Draft = EMPTY_DRAFT;

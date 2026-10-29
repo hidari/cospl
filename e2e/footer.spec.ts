@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, test } from "./fixtures.ts";
 
 test("フッターの関連リンクが決められた順で並ぶ", async ({ licensePage }) => {
   await licensePage.goto();

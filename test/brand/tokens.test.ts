@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { declarationsOf, stripComments, stylesCss, TOKEN_BLOCK } from "./css";
+import { declarationsOf, stripComments, stylesCss, TOKEN_BLOCK } from "./css.ts";
 
 const COLOR_LITERAL = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/g;
 

@@ -1,7 +1,7 @@
 // AI エージェント・クローラ向けの発見性リソースを生成・判定する純粋関数群。
 // 副作用は持たず入出力は文字列/boolean のみ。ルーティングと I/O は src/worker.ts が担う。
 
-import { CREDITS, DEFAULT_TAGS, ORDER } from "./core";
+import { CREDITS, DEFAULT_TAGS, ORDER } from "./core.ts";
 
 // 明示ブロックを置く主要 AI クローラ。CC0 サイトなので全て Allow: / にする。
 const AI_CRAWLERS = [

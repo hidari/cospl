@@ -1,9 +1,9 @@
 // タグの定義と厳格パース。DOM にも他の license モジュールにも依存しない（version のみ）。
 
-import { type ParseError, unknownTagError } from "../types/errors";
-import { none, type Option, some } from "../types/option";
-import { fail, getOrElse, type Result, success } from "../types/result";
-import { VERSION } from "./version";
+import { type ParseError, unknownTagError } from "../types/errors.ts";
+import { none, type Option, some } from "../types/option.ts";
+import { fail, getOrElse, type Result, success } from "../types/result.ts";
+import { VERSION } from "./version.ts";
 
 // タグの定義順（単一ソース）。union 型と検証用 Set をここから起こす。
 export const ORDER = ["BY", "NC", "ND", "NAI", "TD", "SB", "MR"] as const;

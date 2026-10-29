@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { CREDITS, DEFAULT_OPTIONS, parseCredit } from "../../src/license/options";
+import { CREDITS, DEFAULT_OPTIONS, parseCredit } from "../../src/license/options.ts";
 
 describe("parseCredit", () => {
   test("省略（null）は既定の sns", () => {

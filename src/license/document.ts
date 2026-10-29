@@ -1,10 +1,10 @@
 // 生成文書（人間向け README・同梱テキスト・AI 向け宣言）。
 // 生成文書の文字列は golden（test/__fixtures__/golden.json）と byte 一致を保つ。文面変更時は just regen-golden で更新する。
 
-import { DEFAULT_OPTIONS, type Options } from "./options";
-import { DEFAULT_DOC, type Doc, hasExtensions } from "./sanitize";
-import { ident, type State } from "./tags";
-import { TERMS_URL } from "./version";
+import { DEFAULT_OPTIONS, type Options } from "./options.ts";
+import { DEFAULT_DOC, type Doc, hasExtensions } from "./sanitize.ts";
+import { ident, type State } from "./tags.ts";
+import { TERMS_URL } from "./version.ts";
 
 // 人間向け README を生成する
 export function humanMD(

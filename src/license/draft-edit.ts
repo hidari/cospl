@@ -1,7 +1,7 @@
 // 入力（Draft）の編集操作。UI の action から呼ばれる純粋関数で、上限は追加の時点で守る。
 
-import { EXTENSION_PRESETS, type ExtensionPresetId } from "./presets";
-import { type Draft, type Extension, MAX_EXTENSIONS } from "./sanitize";
+import { EXTENSION_PRESETS, type ExtensionPresetId } from "./presets.ts";
+import { type Draft, type Extension, MAX_EXTENSIONS } from "./sanitize.ts";
 
 // 生の文字列で持つ欄（単一行、または 1 行 1 件の複数行）。拡張は件数を持つので別の操作にする。
 export type TextField = "photographer" | "contacts" | "sendBack" | "contents";

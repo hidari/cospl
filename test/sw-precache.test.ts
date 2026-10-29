@@ -4,10 +4,19 @@ import indexRaw from "../index.html?raw";
 import manifestRaw from "../public/manifest.webmanifest?raw";
 import cssRaw from "../src/client/styles.module.css?raw";
 import { cacheVersion } from "../src/client/sw-precache.ts";
-import { isStablePrecache } from "../src/client/sw-strategy.ts";
+import { chooseStrategy, isStablePrecache } from "../src/client/sw-strategy.ts";
 
 const matches = (text: string, re: RegExp): string[] =>
   Array.from(text.matchAll(re), (m) => m[1] ?? "");
+
+// 事前キャッシュに入り、SW の入れ替わりだけで届く（cache-first で配る）とは言えない参照。
+const notDeliveredBySw = (urls: readonly string[]): string[] =>
+  urls.filter(
+    (pathname) =>
+      !isStablePrecache(pathname) ||
+      chooseStrategy({ method: "GET", sameOrigin: true, isNavigate: false, pathname }) !==
+        "cache-first",
+  );
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 
@@ -16,8 +25,8 @@ const hasIconSrcs = (v: unknown): v is { icons: { src: string }[] } =>
   Array.isArray(v.icons) &&
   v.icons.every((i: unknown) => isRecord(i) && typeof i.src === "string");
 
-describe("事前キャッシュの対象は、配信物が参照する安定名ファイルを漏らさない", () => {
-  test('CSS の url("/…") は、フォント 3 つとアイコン 7 つのすべてが対象', () => {
+describe("配信物が参照する安定名ファイルは、すべて事前キャッシュされ cache-first で配られる", () => {
+  test('CSS の url("/…") は、フォント 3 つとアイコン 7 つで、すべて SW が届ける', () => {
     const urls = [...new Set(matches(cssRaw, /url\("(\/[^"]+)"\)/g))].sort();
     expect(urls).toEqual(
       [
@@ -27,25 +36,25 @@ describe("事前キャッシュの対象は、配信物が参照する安定名�
         ...["by", "mr", "nai", "nc", "nd", "sb", "td"].map((n) => `/icons/${n}.svg`),
       ].sort(),
     );
-    expect(urls.filter((u) => !isStablePrecache(u))).toEqual([]);
+    expect(notDeliveredBySw(urls)).toEqual([]);
   });
 
-  test("index.html のアイコン・favicon・manifest 参照はすべて対象", () => {
+  test("index.html のアイコン・favicon・manifest 参照は、すべて SW が届ける", () => {
     const refs = matches(indexRaw, /\b(?:href|src|srcset)="(\/[^"]*)"/g).filter((u) =>
       ["/icons/", "/favicon", "/apple-touch-icon", "/manifest"].some((p) => u.startsWith(p)),
     );
     expect(refs.length).toBeGreaterThan(0);
-    expect(refs.filter((u) => !isStablePrecache(u))).toEqual([]);
+    expect(notDeliveredBySw(refs)).toEqual([]);
   });
 
-  test("manifest.webmanifest の icons[].src はすべて対象", () => {
+  test("manifest.webmanifest の icons[].src は、すべて SW が届ける", () => {
     const parsed: unknown = JSON.parse(manifestRaw);
     if (!hasIconSrcs(parsed)) {
       throw new Error("manifest.webmanifest の icons[].src を読めない");
     }
     const srcs = parsed.icons.map((i) => i.src);
     expect(srcs.length).toBeGreaterThan(0);
-    expect(srcs.filter((u) => !isStablePrecache(u))).toEqual([]);
+    expect(notDeliveredBySw(srcs)).toEqual([]);
   });
 });
 

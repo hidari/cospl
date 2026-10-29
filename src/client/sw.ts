@@ -11,8 +11,10 @@ declare const __CACHE_VERSION__: string;
 const CACHE = `cospl-${__CACHE_VERSION__}`;
 
 self.addEventListener("install", (event) => {
-  // shell 一式を precache し、待機せず即座に新 SW を有効化する。
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll([...__PRECACHE__])));
+  // shell 一式を precache し、待機せず即座に新 SW を有効化する。安定名アセットの差し替えはこの取り直しだけで
+  // 届くので、HTTP キャッシュの古い中身を掴まないよう、配信側のヘッダーに頼らず必ず再検証させる。
+  const requests = __PRECACHE__.map((url) => new Request(url, { cache: "no-cache" }));
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(requests)));
   self.skipWaiting();
 });
 
@@ -41,27 +43,20 @@ self.addEventListener("fetch", (event) => {
   if (strategy === "passthrough") {
     return;
   }
-  event.respondWith(handle(strategy, event.request, event.waitUntil.bind(event)));
+  event.respondWith(handle(strategy, event.request));
 });
 
-type WaitUntil = (promise: Promise<unknown>) => void;
-
-function handle(
-  strategy: Exclude<Strategy, "passthrough">,
-  request: Request,
-  waitUntil: WaitUntil,
-): Promise<Response> {
+function handle(strategy: Exclude<Strategy, "passthrough">, request: Request): Promise<Response> {
   switch (strategy) {
     case "cache-first":
       return cacheFirst(request);
     case "network-first":
       return networkFirst(request);
-    case "swr":
-      return staleWhileRevalidate(request, waitUntil);
   }
 }
 
-// ハッシュ付きアセットと、内容が SW の版数に入っている安定名アセット（フォント）: キャッシュ優先。未取得時のみネットワークから取得しキャッシュへ格納する。
+// ハッシュ付きアセットと、中身が SW の版数に入っている安定名の事前キャッシュ対象: キャッシュ優先。
+// 未取得時のみネットワークから取得しキャッシュへ格納する。
 async function cacheFirst(request: Request): Promise<Response> {
   // Vite は <script type="module" crossorigin> を生成するため、ブラウザは cors モードでリクエストする。
   // caches.match はデフォルトで Vary/モードを考慮するため、同一 URL でもキャッシュ miss が起きる。
@@ -101,23 +96,4 @@ async function networkFirst(request: Request): Promise<Response> {
     return shell;
   }
   return Response.error();
-}
-
-// シェル資産: キャッシュ即返し + 背景で再検証（失敗は握りつぶす）。
-// 裏の取得とキャッシュ書き込みは waitUntil に渡す。渡さないと応答を返した時点で SW が停止され得て、
-// 書き込みが完了せず「2 回目の表示で最新になる」保証が崩れる。waitUntil に渡す Promise は reject させない。
-async function staleWhileRevalidate(request: Request, waitUntil: WaitUntil): Promise<Response> {
-  const cached = await caches.match(request, { ignoreVary: true });
-  const network = fetch(request).then(async (response) => {
-    if (response.ok) {
-      const cache = await caches.open(CACHE);
-      await cache.put(request, response.clone());
-    }
-    return response;
-  });
-  if (cached) {
-    waitUntil(network.catch(() => undefined));
-    return cached;
-  }
-  return network;
 }

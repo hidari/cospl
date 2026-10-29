@@ -1,7 +1,7 @@
 // キャッシュ戦略の判定と事前キャッシュ対象の述語（純粋関数）。Request/DOM/WebWorker 型に依存せず、
 // 素の記述子だけで戦略を決める。これにより workerd の vitest でそのままテストでき、SW 本体（副作用）と分離する。
 
-export type Strategy = "network-first" | "cache-first" | "swr" | "passthrough";
+export type Strategy = "network-first" | "cache-first" | "passthrough";
 
 // fetch ハンドラが Request から抽出する最小の記述子。
 export type RequestDescriptor = {
@@ -11,7 +11,6 @@ export type RequestDescriptor = {
   readonly pathname: string;
 };
 
-// 安定名のシェル資産（アイコン/favicon/manifest）。まれに変わるため swr で配る。
 function isShellAsset(pathname: string): boolean {
   return (
     pathname.startsWith("/icons/") ||
@@ -44,13 +43,11 @@ export function chooseStrategy(req: RequestDescriptor): Strategy {
   if (req.isNavigate) {
     return "network-first";
   }
-  // ハッシュ付き /assets/* は不変。/fonts/* は内容が SW の版数に畳み込まれる（sw-precache.ts）ので、
-  // 差し替えは SW の更新で届くため cache-first でよい。
-  if (req.pathname.startsWith("/assets/") || req.pathname.startsWith("/fonts/")) {
+  // ハッシュ付き /assets/* は名前が中身で変わるので不変。安定名の事前キャッシュ対象は中身が SW の版数に
+  // 入る（sw-precache.ts）ので、差し替えは SW の入れ替わりで届く。どちらも cache-first でよい。
+  // 事前キャッシュの対象と同じ述語で決めるので、版数に入らないファイルが cache-first になることはない。
+  if (req.pathname.startsWith("/assets/") || isStablePrecache(req.pathname)) {
     return "cache-first";
-  }
-  if (isShellAsset(req.pathname)) {
-    return "swr";
   }
   // 既定はキャッシュしない（OGP 大画像・Worker 動的ルート・未知パスを安全側で素通し）。
   return "passthrough";

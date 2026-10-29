@@ -11,7 +11,6 @@ export type RequestDescriptor = {
   readonly pathname: string;
 };
 
-// 安定名のシェル資産（アイコン/favicon/manifest）。
 function isShellAsset(pathname: string): boolean {
   return (
     pathname.startsWith("/icons/") ||

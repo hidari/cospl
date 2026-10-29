@@ -50,21 +50,12 @@ describe("chooseStrategy（キャッシュ戦略の判定）", () => {
     expect(chooseStrategy({ ...base, pathname })).toBe("cache-first");
   });
 
-  // 版数に入らないファイルを cache-first にすると、差し替えが届かなくなる。
-  test.each(["/fonts/OFL.txt", "/icons/.DS_Store", "/fonts/.hidden.woff2"])(
+  // 版数に入らないファイルを cache-first にすると、差し替えが届かなくなる（/fonts/OFL.txt やドットファイル）。
+  // /assets/* と / は別の規則で決まるので除く。
+  test.each(NOT_PRECACHED.filter((p) => !p.startsWith("/assets/") && p !== "/"))(
     "事前キャッシュ対象でない %s は passthrough",
     (pathname) => {
       expect(chooseStrategy({ ...base, pathname })).toBe("passthrough");
-    },
-  );
-
-  // 事前キャッシュの対象とキャッシュ戦略は同じ述語で決まり、ずれない。
-  test.each([...PRECACHED, ...NOT_PRECACHED].filter((p) => !p.startsWith("/assets/") && p !== "/"))(
-    "%s は事前キャッシュ対象なら cache-first、そうでなければ passthrough",
-    (pathname) => {
-      expect(chooseStrategy({ ...base, pathname })).toBe(
-        isStablePrecache(pathname) ? "cache-first" : "passthrough",
-      );
     },
   );
 

@@ -1,5 +1,5 @@
 ---
-status: in_progress
+status: closed
 ---
 
 # refactor(sw): 安定名アセットの届け方を SW の入れ替わりに一本化する
@@ -24,10 +24,10 @@ ISSUE-4 と同じ。 前に来た人には、 最初の 1 回だけ古いもの�
 
 ## タスク
 
-- [ ] `chooseStrategy` を `isStablePrecache` で cache-first にし、 戦略 `swr` を消す (テストを先に直す)
-- [ ] `sw.ts` から stale-while-revalidate と `waitUntil` の受け渡しを消し、 install の `addAll` を `cache: "no-cache"` にする
-- [ ] 「precache の対象なら cache-first、 それ以外の非ナビゲーションの同一オリジンは `/assets/` 以外 passthrough」をテストで pin する
-- [ ] 変異注入で pin が赤くなることを確かめる
+- [x] `chooseStrategy` を `isStablePrecache` で cache-first にし、 戦略 `swr` を消す (テストを先に直す)
+- [x] `sw.ts` から stale-while-revalidate と `waitUntil` の受け渡しを消し、 install の `addAll` を `cache: "no-cache"` にする
+- [x] 「precache の対象なら cache-first、 それ以外の非ナビゲーションの同一オリジンは `/assets/` 以外 passthrough」をテストで pin する
+- [x] 変異注入で pin が赤くなることを確かめる
 
 ## 関連
 

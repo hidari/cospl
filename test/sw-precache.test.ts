@@ -26,7 +26,7 @@ const hasIconSrcs = (v: unknown): v is { icons: { src: string }[] } =>
   v.icons.every((i: unknown) => isRecord(i) && typeof i.src === "string");
 
 describe("配信物が参照する安定名ファイルは、すべて事前キャッシュされ cache-first で配られる", () => {
-  test('CSS の url("/…") は、フォント 3 つとアイコン 7 つのすべてが対象', () => {
+  test('CSS の url("/…") は、フォント 3 つとアイコン 7 つで、すべて SW が届ける', () => {
     const urls = [...new Set(matches(cssRaw, /url\("(\/[^"]+)"\)/g))].sort();
     expect(urls).toEqual(
       [
@@ -39,7 +39,7 @@ describe("配信物が参照する安定名ファイルは、すべて事前キ�
     expect(notDeliveredBySw(urls)).toEqual([]);
   });
 
-  test("index.html のアイコン・favicon・manifest 参照はすべて対象", () => {
+  test("index.html のアイコン・favicon・manifest 参照は、すべて SW が届ける", () => {
     const refs = matches(indexRaw, /\b(?:href|src|srcset)="(\/[^"]*)"/g).filter((u) =>
       ["/icons/", "/favicon", "/apple-touch-icon", "/manifest"].some((p) => u.startsWith(p)),
     );
@@ -47,7 +47,7 @@ describe("配信物が参照する安定名ファイルは、すべて事前キ�
     expect(notDeliveredBySw(refs)).toEqual([]);
   });
 
-  test("manifest.webmanifest の icons[].src はすべて対象", () => {
+  test("manifest.webmanifest の icons[].src は、すべて SW が届ける", () => {
     const parsed: unknown = JSON.parse(manifestRaw);
     if (!hasIconSrcs(parsed)) {
       throw new Error("manifest.webmanifest の icons[].src を読めない");

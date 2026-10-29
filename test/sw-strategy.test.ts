@@ -13,6 +13,28 @@ const base: RequestDescriptor = {
   pathname: "/assets/index-abc123.js",
 };
 
+const PRECACHED = [
+  "/icons/nd.svg",
+  "/icons/sb.svg",
+  "/icons/logo-light.svg",
+  "/icons/icon-512.png",
+  "/favicon.ico",
+  "/favicon.svg",
+  "/apple-touch-icon.png",
+  "/manifest.webmanifest",
+  "/fonts/SpaceMono-400-latin.woff2",
+];
+const NOT_PRECACHED = [
+  "/fonts/OFL.txt",
+  "/ogp/ogp-landscape.jpg",
+  "/_headers",
+  "/llms.txt",
+  "/assets/index-abc.js",
+  "/",
+  "/icons/.DS_Store",
+  "/fonts/.hidden.woff2",
+];
+
 describe("chooseStrategy（キャッシュ戦略の判定）", () => {
   test("ナビゲーションは network-first（最新 HTML 優先・オフライン時はキャッシュ shell）", () => {
     expect(chooseStrategy({ ...base, isNavigate: true, pathname: "/" })).toBe("network-first");
@@ -23,20 +45,28 @@ describe("chooseStrategy（キャッシュ戦略の判定）", () => {
     expect(chooseStrategy({ ...base, pathname: "/assets/index-def456.css" })).toBe("cache-first");
   });
 
-  test("フォント /fonts/* は cache-first", () => {
-    expect(chooseStrategy({ ...base, pathname: "/fonts/SpaceMono-400-latin.woff2" })).toBe(
-      "cache-first",
-    );
+  // 安定名の事前キャッシュ対象は中身が SW の版数に入り、差し替えは SW の入れ替わりで届く。
+  test.each(PRECACHED)("事前キャッシュ対象の %s は cache-first", (pathname) => {
+    expect(chooseStrategy({ ...base, pathname })).toBe("cache-first");
   });
 
-  test("アイコン/favicon/manifest は swr（高速表示しつつ背景更新）", () => {
-    expect(chooseStrategy({ ...base, pathname: "/icons/by.svg" })).toBe("swr");
-    expect(chooseStrategy({ ...base, pathname: "/icons/icon-512.png" })).toBe("swr");
-    expect(chooseStrategy({ ...base, pathname: "/favicon.svg" })).toBe("swr");
-    expect(chooseStrategy({ ...base, pathname: "/favicon.ico" })).toBe("swr");
-    expect(chooseStrategy({ ...base, pathname: "/apple-touch-icon.png" })).toBe("swr");
-    expect(chooseStrategy({ ...base, pathname: "/manifest.webmanifest" })).toBe("swr");
-  });
+  // 版数に入らないファイルを cache-first にすると、差し替えが届かなくなる。
+  test.each(["/fonts/OFL.txt", "/icons/.DS_Store", "/fonts/.hidden.woff2"])(
+    "事前キャッシュ対象でない %s は passthrough",
+    (pathname) => {
+      expect(chooseStrategy({ ...base, pathname })).toBe("passthrough");
+    },
+  );
+
+  // 事前キャッシュの対象とキャッシュ戦略は同じ述語で決まり、ずれない。
+  test.each([...PRECACHED, ...NOT_PRECACHED].filter((p) => !p.startsWith("/assets/") && p !== "/"))(
+    "%s は事前キャッシュ対象なら cache-first、そうでなければ passthrough",
+    (pathname) => {
+      expect(chooseStrategy({ ...base, pathname })).toBe(
+        isStablePrecache(pathname) ? "cache-first" : "passthrough",
+      );
+    },
+  );
 
   test("OGP 大画像 /ogp/* はキャッシュしない（passthrough）", () => {
     expect(chooseStrategy({ ...base, pathname: "/ogp/ogp-landscape.jpg" })).toBe("passthrough");
@@ -65,29 +95,11 @@ describe("chooseStrategy（キャッシュ戦略の判定）", () => {
 });
 
 describe("isStablePrecache（SW が事前キャッシュする安定名の公開ファイル）", () => {
-  test.each([
-    "/icons/nd.svg",
-    "/icons/sb.svg",
-    "/icons/logo-light.svg",
-    "/favicon.ico",
-    "/favicon.svg",
-    "/apple-touch-icon.png",
-    "/manifest.webmanifest",
-    "/fonts/SpaceMono-400-latin.woff2",
-  ])("%s は事前キャッシュする", (pathname) => {
+  test.each(PRECACHED)("%s は事前キャッシュする", (pathname) => {
     expect(isStablePrecache(pathname)).toBe(true);
   });
 
-  test.each([
-    "/fonts/OFL.txt",
-    "/ogp/ogp-landscape.jpg",
-    "/_headers",
-    "/llms.txt",
-    "/assets/index-abc.js",
-    "/",
-    "/icons/.DS_Store",
-    "/fonts/.hidden.woff2",
-  ])("%s は事前キャッシュしない", (pathname) => {
+  test.each(NOT_PRECACHED)("%s は事前キャッシュしない", (pathname) => {
     expect(isStablePrecache(pathname)).toBe(false);
   });
 });

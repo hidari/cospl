@@ -1,5 +1,5 @@
 ---
-status: in_progress
+status: closed
 ---
 
 # fix(sw): HTML だけの変更で Service Worker のキャッシュ版数が上がらない
@@ -39,11 +39,11 @@ status: in_progress
 
 ## タスク
 
-- [ ] 安定名の precache 対象を `public/` から述語で選び、 `nd.svg` と `sb.svg` を含める
-- [ ] 版数に安定名アセットの中身のハッシュを含める
-- [ ] stale-while-revalidate の裏の更新を `event.waitUntil` に入れる
-- [ ] 安定名のファイルだけを変えたビルドで版数が変わることを、 テストと実際のビルドで確かめる
-- [ ] 変異注入で各 pin が赤くなることを確かめる
+- [x] 安定名の precache 対象を `public/` から述語で選び、 `nd.svg` と `sb.svg` を含める
+- [x] 版数に安定名アセットの中身のハッシュを含める
+- [x] stale-while-revalidate の裏の更新を `event.waitUntil` に入れる
+- [x] 安定名のファイルだけを変えたビルドで版数が変わることを、 テストと実際のビルドで確かめる
+- [x] 変異注入で各 pin が赤くなることを確かめる
 
 ## 関連
 

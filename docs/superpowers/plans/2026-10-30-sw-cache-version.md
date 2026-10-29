@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript、Vite 8 の plugin（`vite.config.ts` の `serviceWorkerPlugin`）、vitest（workerd）、Playwright。
 
-**Spec:** `docs/issues/ISSUE-4_HTML だけの変更で Service Worker のキャッシュ版数が上がらない/issue.md`
+**Spec:** `docs/issues/closed/ISSUE-4_HTML だけの変更で Service Worker のキャッシュ版数が上がらない/issue.md`
 
 ## Global Constraints
 
@@ -83,7 +83,7 @@
 - Modify: `src/client/sw.ts`
 
 - [ ] **Step 1: `handle` に `event` の `waitUntil` を渡し、`staleWhileRevalidate` がキャッシュを返すときに、裏の取得とキャッシュへの書き込みを `waitUntil` に渡す。** 失敗は今と同じく握りつぶす（`waitUntil` に渡す Promise は reject しない形にする）。キャッシュが無いときは今どおりネットワークの応答を返す
-- [ ] **Step 2: 確かめる** — Run: `just typecheck` と offline.spec を含む E2E / Expected: PASS。SW 本体の配線は unit テストしない方針（SW の配線は unit テストせず E2E で確かめる）なので、型と E2E で見る
+- [ ] **Step 2: 確かめる** — Run: `just typecheck` と offline.spec を含む E2E / Expected: PASS。SW 本体の配線は unit テストせず、型と E2E で確かめる方針
 - [ ] **Step 3: コミット**
 
 ### Task 4: 変異注入とまとめ

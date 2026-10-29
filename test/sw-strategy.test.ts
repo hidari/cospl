@@ -85,6 +85,8 @@ describe("isStablePrecache（SW が事前キャッシュする安定名の公開
     "/llms.txt",
     "/assets/index-abc.js",
     "/",
+    "/icons/.DS_Store",
+    "/fonts/.DS_Store",
   ])("%s は事前キャッシュしない", (pathname) => {
     expect(isStablePrecache(pathname)).toBe(false);
   });

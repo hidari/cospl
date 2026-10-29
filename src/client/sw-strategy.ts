@@ -24,7 +24,11 @@ function isShellAsset(pathname: string): boolean {
 
 // SW が install 時に事前キャッシュする安定名の公開ファイル（シェル資産と woff2 フォント）。
 // 名前が変わらないので、内容の変更は SW の版数に畳み込んで更新を届ける（sw-precache.ts）。
+// 末尾が "." で始まるファイル（Finder の .DS_Store など）は公開物ではないので入れない。
 export function isStablePrecache(pathname: string): boolean {
+  if (pathname.slice(pathname.lastIndexOf("/") + 1).startsWith(".")) {
+    return false;
+  }
   return isShellAsset(pathname) || (pathname.startsWith("/fonts/") && pathname.endsWith(".woff2"));
 }
 

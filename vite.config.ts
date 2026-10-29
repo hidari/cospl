@@ -1,5 +1,5 @@
 import { readdir, readFile } from "node:fs/promises";
-import { join, sep } from "node:path";
+import { join, relative, sep } from "node:path";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { build as esbuild } from "esbuild";
 import { defineConfig, type Plugin } from "vite";
@@ -28,11 +28,15 @@ function serviceWorkerPlugin(): Plugin {
       .then(async (bytes) => ({ path, sha256: await sha256HexBytes(bytes) }))
       .catch((err: unknown) => reject(`${path} を読めない: ${String(err)}`));
   const stablePaths = async (): Promise<string[]> => {
-    const entries = await readdir(publicDir, { recursive: true }).catch((err: unknown) =>
-      reject(`${publicDir} を列挙できない: ${String(err)}`),
+    const entries = await readdir(publicDir, { recursive: true, withFileTypes: true }).catch(
+      (err: unknown) => reject(`${publicDir} を列挙できない: ${String(err)}`),
     );
     return entries
-      .map((entry) => `/${entry.split(sep).join("/")}`)
+      .filter((entry) => entry.isFile())
+      .map(
+        (entry) =>
+          `/${relative(publicDir, join(entry.parentPath, entry.name)).split(sep).join("/")}`,
+      )
       .filter(isStablePrecache)
       .sort();
   };

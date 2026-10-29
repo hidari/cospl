@@ -1,9 +1,9 @@
 // マスターと配信物から作る、写しと描画以外の生成物。ロゴのダーク版と、index.html に差し込む値。
 // vitest（workerd）・scripts/build-images.mjs（loadTs で bundle した Node）・vite.config.ts が読む。
-// vite.config.ts から読むので、この連鎖の import には拡張子を付ける（biome.json の useImportExtensions）。
 
 import { SITE_URL } from "../license/share.ts";
-import { fail, type Result, success } from "../types/result.ts";
+import { none, type Option, some } from "../types/option.ts";
+import { fail, mapError, type Result, success } from "../types/result.ts";
 import { inspectMaster, LOGO, OGP_LANDSCAPE, sha256HexBytes } from "./masters.ts";
 
 // ライト版で使ってよい色と、ダーク版での色。ダークの文字色はサイトのダークの --ink に揃える。
@@ -56,94 +56,114 @@ export const OGP_IMAGE = `${OGP_LANDSCAPE.raster.to}.jpg`;
 type Size = { width: number; height: number };
 export type IndexHtmlValues = { ogpVersion: string; logo: Size };
 
+// index.html にちょうど 1 つだけあるべきタグ。手で足した同じタグも数える。
+type Unique = { label: string; re: RegExp };
+
 // トークンを置いてよいタグ（トークンを含む < から > まで）と、差し込む値。
 type Slot = {
   inTag: (tag: string, token: string) => boolean;
   value: (values: IndexHtmlValues) => string;
+  unique: Unique;
 };
+
+const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const ogImageUrl = ({ ogpVersion }: IndexHtmlValues): string =>
   `${SITE_URL}${OGP_IMAGE}?v=${ogpVersion}`;
 
-// 値を差し込む meta。どれも index.html にちょうど 1 つだけ置く。
-const METAS = [
-  { slot: "COSPL_OG_IMAGE", attr: "property", key: "og:image", value: ogImageUrl },
-  {
-    slot: "COSPL_OG_IMAGE_WIDTH",
-    attr: "property",
-    key: "og:image:width",
-    value: () => `${OGP_LANDSCAPE.raster.width}`,
+const metaSlot = (attr: "property" | "name", key: string, value: Slot["value"]): Slot => ({
+  inTag: (tag, token) => tag === `<meta ${attr}="${key}" content="${token}">`,
+  value,
+  unique: {
+    label: `${key} の meta`,
+    re: new RegExp(`<meta\\b[^>]*\\s${attr}="${escapeRegExp(key)}"`, "g"),
   },
-  {
-    slot: "COSPL_OG_IMAGE_HEIGHT",
-    attr: "property",
-    key: "og:image:height",
-    value: () => `${OGP_LANDSCAPE.raster.height}`,
-  },
-  { slot: "COSPL_TWITTER_IMAGE", attr: "name", key: "twitter:image", value: ogImageUrl },
-] as const;
+});
 
-const isLogoImg = (tag: string): boolean =>
-  /^<img\s/.test(tag) && tag.includes(` src="/${LOGO.light}"`);
-
-export const INDEX_HTML_SLOTS: Readonly<Record<string, Slot>> = {
-  ...Object.fromEntries(
-    METAS.map(({ slot, attr, key, value }) => [
-      slot,
-      { inTag: (tag, token) => tag === `<meta ${attr}="${key}" content="${token}">`, value },
-    ]),
-  ),
-  COSPL_LOGO_WIDTH: { inTag: isLogoImg, value: ({ logo }) => `${logo.width}` },
-  COSPL_LOGO_HEIGHT: { inTag: isLogoImg, value: ({ logo }) => `${logo.height}` },
+const LOGO_IMG: Unique = {
+  label: "ロゴの img",
+  re: new RegExp(`<img\\b[^>]*\\ssrc="/${escapeRegExp(LOGO.light)}"`, "g"),
 };
+const logoSlot = (value: Slot["value"]): Slot => ({
+  inTag: (tag) => /^<img\s/.test(tag) && tag.includes(` src="/${LOGO.light}"`),
+  value,
+  unique: LOGO_IMG,
+});
+
+export const INDEX_HTML_SLOTS = {
+  COSPL_OG_IMAGE: metaSlot("property", "og:image", ogImageUrl),
+  COSPL_OG_IMAGE_WIDTH: metaSlot(
+    "property",
+    "og:image:width",
+    () => `${OGP_LANDSCAPE.raster.width}`,
+  ),
+  COSPL_OG_IMAGE_HEIGHT: metaSlot(
+    "property",
+    "og:image:height",
+    () => `${OGP_LANDSCAPE.raster.height}`,
+  ),
+  COSPL_TWITTER_IMAGE: metaSlot("name", "twitter:image", ogImageUrl),
+  COSPL_LOGO_WIDTH: logoSlot(({ logo }) => `${logo.width}`),
+  COSPL_LOGO_HEIGHT: logoSlot(({ logo }) => `${logo.height}`),
+} as const satisfies Record<string, Slot>;
+
+type SlotName = keyof typeof INDEX_HTML_SLOTS;
+const SLOT_NAMES = Object.keys(INDEX_HTML_SLOTS).filter(
+  (name): name is SlotName => name in INDEX_HTML_SLOTS,
+);
+const isSlotName = (name: string): name is SlotName => SLOT_NAMES.some((s) => s === name);
+// ロゴの 2 つのスロットは同じ img を数えるので、ラベルで重ねて 1 回だけ数える。
+const UNIQUES = [
+  ...new Map(
+    SLOT_NAMES.map((s) => [INDEX_HTML_SLOTS[s].unique.label, INDEX_HTML_SLOTS[s].unique]),
+  ).values(),
+];
 
 const TOKEN = /\{\{([A-Z_]+)\}\}/g;
 const VERSION = /^[0-9a-f]{8}$/;
-const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const count = (html: string, re: RegExp): number => (html.match(re) ?? []).length;
-const META_COUNTS = METAS.map(({ attr, key }) => ({
-  key,
-  re: new RegExp(`<meta\\b[^>]*\\s${attr}="${escapeRegExp(key)}"`, "g"),
-}));
-const LOGO_IMG = new RegExp(`<img\\b[^>]*\\ssrc="/${escapeRegExp(LOGO.light)}"`, "g");
 
 // トークンを含むタグ。トークンは属性値の中に置くので、直前の < から直後の > までを取る。
 const enclosingTag = (html: string, index: number): string =>
   html.slice(html.lastIndexOf("<", index), html.indexOf(">", index) + 1);
 
-// テンプレートの形の検査。最初に見つけた問題を返す。手で足した meta や img も数えるので、
-// トークンのある 1 つとは別に値の書かれたタグが残っていれば失敗する。
-const templateProblem = (html: string): string | undefined => {
-  const tokens = Array.from(html.matchAll(TOKEN));
-  const unknown = tokens.find((m) => INDEX_HTML_SLOTS[m[1] ?? ""] === undefined);
-  if (unknown !== undefined) return `未知のトークン: ${unknown[0]}`;
-  if (/\{\{|\}\}/.test(html.replace(TOKEN, ""))) return "形の崩れたトークンがある";
-  const miscounted = Object.keys(INDEX_HTML_SLOTS)
-    .map((slot) => ({ slot, n: tokens.filter((m) => m[1] === slot).length }))
-    .find(({ n }) => n !== 1);
+// テンプレートの形の検査。最初に見つけた問題を返す。
+const templateProblem = (html: string): Option<string> => {
+  const tokens = Array.from(html.matchAll(TOKEN), (m) => ({
+    raw: m[0],
+    name: m[1] ?? "",
+    tag: enclosingTag(html, m.index),
+  }));
+  const unknown = tokens.find(({ name }) => !isSlotName(name));
+  if (unknown !== undefined) return some(`未知のトークン: ${unknown.raw}`);
+  if (/\{\{|\}\}/.test(html.replace(TOKEN, ""))) return some("形の崩れたトークンがある");
+  const miscounted = SLOT_NAMES.map((slot) => ({
+    slot,
+    n: tokens.filter(({ name }) => name === slot).length,
+  })).find(({ n }) => n !== 1);
   if (miscounted !== undefined) {
-    return `トークン {{${miscounted.slot}}} が ${miscounted.n} 個ある（1 個だけ置く）`;
+    return some(`トークン {{${miscounted.slot}}} が ${miscounted.n} 個ある（1 個だけ置く）`);
   }
   const misplaced = tokens.find(
-    (m) => !INDEX_HTML_SLOTS[m[1] ?? ""]?.inTag(enclosingTag(html, m.index), m[0]),
+    ({ raw, name, tag }) => isSlotName(name) && !INDEX_HTML_SLOTS[name].inTag(tag, raw),
   );
   if (misplaced !== undefined) {
-    return `${misplaced[0]} が置いてよいタグにない: ${enclosingTag(html, misplaced.index)}`;
+    return some(`${misplaced.raw} が置いてよいタグにない: ${misplaced.tag}`);
   }
-  const meta = META_COUNTS.map(({ key, re }) => ({ key, n: count(html, re) })).find(
+  const duplicated = UNIQUES.map(({ label, re }) => ({ label, n: count(html, re) })).find(
     ({ n }) => n !== 1,
   );
-  if (meta !== undefined) return `${meta.key} の meta が ${meta.n} 個ある（1 個だけ置く）`;
-  const logos = count(html, LOGO_IMG);
-  if (logos !== 1) return `ロゴの img が ${logos} 個ある（1 個だけ置く）`;
-  return undefined;
+  if (duplicated !== undefined) {
+    return some(`${duplicated.label} が ${duplicated.n} 個ある（1 個だけ置く）`);
+  }
+  return none();
 };
 
 // index.html のトークンを値で置き換える。目印が欠けたまま成功するとトークンの文字列や古い値が
 // 配信されるので、形が崩れていれば失敗する。
 export const renderIndexHtml = (html: string, values: IndexHtmlValues): Result<string, string> => {
   const problem = templateProblem(html);
-  if (problem !== undefined) return fail(problem);
+  if (problem.some) return fail(problem.value);
   if (!VERSION.test(values.ogpVersion)) {
     return fail(`?v= の値が 8 桁の小文字 16 進でない: ${values.ogpVersion}`);
   }
@@ -152,8 +172,12 @@ export const renderIndexHtml = (html: string, values: IndexHtmlValues): Result<s
     return fail(`ロゴの寸法が正の整数にならない: ${values.logo.width}x${values.logo.height}`);
   }
   const resolved = { ...values, logo };
+  // 各トークンはちょうど 1 つと確かめたので、スロットごとに 1 回ずつ置き換える。
   return success(
-    html.replace(TOKEN, (token, slot: string) => INDEX_HTML_SLOTS[slot]?.value(resolved) ?? token),
+    SLOT_NAMES.reduce(
+      (out, slot) => out.replace(`{{${slot}}}`, () => INDEX_HTML_SLOTS[slot].value(resolved)),
+      html,
+    ),
   );
 };
 
@@ -163,8 +187,8 @@ export const buildIndexHtml = async (
   files: { ogpJpg: Uint8Array<ArrayBuffer>; logoSvg: string },
 ): Promise<Result<string, string>> => {
   if (files.ogpJpg.length === 0) return fail("OG 画像が空");
-  const logo = inspectMaster(files.logoSvg);
-  if (!logo.success) return fail(`ロゴ: ${logo.error}`);
+  const logo = mapError(inspectMaster(files.logoSvg), (error) => `ロゴ: ${error}`);
+  if (!logo.success) return logo;
   const ogpVersion = (await sha256HexBytes(files.ogpJpg)).slice(0, 8);
   return renderIndexHtml(html, { ogpVersion, logo: logo.data.viewBox });
 };

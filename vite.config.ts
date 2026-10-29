@@ -28,7 +28,7 @@ const STABLE_PRECACHE: readonly string[] = [
 ];
 
 // クライアントビルドの generateBundle で sw.ts を esbuild バンドルし precache を注入して /sw.js を emit。
-// vite build の一部なので deploy（vite build && wrangler deploy）でも E2E（vite build && preview）でも一貫。
+// vite build の一部なので、deploy.yml と E2E（vite build && preview）のどちらも同じ sw.js を使う。
 function serviceWorkerPlugin(): Plugin {
   return {
     name: "cospl-service-worker",
@@ -83,12 +83,9 @@ function brandIndexHtmlPlugin(): Plugin {
     throw new Error(`index.html: ${error}`);
   };
   // 読めないときも reject を通す（readFile の reject をそのまま投げると理由が消える）。
-  const read = <T>(file: string, load: (path: string) => Promise<T>): Promise<T> => {
+  const read = (file: string): Promise<Uint8Array<ArrayBuffer>> => {
     const path = join(publicDir, file);
-    return load(path).then(
-      (data) => data,
-      (err: unknown) => reject(`${path} を読めない: ${String(err)}`),
-    );
+    return readFile(path).catch((err: unknown) => reject(`${path} を読めない: ${String(err)}`));
   };
   return {
     name: "cospl-brand-index-html",
@@ -99,8 +96,8 @@ function brandIndexHtmlPlugin(): Plugin {
       order: "pre",
       async handler(html) {
         const result = await buildIndexHtml(html, {
-          ogpJpg: await read(OGP_IMAGE, (path) => readFile(path)),
-          logoSvg: await read(LOGO.light, (path) => readFile(path, "utf8")),
+          ogpJpg: await read(OGP_IMAGE),
+          logoSvg: new TextDecoder().decode(await read(LOGO.light)),
         });
         return result.success ? result.data : reject(result.error);
       },

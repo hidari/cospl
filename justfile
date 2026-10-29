@@ -71,7 +71,8 @@ check-brand-html source:
       echo "${values}"
     }
     case "${src}" in http*://*) html=$(get /) ;; *) html=$(get /index.html) ;; esac
-    if grep -qE '\{\{|\}\}|COSPL_|%[A-Z_]+%' <<<"${html}"; then fail "置き換え残しのトークンがある"; fi
+    # トークンの形は src/brand/outputs.ts が正。}} だけでは数えない（Cloudflare のビーコンの JSON が持つ）
+    if grep -qE '\{\{|COSPL_|%[A-Z_]+%' <<<"${html}"; then fail "置き換え残しのトークンがある"; fi
     og=$(one 'property="og:image"')
     [ "$(one 'name="twitter:image"')" = "${og}" ] || fail "og:image と twitter:image が違う"
     v=$(sed -nE 's/.*\?v=([0-9a-f]{8})$/\1/p' <<<"${og}")

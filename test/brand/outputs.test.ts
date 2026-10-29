@@ -143,16 +143,14 @@ describe("renderIndexHtml", () => {
   });
 
   test("トークンは 6 つで、生成する値 1 つにつき 1 つ", () => {
-    expect(SLOTS.sort()).toEqual(
-      [
-        "COSPL_LOGO_HEIGHT",
-        "COSPL_LOGO_WIDTH",
-        "COSPL_OG_IMAGE",
-        "COSPL_OG_IMAGE_HEIGHT",
-        "COSPL_OG_IMAGE_WIDTH",
-        "COSPL_TWITTER_IMAGE",
-      ].sort(),
-    );
+    expect([...SLOTS].sort()).toEqual([
+      "COSPL_LOGO_HEIGHT",
+      "COSPL_LOGO_WIDTH",
+      "COSPL_OG_IMAGE",
+      "COSPL_OG_IMAGE_HEIGHT",
+      "COSPL_OG_IMAGE_WIDTH",
+      "COSPL_TWITTER_IMAGE",
+    ]);
   });
 
   // 置き換え漏れのまま成功すると、トークンの文字列がそのまま配信される。
@@ -227,12 +225,19 @@ describe("buildIndexHtml", () => {
 
   test("?v= は配信する OG 画像のバイト列の SHA-256 の先頭 8 文字、ロゴの寸法は viewBox から作る", async () => {
     const built = await buildIndexHtml(TEMPLATE, { ogpJpg: abc, logoSvg });
-    const expected = renderIndexHtml(TEMPLATE, {
-      ogpVersion: "ba7816bf",
-      logo: { width: 940, height: 330 },
+    // renderIndexHtml を期待値に使うと、renderer が壊れたとき両方が同じように壊れて緑になる。
+    const ogImage = "https://cospl.org/ogp/ogp-landscape.jpg?v=ba7816bf";
+    expect(built).toEqual({
+      success: true,
+      data: [
+        `<meta property="og:image" content="${ogImage}">`,
+        '<meta property="og:image:width" content="1200">',
+        '<meta property="og:image:height" content="630">',
+        '<meta property="og:image:alt" content="alt">',
+        `<meta name="twitter:image" content="${ogImage}">`,
+        `<p class="logo"><picture>${LOGO_IMG("940", "330")}</picture></p>`,
+      ].join("\n"),
     });
-    expect(expected.success).toBe(true);
-    expect(built).toEqual(expected);
   });
 
   test("OG 画像が空なら失敗する", async () => {

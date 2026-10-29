@@ -74,7 +74,8 @@ describe("index.html", () => {
       ogpVersion: "0123abcd",
       logo: { width: 1, height: 1 },
     });
-    expect(rendered.success).toBe(true);
+    // 失敗したら理由（どのトークンやタグか）が差分に出るよう、エラーの文字列を比べる。
+    expect(rendered.success ? "" : rendered.error).toBe("");
   });
 
   // 値をソースに残すと、ビルドが差し込む値と食い違ったまま読まれる。

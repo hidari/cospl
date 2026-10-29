@@ -8,7 +8,8 @@ import { buildIndexHtml, OGP_IMAGE } from "./src/brand/outputs.ts";
 import { cacheVersion } from "./src/client/sw-precache.ts";
 import { isStablePrecache } from "./src/client/sw-strategy.ts";
 
-// dev では throw の理由が本文にもターミナルにも出ないので、先にターミナルへ出してから止める。
+// transformIndexHtml は dev で throw の理由が本文にもターミナルにも出ないので、先にターミナルへ出してから止める。
+// build では理由が 2 回出るが無害。
 const rejector =
   (scope: string) =>
   (error: string): never => {
@@ -25,8 +26,8 @@ function serviceWorkerPlugin(): Plugin {
   // 読めないときも reject を通す（reject を挟まないと理由が消える）。
   const readStable = (path: string): Promise<{ path: string; sha256: string }> =>
     readFile(join(publicDir, path))
-      .then(async (bytes) => ({ path, sha256: await sha256HexBytes(bytes) }))
-      .catch((err: unknown) => reject(`${path} を読めない: ${String(err)}`));
+      .catch((err: unknown) => reject(`${path} を読めない: ${String(err)}`))
+      .then(async (bytes) => ({ path, sha256: await sha256HexBytes(bytes) }));
   const stablePaths = async (): Promise<string[]> => {
     const entries = await readdir(publicDir, { recursive: true, withFileTypes: true }).catch(
       (err: unknown) => reject(`${publicDir} を列挙できない: ${String(err)}`),

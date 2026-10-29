@@ -1,5 +1,5 @@
-// キャッシュ戦略の判定（純粋関数）。Request/DOM/WebWorker 型に依存せず、素の記述子だけで
-// 戦略を決める。これにより workerd の vitest でそのままテストでき、SW 本体（副作用）と分離する。
+// キャッシュ戦略の判定と事前キャッシュ対象の述語（純粋関数）。Request/DOM/WebWorker 型に依存せず、
+// 素の記述子だけで戦略を決める。これにより workerd の vitest でそのままテストでき、SW 本体（副作用）と分離する。
 
 export type Strategy = "network-first" | "cache-first" | "swr" | "passthrough";
 
@@ -24,7 +24,7 @@ function isShellAsset(pathname: string): boolean {
 
 // SW が install 時に事前キャッシュする安定名の公開ファイル（シェル資産と woff2 フォント）。
 // 名前が変わらないので、内容の変更は SW の版数に畳み込んで更新を届ける（sw-precache.ts）。
-// 末尾が "." で始まるファイル（Finder の .DS_Store など）は公開物ではないので入れない。
+// パスの最後の区間（ファイル名）が "." で始まるファイル（Finder の .DS_Store など）は公開物ではないので入れない。
 export function isStablePrecache(pathname: string): boolean {
   if (pathname.slice(pathname.lastIndexOf("/") + 1).startsWith(".")) {
     return false;
@@ -44,7 +44,8 @@ export function chooseStrategy(req: RequestDescriptor): Strategy {
   if (req.isNavigate) {
     return "network-first";
   }
-  // 内容ハッシュ付き or フォントは不変扱いで cache-first。
+  // ハッシュ付き /assets/* は不変。/fonts/* は内容が SW の版数に畳み込まれる（sw-precache.ts）ので、
+  // 差し替えは SW の更新で届くため cache-first でよい。
   if (req.pathname.startsWith("/assets/") || req.pathname.startsWith("/fonts/")) {
     return "cache-first";
   }

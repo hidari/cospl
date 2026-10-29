@@ -9,6 +9,13 @@ import { isStablePrecache } from "../src/client/sw-strategy.ts";
 const matches = (text: string, re: RegExp): string[] =>
   Array.from(text.matchAll(re), (m) => m[1] ?? "");
 
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
+
+const hasIconSrcs = (v: unknown): v is { icons: { src: string }[] } =>
+  isRecord(v) &&
+  Array.isArray(v.icons) &&
+  v.icons.every((i: unknown) => isRecord(i) && typeof i.src === "string");
+
 describe("事前キャッシュの対象は、配信物が参照する安定名ファイルを漏らさない", () => {
   test('CSS の url("/…") は、フォント 3 つとアイコン 7 つのすべてが対象', () => {
     const urls = [...new Set(matches(cssRaw, /url\("(\/[^"]+)"\)/g))].sort();
@@ -32,8 +39,11 @@ describe("事前キャッシュの対象は、配信物が参照する安定名�
   });
 
   test("manifest.webmanifest の icons[].src はすべて対象", () => {
-    const manifest: { icons: { src: string }[] } = JSON.parse(manifestRaw);
-    const srcs = manifest.icons.map((i) => i.src);
+    const parsed: unknown = JSON.parse(manifestRaw);
+    if (!hasIconSrcs(parsed)) {
+      throw new Error("manifest.webmanifest の icons[].src を読めない");
+    }
+    const srcs = parsed.icons.map((i) => i.src);
     expect(srcs.length).toBeGreaterThan(0);
     expect(srcs.filter((u) => !isStablePrecache(u))).toEqual([]);
   });

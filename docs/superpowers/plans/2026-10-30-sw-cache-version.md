@@ -83,7 +83,7 @@
 - Modify: `src/client/sw.ts`
 
 - [ ] **Step 1: `handle` に `event` の `waitUntil` を渡し、`staleWhileRevalidate` がキャッシュを返すときに、裏の取得とキャッシュへの書き込みを `waitUntil` に渡す。** 失敗は今と同じく握りつぶす（`waitUntil` に渡す Promise は reject しない形にする）。キャッシュが無いときは今どおりネットワークの応答を返す
-- [ ] **Step 2: 確かめる** — Run: `just typecheck` と offline.spec を含む E2E / Expected: PASS。SW 本体の配線は unit テストしない方針（[メモリ: client wiring untested by design]）なので、型と E2E で見る
+- [ ] **Step 2: 確かめる** — Run: `just typecheck` と offline.spec を含む E2E / Expected: PASS。SW 本体の配線は unit テストしない方針（SW の配線は unit テストせず E2E で確かめる）なので、型と E2E で見る
 - [ ] **Step 3: コミット**
 
 ### Task 4: 変異注入とまとめ
@@ -93,4 +93,4 @@
   - `cacheVersion` が `stable` を無視する → 版数のテストが赤
   - `cacheVersion` が並べ替えない → 並べ替えのテストが赤
   - plugin が `stable` を渡さない（取り付けを外す） → Task 2 Step 3 の版数の追従が崩れる（ビルドの比較で確かめる）
-- [ ] **Step 2: ISSUE-4 のタスクを消化してクローズ（PR に同梱）、メモリ `cospl-pwa-sw-gotchas.md` の「cache 版数は…ハッシュ付き JS/CSS 全体を…」を新しい作りに直す**
+- [ ] **Step 2: ISSUE-4 のタスクを消化してクローズ（PR に同梱）**

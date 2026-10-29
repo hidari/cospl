@@ -61,7 +61,7 @@ function handle(
   }
 }
 
-// 不変アセット: キャッシュ優先。未取得時のみネットワークから取得しキャッシュへ格納する。
+// ハッシュ付きアセットと、内容が SW の版数に入っている安定名アセット（フォント）: キャッシュ優先。未取得時のみネットワークから取得しキャッシュへ格納する。
 async function cacheFirst(request: Request): Promise<Response> {
   // Vite は <script type="module" crossorigin> を生成するため、ブラウザは cors モードでリクエストする。
   // caches.match はデフォルトで Vary/モードを考慮するため、同一 URL でもキャッシュ miss が起きる。
@@ -116,12 +116,7 @@ async function staleWhileRevalidate(request: Request, waitUntil: WaitUntil): Pro
     return response;
   });
   if (cached) {
-    waitUntil(
-      network.then(
-        () => undefined,
-        () => undefined,
-      ),
-    );
+    waitUntil(network.catch(() => undefined));
     return cached;
   }
   return network;

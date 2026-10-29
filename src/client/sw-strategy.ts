@@ -22,6 +22,12 @@ function isShellAsset(pathname: string): boolean {
   );
 }
 
+// SW が install 時に事前キャッシュする安定名の公開ファイル（シェル資産と woff2 フォント）。
+// 名前が変わらないので、内容の変更は SW の版数に畳み込んで更新を届ける（sw-precache.ts）。
+export function isStablePrecache(pathname: string): boolean {
+  return isShellAsset(pathname) || (pathname.startsWith("/fonts/") && pathname.endsWith(".woff2"));
+}
+
 export function chooseStrategy(req: RequestDescriptor): Strategy {
   // 読み取り以外・別オリジンは一切触らない（早期リターンで安全側に倒す）。
   if (req.method !== "GET") {

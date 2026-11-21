@@ -1,0 +1,22 @@
+name: cospl
+version: 1.0.0
+description: cospl 開発用の外部 skill
+author: Hidari
+targets:
+  - claude
+dependencies:
+  apm:
+    - cloudflare/skills/skills/cloudflare#5108325ecceabc899c761e07aa617b09c02445ee
+    - cloudflare/skills/skills/durable-objects#5108325ecceabc899c761e07aa617b09c02445ee
+    - cloudflare/skills/skills/workers-best-practices#5108325ecceabc899c761e07aa617b09c02445ee
+    - cloudflare/skills/skills/workers-development#5108325ecceabc899c761e07aa617b09c02445ee
+    - cloudflare/skills/skills/workers-profiling#5108325ecceabc899c761e07aa617b09c02445ee
+    - cloudflare/skills/skills/gateway-workers#5108325ecceabc899c761e07aa617b09c02445ee
+    - cloudflare/skills/skills/cf-cli#5108325ecceabc899c761e07aa617b09c02445ee
+    - cloudflare/skills/skills/frameworks-on-cloudflare#5108325ecceabc899c761e07aa617b09c02445ee
+    - cloudflare/skills/skills/turnstile-spin#5108325ecceabc899c761e07aa617b09c02445ee
+    - cloudflare/skills/skills/cloudflare-email-service#5108325ecceabc899c761e07aa617b09c02445ee
+    - cloudflare/skills/skills/web-perf#5108325ecceabc899c761e07aa617b09c02445ee
+  mcp: []
+includes: auto
+scripts: {}

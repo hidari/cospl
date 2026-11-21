@@ -12,3 +12,12 @@ playwright-report/
 .playwright/
 .superpowers/
 .claude/settings.local.json
+
+# apm の依存と配備先 (再生成物)。配備物の一覧の canonical は apm.lock.yaml の deployed_files。
+# 配備先を名指しで除外すると、依存を足したときに未読の外部ファイルが untracked で現れて
+# 一括追加で履歴へ入る。既定で除外して手書きの skill だけを否定で救う。末尾スラッシュ形
+# (.claude/skills/) では git が配下へ降りないので否定が効かず、アスタリスク形なら効く。
+# 手書きの skill を足すときは !.claude/skills/<名前>/ も足すこと。足さないと黙って追跡から外れる。
+apm_modules/
+.claude/skills/*
+!.claude/skills/release/
